@@ -3,10 +3,7 @@ import './App.css';
 import React from 'react';
 
 // pages
-import LoginPage from './pages/LoginPage';
-// import SignUpPage from './pages/SignUpPage';
-
-console.log('LoginPage:', LoginPage);
+import LoginRegisterPage from './pages/LoginRegisterPage';
 
 function App() {
   return (
@@ -25,7 +22,7 @@ function App() {
           Learn React
         </a> */}
       {/* </header> */}
-      <LoginPage />
+      <LoginRegisterPage />
     </div>
   );
 }
