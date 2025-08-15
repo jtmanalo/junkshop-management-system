@@ -10,13 +10,13 @@ import {
 // pages
 import LoginRegisterPage from './pages/LoginRegisterPage';
 import MobileDashboard from './pages/MobileDashboard';
-import MobileNav from './components/MobileNav';
-import DesktopNav from './components/DesktopNav';
+import NavBar from './components/NavBar';
 
 function App() {
   return (
     <div className="App">
-      <MobileNav />
+      <NavBar />
+      {/* <MobileNav /> */}
       {/* <DesktopNav /> */}
       <Routes>
         <Route path="/" element={<LoginRegisterPage />} />
