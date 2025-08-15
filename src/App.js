@@ -16,8 +16,8 @@ import DesktopNav from './components/DesktopNav';
 function App() {
   return (
     <div className="App">
-      {/* <MobileNav /> */}
-      <DesktopNav />
+      <MobileNav />
+      {/* <DesktopNav /> */}
       <Routes>
         <Route path="/" element={<LoginRegisterPage />} />
         <Route path="mobile-dashboard" element={<MobileDashboard />} />
