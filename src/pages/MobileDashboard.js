@@ -2,14 +2,16 @@ import {
     Container
 } from 'react-bootstrap';
 import Header from '../components/Header';
-import Closed from '../components/Closed';
+import ClosedShop from '../components/ClosedShop';
+import OpenShop from '../components/OpenShop';
 
 function MobileDashboard() {
   return (
     <>
     <Container fluid className="p-0 d-flex flex-column min-vh-100">
       <Header />
-      <Closed />
+      {/* <ClosedShop /> */}
+      <OpenShop />
     </Container>          
     </>
   );

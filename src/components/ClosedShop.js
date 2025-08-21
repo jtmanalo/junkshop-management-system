@@ -5,9 +5,8 @@ import {
     Modal,
     Form
 } from 'react-bootstrap';
-import Header from '../components/Header';
 
-function Closed() {
+function ClosedShop() {
   const [showModal, setShowModal] = useState(false);
   const [cashAmount, setCashAmount] = useState('₱1000.00');
 
@@ -66,4 +65,4 @@ function Closed() {
   );
 }
 
-export default Closed;
+export default ClosedShop;
