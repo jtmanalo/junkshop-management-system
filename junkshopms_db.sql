@@ -1,5 +1,6 @@
 CREATE TABLE employee (
     EmployeeID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT UNIQUE,
     PositionTitle VARCHAR(100) NOT NULL,
     FirstName VARCHAR(100) NOT NULL,
     MiddleName VARCHAR(100),
@@ -12,17 +13,14 @@ CREATE TABLE employee (
     Status ENUM('active', 'inactive', 'terminated') DEFAULT 'active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE seller (
     SellerID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(100) NOT NULL,
     ContactNumber VARCHAR(15) UNIQUE,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE user (
     UserID INT AUTO_INCREMENT PRIMARY KEY,
-    EmployeeID INT NOT NULL UNIQUE,
     Username VARCHAR(100) NOT NULL UNIQUE,
     PasswordHash VARCHAR(255) NOT NULL,
     UserType ENUM('owner', 'employee') NOT NULL,
@@ -30,7 +28,6 @@ CREATE TABLE user (
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (EmployeeID) REFERENCES employee(EmployeeID)
 );
-
 CREATE TABLE branch (
     BranchID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(100) NOT NULL UNIQUE,
@@ -39,7 +36,6 @@ CREATE TABLE branch (
     OpeningDate DATE NOT NULL,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE buyer (
     BuyerID INT AUTO_INCREMENT PRIMARY KEY,
     CompanyName VARCHAR(100) NOT NULL UNIQUE,
@@ -48,7 +44,6 @@ CREATE TABLE buyer (
     Status ENUM('active', 'inactive', 'closed') DEFAULT 'active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE buyer_contact_method (
     ContactID INT AUTO_INCREMENT PRIMARY KEY,
     BuyerID INT NOT NULL,
@@ -57,9 +52,11 @@ CREATE TABLE buyer_contact_method (
     IsPrimary BOOLEAN NOT NULL DEFAULT FALSE,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (BuyerID) REFERENCES buyer(BuyerID),
-    CONSTRAINT CHK_OnePrimaryContact CHECK (IsPrimary = TRUE OR IsPrimary = FALSE)
+    CONSTRAINT CHK_OnePrimaryContact CHECK (
+        IsPrimary = TRUE
+        OR IsPrimary = FALSE
+    )
 );
-
 CREATE TABLE item (
     ItemID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(100) NOT NULL UNIQUE,
@@ -68,7 +65,6 @@ CREATE TABLE item (
     Description TEXT,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE transaction (
     TransactionID INT AUTO_INCREMENT PRIMARY KEY,
     BranchID INT NOT NULL,
@@ -77,7 +73,13 @@ CREATE TABLE transaction (
     EmployeeID INT,
     UserID INT NOT NULL,
     PartyType ENUM('extra', 'regular'),
-    TransactionType ENUM('sale', 'purchase', 'expense', 'loan', 'repayment') NOT NULL,
+    TransactionType ENUM(
+        'sale',
+        'purchase',
+        'expense',
+        'loan',
+        'repayment'
+    ) NOT NULL,
     TransactionDate TIMESTAMP NOT NULL,
     TotalAmount DECIMAL(10, 2) NOT NULL,
     PaymentMethod ENUM('cash', 'check', 'online_transfer') NOT NULL,
@@ -90,7 +92,6 @@ CREATE TABLE transaction (
     FOREIGN KEY (EmployeeID) REFERENCES employee(EmployeeID),
     FOREIGN KEY (UserID) REFERENCES user(UserID)
 );
-
 CREATE TABLE pricelist (
     PriceListID INT AUTO_INCREMENT PRIMARY KEY,
     BuyerID INT,
@@ -100,11 +101,16 @@ CREATE TABLE pricelist (
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
     FOREIGN KEY (BuyerID) REFERENCES buyer(BuyerID),
     CONSTRAINT CHK_BranchOrBuyer CHECK (
-        (BranchID IS NOT NULL AND BuyerID IS NULL) OR
-        (BranchID IS NULL AND BuyerID IS NOT NULL)
+        (
+            BranchID IS NOT NULL
+            AND BuyerID IS NULL
+        )
+        OR (
+            BranchID IS NULL
+            AND BuyerID IS NOT NULL
+        )
     )
 );
-
 CREATE TABLE pricelist_item (
     PriceListItemID INT AUTO_INCREMENT PRIMARY KEY,
     PriceListID INT NOT NULL,
@@ -115,7 +121,6 @@ CREATE TABLE pricelist_item (
     FOREIGN KEY (ItemID) REFERENCES item(ItemID),
     UNIQUE (PriceListID, ItemID)
 );
-
 CREATE TABLE transaction_item (
     TransactionItemID INT AUTO_INCREMENT PRIMARY KEY,
     TransactionID INT NOT NULL,
@@ -127,7 +132,6 @@ CREATE TABLE transaction_item (
     FOREIGN KEY (TransactionID) REFERENCES transaction(TransactionID),
     FOREIGN KEY (ItemID) REFERENCES item(ItemID)
 );
-
 CREATE TABLE weighing_log (
     LogID INT AUTO_INCREMENT PRIMARY KEY,
     BranchID INT NOT NULL,
@@ -141,7 +145,6 @@ CREATE TABLE weighing_log (
     FOREIGN KEY (UserID) REFERENCES user(UserID),
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID)
 );
-
 CREATE TABLE counting_log (
     LogID INT AUTO_INCREMENT PRIMARY KEY,
     BranchID INT NOT NULL,
@@ -155,7 +158,6 @@ CREATE TABLE counting_log (
     FOREIGN KEY (UserID) REFERENCES user(UserID),
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID)
 );
-
 CREATE TABLE inventory (
     InventoryID INT AUTO_INCREMENT PRIMARY KEY,
     BranchID INT NOT NULL,
@@ -164,7 +166,6 @@ CREATE TABLE inventory (
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
     UNIQUE (BranchID, Date)
 );
-
 CREATE TABLE inventory_item (
     InventoryItemID INT AUTO_INCREMENT PRIMARY KEY,
     InventoryID INT NOT NULL,
@@ -175,7 +176,6 @@ CREATE TABLE inventory_item (
     FOREIGN KEY (ItemID) REFERENCES item(ItemID),
     UNIQUE (InventoryID, ItemID)
 );
-
 CREATE TABLE shift (
     ShiftID INT AUTO_INCREMENT PRIMARY KEY,
     BranchID INT NOT NULL,
@@ -188,7 +188,6 @@ CREATE TABLE shift (
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
     FOREIGN KEY (UserID) REFERENCES user(UserID)
 );
-
 CREATE TABLE shift_employee (
     ShiftEmployeeID INT AUTO_INCREMENT PRIMARY KEY,
     ShiftID INT NOT NULL,
@@ -198,7 +197,6 @@ CREATE TABLE shift_employee (
     FOREIGN KEY (EmployeeID) REFERENCES employee(EmployeeID),
     UNIQUE (ShiftID, EmployeeID)
 );
-
 CREATE TABLE pricelist_activity (
     ActivityID INT AUTO_INCREMENT PRIMARY KEY,
     PriceListItemID INT NOT NULL,
@@ -209,14 +207,32 @@ CREATE TABLE pricelist_activity (
     FOREIGN KEY (PriceListItemID) REFERENCES pricelist_item(PriceListItemID),
     FOREIGN KEY (UserID) REFERENCES user(UserID)
 );
-
 CREATE TABLE activity_log (
     ActivityID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT NOT NULL,
     BranchID INT NOT NULL,
-    EntityType ENUM('user', 'employee', 'branch', 'seller', 'buyer', 'item', 'transaction', 'inventory', 'shift') NOT NULL,
+    EntityType ENUM(
+        'user',
+        'employee',
+        'branch',
+        'seller',
+        'buyer',
+        'item',
+        'transaction',
+        'inventory',
+        'shift'
+    ) NOT NULL,
     EntityID INT NOT NULL,
-    ActivityType ENUM('create', 'view', 'update', 'delete', 'access', 'login', 'logout', 'upload') NOT NULL,
+    ActivityType ENUM(
+        'create',
+        'view',
+        'update',
+        'delete',
+        'access',
+        'login',
+        'logout',
+        'upload'
+    ) NOT NULL,
     Description TEXT,
     LoggedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (UserID) REFERENCES user(UserID),
