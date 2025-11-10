@@ -1,49 +1,30 @@
+// Import required modules
 const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
-dotenv.config();
-
+// Initialize the Express app
 const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Temporary MongoDB connection string placeholder.
-// Replace with a real connection string or set MONGODB_URI in environment.
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://user:password@cluster0.example.mongodb.net/mydatabase?retryWrites=true&w=majority';
 
 // Middleware
-app.use(express.json());
+app.use(bodyParser.json());
+app.use(cors());
 
-// Simple test endpoint
-app.get('/test', (req, res) => {
-  res.status(200).send('success');
+// Define a basic route
+app.get('/', (req, res) => {
+    res.send('Server is running!');
 });
 
-// Connect to MongoDB and start server
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => {
-  console.log('Connected to MongoDB');
-  app.listen(PORT, () => {
+// Start the server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-  });
-}).catch((err) => {
-  console.error('Failed to connect to MongoDB:', err.message);
-  // Start server even if DB connection fails to allow testing the /test endpoint
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT} (no DB)`);
-  });
 });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('Shutting down...');
-  try {
-    await mongoose.disconnect();
-    console.log('MongoDB disconnected');
-  } catch (e) {
-    console.error('Error during MongoDB disconnect', e.message);
-  }
-  process.exit(0);
+// Handle server errors
+app.on('error', (err) => {
+    console.error('Server encountered an error:', err);
 });
+
+// Import the database connection
+const pool = require('./db');

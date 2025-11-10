@@ -1,3 +1,9 @@
+-- DROP DATABASE IF EXISTS junkshopms_db;
+-- CREATE DATABASE junkshopms_db;
+-- GRANT ALL ON junkshopms_db.* TO 'owner'@'localhost';
+
+-- USE junkshopms_db;
+
 CREATE TABLE employee (
     EmployeeID INT AUTO_INCREMENT PRIMARY KEY,
     PositionTitle VARCHAR(100) NOT NULL,
@@ -13,12 +19,11 @@ CREATE TABLE employee (
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE seller (
-    SellerID INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(100) NOT NULL,
-    ContactNumber VARCHAR(15) UNIQUE,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- CREATE TABLE employee_position (
+--     PositionID INT AUTO_INCREMENT PRIMARY KEY,
+--     Title VARCHAR(100) NOT NULL UNIQUE,
+--     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
 
 CREATE TABLE user (
     UserID INT AUTO_INCREMENT PRIMARY KEY,
@@ -60,15 +65,7 @@ CREATE TABLE buyer_contact_method (
     CONSTRAINT CHK_OnePrimaryContact CHECK (IsPrimary = TRUE OR IsPrimary = FALSE)
 );
 
-CREATE TABLE item (
-    ItemID INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(100) NOT NULL UNIQUE,
-    UnitOfMeasurement ENUM ('per piece', 'per kg', 'others') NOT NULL,
-    Classification VARCHAR(50),
-    Description TEXT,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
+--
 CREATE TABLE transaction (
     TransactionID INT AUTO_INCREMENT PRIMARY KEY,
     BranchID INT NOT NULL,
@@ -90,6 +87,16 @@ CREATE TABLE transaction (
     FOREIGN KEY (EmployeeID) REFERENCES employee(EmployeeID),
     FOREIGN KEY (UserID) REFERENCES user(UserID)
 );
+
+CREATE TABLE item (
+    ItemID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL UNIQUE,
+    UnitOfMeasurement ENUM ('per piece', 'per kg', 'others') NOT NULL,
+    Classification VARCHAR(50),
+    Description TEXT,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- add classification eg class A, class B
 
 CREATE TABLE pricelist (
     PriceListID INT AUTO_INCREMENT PRIMARY KEY,
@@ -156,6 +163,8 @@ CREATE TABLE counting_log (
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID)
 );
 
+--
+
 CREATE TABLE inventory (
     InventoryID INT AUTO_INCREMENT PRIMARY KEY,
     BranchID INT NOT NULL,
@@ -175,6 +184,15 @@ CREATE TABLE inventory_item (
     FOREIGN KEY (ItemID) REFERENCES item(ItemID),
     UNIQUE (InventoryID, ItemID)
 );
+
+CREATE TABLE seller (
+    SellerID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    ContactNumber VARCHAR(15) UNIQUE,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- create a separate table for extras
+-- added seller type in transaction table instead
 
 CREATE TABLE shift (
     ShiftID INT AUTO_INCREMENT PRIMARY KEY,
