@@ -1,23 +1,6 @@
 const express = require('express');
 const services = require('./services');
 const router = express.Router();
-// const pool = require('../db');
-
-// router.get('/users', async (req, res) => {
-//     let conn;
-//     try {
-//         conn = await pool.getConnection(); // Acquire a connection
-//         const rows = await conn.query('SELECT * FROM user'); // Perform the query
-//         res.json(rows); // Send the result as JSON
-//     } catch (err) {
-//         console.error('Error in /users route:', err);
-//         res.status(500).send('Database error');
-//     } finally {
-//         if (conn) conn.release(); // Always release the connection
-//     }
-// });
-
-// module.exports = router;
 
 // Get all users
 router.get('/users', async (req, res) => {
@@ -35,8 +18,14 @@ router.get('/users', async (req, res) => {
 
 // Create a user
 router.post('/users', async (req, res) => {
+    const { username, passwordHash, userType } = req.body;
+
+    if (!username || !passwordHash || !userType) {
+        return res.status(400).json({ error: 'Username, PasswordHash, and UserType are required.' });
+    }
+
     try {
-        const user = await services.createUser(req.body); // Call the service function
+        const user = await services.createUser({ username, passwordHash, userType });
         res.status(201).json(user);
     } catch (error) {
         console.error('Error in POST /users:', error);
@@ -60,9 +49,12 @@ router.get('/users/:id', async (req, res) => {
 
 // Update a user
 router.put('/users/:id', async (req, res) => {
+    const userId = parseInt(req.params.id, 10);
+
     try {
-        const user = await services.updateUser(parseInt(req.params.id), req.body); // Call the service function
-        res.json(user);
+        // Pass the request body directly to the service function
+        const updatedUser = await services.updateUser(userId, req.body);
+        res.json(updatedUser);
     } catch (error) {
         console.error('Error in PUT /users/:id:', error);
         res.status(500).json({ error: error.message });

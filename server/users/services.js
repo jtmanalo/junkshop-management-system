@@ -1,10 +1,5 @@
 const pool = require('../db');
 
-// CRUD operations for Users
-// async function getAllUsers() {
-//     const [rows] = await pool.query('SELECT * FROM user');
-//     return rows;
-// }
 async function getAllUsers() {
     let conn;
     try {
@@ -22,21 +17,6 @@ async function getAllUsers() {
     }
 }
 
-
-// async function createUser(data) {
-//     const result = await pool.query(
-//         'INSERT INTO user (Username, PasswordHash, UserType' + (data.email ? ', Email' : '') + ') VALUES (?, ?, ?' + (data.email ? ', ?' : '') + ')',
-//         data.email ? [data.username, data.passwordHash, data.userType, data.email] : [data.username, data.passwordHash, data.userType]
-//     );
-
-//     // Check if result is iterable or contains the expected structure
-//     if (result && result.insertId) {
-//         return { id: result.insertId, ...data };
-//     } else {
-//         throw new Error('Failed to insert user');
-//     }
-// }
-
 async function createUser(data) {
     let conn;
     try {
@@ -49,7 +29,7 @@ async function createUser(data) {
         );
 
         // Return the inserted user data
-        return { id: result.insertId, ...data };
+        return { id: result.insertId.toString(), ...data };
     } catch (error) {
         throw error;
     } finally {
@@ -58,18 +38,61 @@ async function createUser(data) {
 }
 
 async function getUserById(userId) {
-    const [rows] = await pool.query('SELECT * FROM user WHERE UserID = ?', [userId]);
-    return rows[0];
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query('SELECT * FROM user WHERE UserID = ?', [userId]);
+        return rows[0]; // Return the first row if found
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
 }
 
 async function updateUser(userId, data) {
-    const query = 'UPDATE user SET Username = ?, PasswordHash = ?, UserType = ?' + (data.email ? ', Email = ?' : '') + ' WHERE UserID = ?';
-    const params = data.email
-        ? [data.username, data.passwordHash, data.userType, data.email, userId]
-        : [data.username, data.passwordHash, data.userType, userId];
+    let conn;
+    try {
+        conn = await pool.getConnection();
 
-    await pool.query(query, params);
-    return { id: userId, ...data };
+        // Dynamically build the query
+        const fields = [];
+        const values = [];
+
+        if (data.username) {
+            fields.push('Username = ?');
+            values.push(data.username);
+        }
+        if (data.passwordHash) {
+            fields.push('PasswordHash = ?');
+            values.push(data.passwordHash);
+        }
+        if (data.userType) {
+            fields.push('UserType = ?');
+            values.push(data.userType);
+        }
+
+        // If no fields are provided, throw an error
+        if (fields.length === 0) {
+            throw new Error('No fields provided for update');
+        }
+
+        const query = `UPDATE user SET ${fields.join(', ')} WHERE UserID = ?`;
+        values.push(userId);
+
+        const result = await conn.query(query, values);
+
+        // Check if any rows were updated
+        if (result.affectedRows === 0) {
+            throw new Error('User not found');
+        }
+
+        return { id: userId, ...data };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
 }
 
 async function deleteUser(userId) {

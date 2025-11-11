@@ -1,5 +1,4 @@
 const mariadb = require('mariadb');
-
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
@@ -19,8 +18,10 @@ const pool = mariadb.createPool({
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
     connectionLimit: 10,
+    timezone: '+08:00', // Set the time zone to Philippine Time
     connectTimeout: 10000, // Increase timeout to 10 seconds
 });
+
 // Test the database connection
 pool.getConnection()
     .then(conn => {
@@ -31,5 +32,29 @@ pool.getConnection()
     .catch(err => {
         console.error('Error connecting to MariaDB:', err);
     });
+
+// Function to close the pool
+const closePool = async () => {
+    try {
+        console.log('Closing database connection pool...');
+        await pool.end();
+        console.log('Database connection pool closed.');
+    } catch (err) {
+        console.error('Error closing database connection pool:', err);
+    }
+};
+
+// Listen for termination signals
+process.on('SIGINT', async () => {
+    console.log('SIGINT received. Shutting down gracefully...');
+    await closePool();
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('SIGTERM received. Shutting down gracefully...');
+    await closePool();
+    process.exit(0);
+});
 
 module.exports = pool;
