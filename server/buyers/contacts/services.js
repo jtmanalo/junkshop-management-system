@@ -1,4 +1,4 @@
-const pool = require('../db');
+const pool = require('../../db');
 const moment = require('moment-timezone');
 
 async function create(buyerId, contactData) {
@@ -154,8 +154,6 @@ async function update(contactId, contactData) {
         if (conn) conn.release();
     }
 }
-
-
 
 module.exports = {
     create,

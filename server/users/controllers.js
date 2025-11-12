@@ -16,14 +16,22 @@ async function getAll(req, res) {
 
 // Create a user
 async function create(req, res) {
-    const { username, passwordHash, userType } = req.body;
+    const {
+        username,
+        passwordHash,
+        userType
+    } = req.body;
 
     if (!username || !passwordHash || !userType) {
         return res.status(400).json({ error: 'Username, PasswordHash, and UserType are required.' });
     }
 
     try {
-        const user = await userService.create({ username, passwordHash, userType });
+        const user = await userService.create({
+            username,
+            passwordHash,
+            userType
+        });
         res.status(201).json(user);
     } catch (error) {
         console.error('Error in createUser:', error);

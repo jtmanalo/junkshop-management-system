@@ -1,10 +1,10 @@
-const buyerContactService = require('./services');
+const contactService = require('./services');
 
 async function create(req, res) {
     try {
         const { buyerId } = req.params;
         const contactData = req.body;
-        const contactId = await buyerContactService.create(buyerId, contactData);
+        const contactId = await contactService.create(buyerId, contactData);
         res.status(201).json({ id: contactId, message: 'Buyer contact created successfully.' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to create buyer contact.' });
@@ -13,7 +13,7 @@ async function create(req, res) {
 
 async function getAll(req, res) {
     try {
-        const contacts = await buyerContactService.getAll();
+        const contacts = await contactService.getAll();
         if (contacts.length === 0) {
             return res.status(204).send("No buyer contacts found");
         }
@@ -27,7 +27,7 @@ async function getAll(req, res) {
 async function getByBuyerId(req, res) {
     try {
         const { buyerId } = req.params;
-        const contacts = await buyerContactService.getByBuyerId(buyerId);
+        const contacts = await contactService.getByBuyerId(buyerId);
         res.status(200).json(contacts);
     } catch (error) {
         res.status(500).json({ error: 'Failed to retrieve buyer contacts for the specified buyer.' });
@@ -38,28 +38,28 @@ async function update(req, res) {
     try {
         const { contactId } = req.params;
         const contactData = req.body;
-        const success = await buyerContactService.update(contactId, contactData);
+        const success = await contactService.update(contactId, contactData);
         if (success) {
-            res.status(200).json({ message: 'Buyer contact updated successfully.' });
+            res.status(200).json({ message: 'Contact updated successfully.' });
         } else {
-            res.status(404).json({ error: 'Buyer contact not found.' });
+            res.status(404).json({ error: 'Contact not found.' });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Failed to update buyer contact.' });
+        res.status(500).json({ error: 'Failed to update contact.' });
     }
 }
 
 // async function remove(req, res) {
 //     try {
 //         const { contactId } = req.params;
-//         const success = await buyerContactService.remove(contactId);
+//         const success = await contactService.remove(contactId);
 //         if (success) {
-//             res.status(200).json({ message: 'Buyer contact deleted successfully.' });
+//             res.status(200).json({ message: 'Contact deleted successfully.' });
 //         } else {
-//             res.status(404).json({ error: 'Buyer contact not found.' });
+//             res.status(404).json({ error: 'Contact not found.' });
 //         }
 //     } catch (error) {
-//         res.status(500).json({ error: 'Failed to delete buyer contact.' });
+//         res.status(500).json({ error: 'Failed to delete contact.' });
 //     }
 // }
 
