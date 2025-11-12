@@ -83,26 +83,26 @@ async function update(req, res) {
 }
 
 // Delete an employee
-async function remove(req, res) {
-    try {
-        const employeeId = parseInt(req.params.id);
-        const result = await employeeService.remove(employeeId);
+// async function remove(req, res) {
+//     try {
+//         const employeeId = parseInt(req.params.id);
+//         const result = await employeeService.remove(employeeId);
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Employee not found' });
-        }
+//         if (result.affectedRows === 0) {
+//             return res.status(404).json({ error: 'Employee not found' });
+//         }
 
-        res.status(200).json({ message: 'Employee deleted successfully' });
-    } catch (error) {
-        console.error('Error in deleteEmployee:', error);
-        res.status(500).json({ error: error.message });
-    }
-}
+//         res.status(200).json({ message: 'Employee deleted successfully' });
+//     } catch (error) {
+//         console.error('Error in deleteEmployee:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// }
 
 module.exports = {
     getAll,
     create,
     getById,
-    update,
-    remove,
+    update
+    // remove,
 };

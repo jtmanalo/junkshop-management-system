@@ -47,7 +47,9 @@ pool.getConnection()
 const userRoutes = require('./users/routes');
 const employeeRoutes = require('./employees/routes');
 const sellerRoutes = require('./sellers/routes');
+const branchRoutes = require('./branches/routes');
 
 app.use('/api', userRoutes); // Prefix routes with /api
 app.use('/api', employeeRoutes); // Prefix routes with /api
 app.use('/api', sellerRoutes); // Prefix routes with /api
+app.use('/api', branchRoutes); // Prefix routes with /api

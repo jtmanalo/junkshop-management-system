@@ -14,6 +14,9 @@ async function getAll() {
             if (row.CreatedAt) {
                 row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
             }
+            if (row.HireDate) {
+                row.HireDate = moment(row.HireDate).tz('Asia/Manila').format('YYYY-MM-DD');
+            }
         });
 
         // Return all rows
@@ -119,10 +122,13 @@ async function update(employeeId, data) {
             fields.push('Address = ?');
             values.push(data.address);
         }
-        if (data.hireDate) {
-            fields.push('HireDate = ?');
-            values.push(data.hireDate);
-        }
+
+        // should not be updated at all
+        // if (data.hireDate) {
+        //     fields.push('HireDate = ?');
+        //     values.push(data.hireDate);
+        // }
+
         if (data.status) {
             fields.push('Status = ?');
             values.push(data.status);
@@ -150,23 +156,23 @@ async function update(employeeId, data) {
     }
 }
 
-async function remove(employeeId) {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const result = await conn.query('DELETE FROM employee WHERE EmployeeID = ?', [employeeId]);
-        return result; // Ensure the result object is returned
-    } catch (error) {
-        throw error;
-    } finally {
-        if (conn) conn.release();
-    }
-}
+// async function remove(employeeId) {
+//     let conn;
+//     try {
+//         conn = await pool.getConnection();
+//         const result = await conn.query('DELETE FROM employee WHERE EmployeeID = ?', [employeeId]);
+//         return result; // Ensure the result object is returned
+//     } catch (error) {
+//         throw error;
+//     } finally {
+//         if (conn) conn.release();
+//     }
+// }
 
 module.exports = {
     getAll,
     create,
     getById,
-    update,
-    remove
+    update
+    // remove
 };
