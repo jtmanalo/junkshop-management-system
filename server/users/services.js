@@ -9,7 +9,7 @@ async function getAllUsers() {
         // Perform the SELECT query
         const rows = await conn.query('SELECT * FROM user');
 
-        // Convert timestamps to UTC+8
+        // Ensures timestamps are in UTC+8
         rows.forEach(row => {
             if (row.CreatedAt) {
                 row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
@@ -119,60 +119,10 @@ async function deleteUser(userId) {
     }
 }
 
-// CRUD operations for Activity Logs
-async function getActivityLogsByUser(userId) {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const [rows] = await conn.query('SELECT * FROM activity_log WHERE UserID = ?', [userId]);
-        return rows;
-    } catch (error) {
-        throw error;
-    } finally {
-        if (conn) conn.release();
-    }
-}
-
-async function createActivityLog(data) {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const [result] = await conn.query(
-            'INSERT INTO activity_log (UserID, BranchID, EntityType, EntityID, ActivityType, Description, LoggedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [
-                data.userId,
-                data.branchId,
-                data.entityType,
-                data.entityId,
-                data.activityType,
-                data.description,
-                data.loggedAt,
-            ]
-        );
-        return { id: result.insertId, ...data };
-    } catch (error) {
-        throw error;
-    } finally {
-        if (conn) conn.release();
-    }
-}
-
 module.exports = {
     getAllUsers,
     createUser,
     getUserById,
     updateUser,
-    deleteUser,
-    getActivityLogsByUser,
-    createActivityLog,
-}
-
-module.exports = {
-    getAllUsers,
-    createUser,
-    getUserById,
-    updateUser,
-    deleteUser,
-    getActivityLogsByUser,
-    createActivityLog,
+    deleteUser
 };

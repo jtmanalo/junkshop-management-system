@@ -45,5 +45,7 @@ pool.getConnection()
 
 // Import user routes
 const userRoutes = require('./users/routes');
+const employeeRoutes = require('./employees/routes');
 
 app.use('/api', userRoutes); // Prefix routes with /api
+app.use('/api', employeeRoutes); // Prefix routes with /api

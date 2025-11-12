@@ -19,7 +19,8 @@ CREATE TABLE employee (
     Address TEXT,
     HireDate DATE NOT NULL,
     Status ENUM('active', 'inactive', 'terminated') DEFAULT 'active',
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP FOREIGN KEY (UserID) REFERENCES user(UserID)
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserID) REFERENCES user(UserID)
 );
 CREATE TABLE seller (
     SellerID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
