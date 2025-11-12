@@ -7,15 +7,12 @@ async function getAll() {
         conn = await pool.getConnection();
 
         // Perform the SELECT query
-        const rows = await conn.query('SELECT * FROM branch');
+        const rows = await conn.query('SELECT * FROM buyer');
 
         // Ensures timestamps are in UTC+8
         rows.forEach(row => {
             if (row.CreatedAt) {
                 row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
-            }
-            if (row.OpeningDate) {
-                row.OpeningDate = moment(row.OpeningDate).tz('Asia/Manila').format('YYYY-MM-DD');
             }
         });
 
@@ -38,17 +35,17 @@ async function create(data) {
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO branch (Name, Location, Status, OpeningDate, CreatedAt) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO buyer (CompanyName, ContactPerson, Notes, Status, CreatedAt) VALUES (?, ?, ?, ?, ?)',
             [
-                data.name,
-                data.location,
+                data.companyName,
+                data.contactPerson,
+                data.notes || null,
                 data.status || 'active',
-                data.openingDate,
                 createdAt
             ]
         );
 
-        // Return the inserted branch data
+        // Return the inserted buyer data
         return { id: result.insertId.toString(), ...data, createdAt };
     } catch (error) {
         throw error;
@@ -57,12 +54,23 @@ async function create(data) {
     }
 }
 
-async function getById(branchId) {
+async function getById(buyerId) {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM branch WHERE BranchID = ?', [branchId]);
-        return rows[0]; // Return the first row if found
+
+        // Perform the SELECT query
+        const rows = await conn.query('SELECT * FROM buyer WHERE BuyerID = ?', [buyerId]);
+
+        // Ensures timestamps are in UTC+8
+        rows.forEach(row => {
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
+
+        // Return the buyer data
+        return rows[0] || null;
     } catch (error) {
         throw error;
     } finally {
@@ -70,73 +78,55 @@ async function getById(branchId) {
     }
 }
 
-async function update(branchId, data) {
+async function update(buyerId, data) {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        // Dynamically build the query
+        // Build the SET clause dynamically based on provided data
         const fields = [];
         const values = [];
 
-        if (data.name) {
-            fields.push('Name = ?');
-            values.push(data.name);
+        if (data.companyName) {
+            fields.push('CompanyName = ?');
+            values.push(data.companyName);
         }
-        if (data.location) {
-            fields.push('Location = ?');
-            values.push(data.location);
+        if (data.contactPerson) {
+            fields.push('ContactPerson = ?');
+            values.push(data.contactPerson);
+        }
+        if (data.notes) {
+            fields.push('Notes = ?');
+            values.push(data.notes);
         }
         if (data.status) {
             fields.push('Status = ?');
             values.push(data.status);
         }
-        // should not be updated at all
-        // if (data.openingDate) {
-        //     fields.push('OpeningDate = ?');
-        //     values.push(data.openingDate);
-        // }
 
-        // If no fields are provided, throw an error
         if (fields.length === 0) {
-            throw new Error('No fields provided for update');
+            throw new Error('No fields to update');
         }
 
-        const query = `UPDATE branch SET ${fields.join(', ')} WHERE BranchID = ?`;
-        values.push(branchId);
+        const query = `UPDATE buyer SET ${fields.join(', ')} WHERE BuyerID = ?`;
+        values.push(buyerId);
 
         const result = await conn.query(query, values);
 
-        // Check if any rows were updated
         if (result.affectedRows === 0) {
-            throw new Error('Branch not found');
+            throw new Error('Buyer not found');
         }
-        return { id: branchId, ...data };
+        return { id: buyerId, ...data };
     } catch (error) {
         throw error;
     } finally {
         if (conn) conn.release();
     }
 }
-
-// update status instead of delete
-// async function remove(branchId) {
-//     let conn;
-//     try {
-//         conn = await pool.getConnection();
-//         const result = await conn.query('DELETE FROM branch WHERE BranchID = ?', [branchId]);
-//         return result; // Ensure the result object is returned
-//     } catch (error) {
-//         throw error;
-//     } finally {
-//         if (conn) conn.release();
-//     }
-// }
 
 module.exports = {
     getAll,
     create,
     getById,
     update,
-    // remove
 };

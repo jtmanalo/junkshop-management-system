@@ -23,8 +23,8 @@ async function create(req, res) {
     }
 
     try {
-        const branch = await branchService.create({ name, location, openingDate });
-        res.status(201).json(branch);
+        const newBranch = await branchService.create({ name, location, openingDate });
+        res.status(201).json(newBranch);
     } catch (error) {
         console.error('Error in createBranch:', error);
         res.status(500).json({ error: error.message });

@@ -43,13 +43,15 @@ pool.getConnection()
         process.exit(1); // Exit if the database connection fails
     });
 
-// Import user routes
+// Import routes
 const userRoutes = require('./users/routes');
 const employeeRoutes = require('./employees/routes');
 const sellerRoutes = require('./sellers/routes');
 const branchRoutes = require('./branches/routes');
+const buyerRoutes = require('./buyers/routes');
 
-app.use('/api', userRoutes); // Prefix routes with /api
-app.use('/api', employeeRoutes); // Prefix routes with /api
-app.use('/api', sellerRoutes); // Prefix routes with /api
-app.use('/api', branchRoutes); // Prefix routes with /api
+app.use('/api', userRoutes);
+app.use('/api', employeeRoutes);
+app.use('/api', sellerRoutes);
+app.use('/api', branchRoutes);
+app.use('/api', buyerRoutes); 
