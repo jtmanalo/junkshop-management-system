@@ -44,7 +44,7 @@ CREATE TABLE buyer (
     Status ENUM('active', 'inactive', 'closed') DEFAULT 'active',
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE buyer_contact_method (
+CREATE TABLE buyer_contact (
     ContactID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     BuyerID INT UNSIGNED NOT NULL,
     ContactMethod VARCHAR(50) NOT NULL,
@@ -55,7 +55,9 @@ CREATE TABLE buyer_contact_method (
     CONSTRAINT CHK_OnePrimaryContact CHECK (
         IsPrimary = TRUE
         OR IsPrimary = FALSE
-    )
+    ),
+    UNIQUE (BuyerID, ContactDetail),
+    INDEX idx_buyer_contact_method_buyer_id (BuyerID)
 );
 CREATE TABLE item (
     ItemID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
