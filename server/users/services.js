@@ -1,4 +1,5 @@
 const pool = require('../db');
+const moment = require('moment-timezone');
 
 async function getAllUsers() {
     let conn;
@@ -7,6 +8,13 @@ async function getAllUsers() {
 
         // Perform the SELECT query
         const rows = await conn.query('SELECT * FROM user');
+
+        // Convert timestamps to UTC+8
+        rows.forEach(row => {
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
 
         // Return all rows
         return rows;
@@ -22,14 +30,17 @@ async function createUser(data) {
     try {
         conn = await pool.getConnection();
 
+        // Convert timestamps to MariaDB-compatible format
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO user (Username, PasswordHash, UserType' + (data.email ? ', Email' : '') + ') VALUES (?, ?, ?' + (data.email ? ', ?' : '') + ')',
-            data.email ? [data.username, data.passwordHash, data.userType, data.email] : [data.username, data.passwordHash, data.userType]
+            'INSERT INTO user (Username, PasswordHash, UserType' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?' + (data.email ? ', ?' : '') + ', ?)',
+            data.email ? [data.username, data.passwordHash, data.userType, data.email, createdAt] : [data.username, data.passwordHash, data.userType, createdAt]
         );
 
         // Return the inserted user data
-        return { id: result.insertId.toString(), ...data };
+        return { id: result.insertId.toString(), ...data, createdAt };
     } catch (error) {
         throw error;
     } finally {
@@ -96,29 +107,64 @@ async function updateUser(userId, data) {
 }
 
 async function deleteUser(userId) {
-    await pool.query('DELETE FROM user WHERE UserID = ?', [userId]);
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const result = await conn.query('DELETE FROM user WHERE UserID = ?', [userId]);
+        return result; // Ensure the result object is returned
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
 }
 
 // CRUD operations for Activity Logs
 async function getActivityLogsByUser(userId) {
-    const [rows] = await pool.query('SELECT * FROM activity_log WHERE UserID = ?', [userId]);
-    return rows;
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const [rows] = await conn.query('SELECT * FROM activity_log WHERE UserID = ?', [userId]);
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
 }
 
 async function createActivityLog(data) {
-    const [result] = await pool.query(
-        'INSERT INTO activity_log (UserID, BranchID, EntityType, EntityID, ActivityType, Description, LoggedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [
-            data.userId,
-            data.branchId,
-            data.entityType,
-            data.entityId,
-            data.activityType,
-            data.description,
-            data.loggedAt,
-        ]
-    );
-    return { id: result.insertId, ...data };
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const [result] = await conn.query(
+            'INSERT INTO activity_log (UserID, BranchID, EntityType, EntityID, ActivityType, Description, LoggedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [
+                data.userId,
+                data.branchId,
+                data.entityType,
+                data.entityId,
+                data.activityType,
+                data.description,
+                data.loggedAt,
+            ]
+        );
+        return { id: result.insertId, ...data };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+module.exports = {
+    getAllUsers,
+    createUser,
+    getUserById,
+    updateUser,
+    deleteUser,
+    getActivityLogsByUser,
+    createActivityLog,
 }
 
 module.exports = {
