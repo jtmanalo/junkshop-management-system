@@ -4,7 +4,7 @@ CREATE TABLE user (
     PasswordHash VARCHAR(255) NOT NULL,
     UserType ENUM('owner', 'employee') NOT NULL,
     Email VARCHAR(100) UNIQUE,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE employee (
     EmployeeID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -19,14 +19,14 @@ CREATE TABLE employee (
     Address TEXT,
     HireDate DATE NOT NULL,
     Status ENUM('active', 'inactive', 'terminated') DEFAULT 'active',
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (UserID) REFERENCES user(UserID)
 );
 CREATE TABLE seller (
     SellerID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(100) NOT NULL,
     ContactNumber VARCHAR(15) UNIQUE,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE branch (
     BranchID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -34,7 +34,7 @@ CREATE TABLE branch (
     Location VARCHAR(255) NOT NULL UNIQUE,
     Status ENUM('active', 'inactive', 'closed') DEFAULT 'active',
     OpeningDate DATE NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE buyer (
     BuyerID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -42,7 +42,7 @@ CREATE TABLE buyer (
     ContactPerson VARCHAR(100) NOT NULL,
     Notes TEXT,
     Status ENUM('active', 'inactive', 'closed') DEFAULT 'active',
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE buyer_contact_method (
     ContactID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -50,7 +50,7 @@ CREATE TABLE buyer_contact_method (
     ContactMethod VARCHAR(50) NOT NULL,
     ContactDetail VARCHAR(255) NOT NULL UNIQUE,
     IsPrimary BOOLEAN NOT NULL DEFAULT FALSE,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (BuyerID) REFERENCES buyer(BuyerID),
     CONSTRAINT CHK_OnePrimaryContact CHECK (
         IsPrimary = TRUE
@@ -63,7 +63,7 @@ CREATE TABLE item (
     UnitOfMeasurement ENUM ('per piece', 'per kg', 'others') NOT NULL,
     Classification VARCHAR(50),
     Description TEXT,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE transaction (
     TransactionID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -80,12 +80,12 @@ CREATE TABLE transaction (
         'loan',
         'repayment'
     ) NOT NULL,
-    TransactionDate TIMESTAMP NOT NULL,
+    TransactionDate DATETIME NOT NULL,
     TotalAmount DECIMAL(10, 2) NOT NULL,
     PaymentMethod ENUM('cash', 'check', 'online_transfer') NOT NULL,
     Status ENUM('completed', 'pending', 'cancelled') NOT NULL,
     Notes TEXT,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
     FOREIGN KEY (BuyerID) REFERENCES buyer(BuyerID),
     FOREIGN KEY (SellerID) REFERENCES seller(SellerID),
@@ -97,7 +97,7 @@ CREATE TABLE pricelist (
     BuyerID INT UNSIGNED,
     BranchID INT UNSIGNED,
     DateEffective DATE NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
     FOREIGN KEY (BuyerID) REFERENCES buyer(BuyerID),
     CONSTRAINT CHK_BranchOrBuyer CHECK (
@@ -116,7 +116,7 @@ CREATE TABLE pricelist_item (
     PriceListID INT UNSIGNED NOT NULL,
     ItemID INT UNSIGNED NOT NULL,
     Price DECIMAL(10, 2) NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (PriceListID) REFERENCES pricelist(PriceListID),
     FOREIGN KEY (ItemID) REFERENCES item(ItemID),
     UNIQUE (PriceListID, ItemID)
@@ -128,7 +128,7 @@ CREATE TABLE transaction_item (
     Quantity DECIMAL(10, 2) NOT NULL,
     Price DECIMAL(10, 2) NOT NULL,
     Subtotal DECIMAL(10, 2) NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (TransactionID) REFERENCES transaction(TransactionID),
     FOREIGN KEY (ItemID) REFERENCES item(ItemID)
 );
@@ -139,7 +139,7 @@ CREATE TABLE weighing_log (
     ItemID INT UNSIGNED NOT NULL,
     TransactionID INT,
     Weight DECIMAL(10, 2) NOT NULL,
-    WeighedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    WeighedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ItemID) REFERENCES item(ItemID),
     FOREIGN KEY (TransactionID) REFERENCES transaction(TransactionID),
     FOREIGN KEY (UserID) REFERENCES user(UserID),
@@ -152,7 +152,7 @@ CREATE TABLE counting_log (
     ItemID INT UNSIGNED NOT NULL,
     TransactionID INT UNSIGNED,
     CountedQuantity DECIMAL(10, 2) NOT NULL,
-    CountedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CountedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ItemID) REFERENCES item(ItemID),
     FOREIGN KEY (TransactionID) REFERENCES transaction(TransactionID),
     FOREIGN KEY (UserID) REFERENCES user(UserID),
@@ -162,7 +162,7 @@ CREATE TABLE inventory (
     InventoryID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     BranchID INT UNSIGNED NOT NULL,
     Date DATE NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
     UNIQUE (BranchID, Date)
 );
@@ -171,7 +171,7 @@ CREATE TABLE inventory_item (
     InventoryID INT UNSIGNED NOT NULL,
     ItemID INT UNSIGNED NOT NULL,
     TotalQuantity DECIMAL(10, 2) NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (InventoryID) REFERENCES inventory(InventoryID),
     FOREIGN KEY (ItemID) REFERENCES item(ItemID),
     UNIQUE (InventoryID, ItemID)
@@ -180,11 +180,11 @@ CREATE TABLE shift (
     ShiftID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     BranchID INT UNSIGNED NOT NULL,
     UserID INT UNSIGNED NOT NULL,
-    StartDatetime TIMESTAMP NOT NULL,
-    EndDatetime TIMESTAMP NOT NULL,
+    StartDatetime DATETIME NOT NULL,
+    EndDatetime DATETIME NOT NULL,
     InitialCash DECIMAL(10, 2) NOT NULL,
     FinalCash DECIMAL(10, 2),
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
     FOREIGN KEY (UserID) REFERENCES user(UserID)
 );
@@ -192,7 +192,7 @@ CREATE TABLE shift_employee (
     ShiftEmployeeID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     ShiftID INT UNSIGNED NOT NULL,
     EmployeeID INT UNSIGNED NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ShiftID) REFERENCES shift(ShiftID),
     FOREIGN KEY (EmployeeID) REFERENCES employee(EmployeeID),
     UNIQUE (ShiftID, EmployeeID)
@@ -202,7 +202,7 @@ CREATE TABLE pricelist_activity (
     PriceListItemID INT UNSIGNED NOT NULL,
     OldPrice DECIMAL(10, 2) NOT NULL,
     NewPrice DECIMAL(10, 2) NOT NULL,
-    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     UserID INT UNSIGNED NOT NULL,
     FOREIGN KEY (PriceListItemID) REFERENCES pricelist_item(PriceListItemID),
     FOREIGN KEY (UserID) REFERENCES user(UserID)
@@ -234,7 +234,7 @@ CREATE TABLE activity_log (
         'upload'
     ) NOT NULL,
     Description TEXT,
-    LoggedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LoggedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (UserID) REFERENCES user(UserID),
     FOREIGN KEY (BranchID) REFERENCES branch(BranchID)
 );

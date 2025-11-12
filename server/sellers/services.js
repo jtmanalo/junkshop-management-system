@@ -7,7 +7,7 @@ async function getAll() {
         conn = await pool.getConnection();
 
         // Perform the SELECT query
-        const rows = await conn.query('SELECT * FROM user');
+        const rows = await conn.query('SELECT * FROM seller');
 
         // Ensures timestamps are in UTC+8
         rows.forEach(row => {
@@ -35,11 +35,15 @@ async function create(data) {
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO user (Username, PasswordHash, UserType' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?' + (data.email ? ', ?' : '') + ', ?)',
-            data.email ? [data.username, data.passwordHash, data.userType, data.email, createdAt] : [data.username, data.passwordHash, data.userType, createdAt]
+            'INSERT INTO seller (Name, ContactNumber, CreatedAt) VALUES (?, ?, ?)',
+            [
+                data.name,
+                data.contactNumber,
+                createdAt
+            ]
         );
 
-        // Return the inserted user data
+        // Return the inserted seller data
         return { id: result.insertId.toString(), ...data, createdAt };
     } catch (error) {
         throw error;
@@ -48,11 +52,11 @@ async function create(data) {
     }
 }
 
-async function getById(userId) {
+async function getById(sellerId) {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM user WHERE UserID = ?', [userId]);
+        const rows = await conn.query('SELECT * FROM seller WHERE SellerID = ?', [sellerId]);
         return rows[0]; // Return the first row if found
     } catch (error) {
         throw error;
@@ -61,7 +65,7 @@ async function getById(userId) {
     }
 }
 
-async function update(userId, data) {
+async function update(sellerId, data) {
     let conn;
     try {
         conn = await pool.getConnection();
@@ -70,17 +74,13 @@ async function update(userId, data) {
         const fields = [];
         const values = [];
 
-        if (data.username) {
-            fields.push('Username = ?');
-            values.push(data.username);
+        if (data.name) {
+            fields.push('Name = ?');
+            values.push(data.name);
         }
-        if (data.passwordHash) {
-            fields.push('PasswordHash = ?');
-            values.push(data.passwordHash);
-        }
-        if (data.userType) {
-            fields.push('UserType = ?');
-            values.push(data.userType);
+        if (data.contactNumber) {
+            fields.push('ContactNumber = ?');
+            values.push(data.contactNumber);
         }
 
         // If no fields are provided, throw an error
@@ -88,17 +88,16 @@ async function update(userId, data) {
             throw new Error('No fields provided for update');
         }
 
-        const query = `UPDATE user SET ${fields.join(', ')} WHERE UserID = ?`;
-        values.push(userId);
+        const query = `UPDATE seller SET ${fields.join(', ')} WHERE SellerID = ?`;
+        values.push(sellerId);
 
         const result = await conn.query(query, values);
 
         // Check if any rows were updated
         if (result.affectedRows === 0) {
-            throw new Error('User not found');
+            throw new Error('Seller not found');
         }
-
-        return { id: userId, ...data };
+        return { id: sellerId, ...data };
     } catch (error) {
         throw error;
     } finally {
@@ -106,11 +105,11 @@ async function update(userId, data) {
     }
 }
 
-async function remove(userId) {
+async function remove(sellerId) {
     let conn;
     try {
         conn = await pool.getConnection();
-        const result = await conn.query('DELETE FROM user WHERE UserID = ?', [userId]);
+        const result = await conn.query('DELETE FROM seller WHERE SellerID = ?', [sellerId]);
         return result; // Ensure the result object is returned
     } catch (error) {
         throw error;

@@ -3,7 +3,7 @@ const employeeService = require('./services');
 // Get all employees
 async function getAll(req, res) {
     try {
-        const employees = await employeeService.getAllEmployees();
+        const employees = await employeeService.getAll();
         if (employees.length === 0) {
             return res.status(204).send("No employees found");
         }
