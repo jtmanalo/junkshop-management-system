@@ -94,24 +94,25 @@ CREATE TABLE transaction (
     FOREIGN KEY (EmployeeID) REFERENCES employee(EmployeeID),
     FOREIGN KEY (UserID) REFERENCES user(UserID)
 );
+--
 CREATE TABLE pricelist (
-    PriceListID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    BuyerID INT UNSIGNED,
-    BranchID INT UNSIGNED,
-    DateEffective DATE NOT NULL,
-    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
-    FOREIGN KEY (BuyerID) REFERENCES buyer(BuyerID),
-    CONSTRAINT CHK_BranchOrBuyer CHECK (
-        (
-            BranchID IS NOT NULL
-            AND BuyerID IS NULL
-        )
-        OR (
-            BranchID IS NULL
-            AND BuyerID IS NOT NULL
-        )
+PriceListID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+BuyerID INT UNSIGNED,
+BranchID INT UNSIGNED,
+DateEffective DATE NOT NULL,
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+FOREIGN KEY (BranchID) REFERENCES branch(BranchID),
+FOREIGN KEY (BuyerID) REFERENCES buyer(BuyerID),
+CONSTRAINT CHK_BranchOrBuyer CHECK (
+    (
+        BranchID IS NOT NULL
+        AND BuyerID IS NULL
     )
+    OR (
+        BranchID IS NULL
+        AND BuyerID IS NOT NULL
+    )
+)
 );
 CREATE TABLE pricelist_item (
     PriceListItemID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -139,7 +140,7 @@ CREATE TABLE weighing_log (
     BranchID INT UNSIGNED NOT NULL,
     UserID INT UNSIGNED NOT NULL,
     ItemID INT UNSIGNED NOT NULL,
-    TransactionID INT,
+    TransactionID INT UNSIGNED,
     Weight DECIMAL(10, 2) NOT NULL,
     WeighedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ItemID) REFERENCES item(ItemID),

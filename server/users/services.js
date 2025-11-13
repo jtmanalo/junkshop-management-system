@@ -36,7 +36,19 @@ async function create(data) {
         // Perform the INSERT query
         const result = await conn.query(
             'INSERT INTO user (Username, PasswordHash, UserType' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?' + (data.email ? ', ?' : '') + ', ?)',
-            data.email ? [data.username, data.passwordHash, data.userType, data.email, createdAt] : [data.username, data.passwordHash, data.userType, createdAt]
+            data.email ?
+                [
+                    data.username,
+                    data.passwordHash,
+                    data.userType,
+                    data.email,
+                    createdAt
+                ] : [
+                    data.username,
+                    data.passwordHash,
+                    data.userType,
+                    createdAt
+                ]
         );
 
         // Return the inserted user data
