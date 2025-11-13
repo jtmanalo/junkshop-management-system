@@ -1,22 +1,25 @@
-const pool = require('../db');
+const pool = require('../../db');
 const moment = require('moment-timezone');
 
 async function getAll() {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM inventory');
+
+        const rows = await conn.query('SELECT * FROM shift');
 
         // Ensures timestamps are in UTC+8
         rows.forEach(row => {
+            if (row.StartDatetime) {
+                row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format();
+            }
+            if (row.EndDatetime) {
+                row.EndDatetime = moment(row.EndDatetime).tz('Asia/Manila').format();
+            }
             if (row.CreatedAt) {
                 row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
             }
-            if (row.UpdatedAt) {
-                row.UpdatedAt = moment(row.UpdatedAt).tz('Asia/Manila').format();
-            }
         });
-
         return rows;
     } catch (error) {
         throw error;
@@ -33,16 +36,19 @@ async function create(data) {
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
-        // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO inventory (BranchID, Date, CreatedAt) VALUES (?, ?, ?)',
+            'INSERT INTO shift (BranchID, UserID, StartDatetime, EndDatetime, InitialCash, FinalCash, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [
                 data.branchId,
-                data.date || null,
+                data.userId,
+                data.startDatetime,
+                data.endDatetime,
+                data.initialCash,
+                data.finalCash,
                 createdAt
             ]
         );
-        // Return the inserted inventory data
+
         return { id: result.insertId.toString(), ...data, createdAt };
     } catch (error) {
         throw error;
@@ -51,19 +57,12 @@ async function create(data) {
     }
 }
 
-async function getById(inventoryId) {
+async function getById(shiftId) {
     let conn;
     try {
         conn = await pool.getConnection();
+        const rows = await conn.query('SELECT * FROM shift WHERE ShiftID = ?', [shiftId]);
 
-        const rows = await conn.query(
-            'SELECT * FROM inventory WHERE InventoryID = ?',
-            [inventoryId]
-        );
-
-        if (rows.length === 0) {
-            return null; // Inventory not found
-        }
         return rows[0];
     } catch (error) {
         throw error;
@@ -72,7 +71,21 @@ async function getById(inventoryId) {
     }
 }
 
-async function update(inventoryId, data) {
+async function getByUserId(userId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query('SELECT * FROM shift WHERE UserID = ?', [userId]);
+
+        return rows[0];
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function update(shiftId, data) {
     let conn;
     try {
         conn = await pool.getConnection();
@@ -80,37 +93,27 @@ async function update(inventoryId, data) {
         const fields = [];
         const values = [];
 
-        if (data.branchId) {
-            fields.push('BranchID = ?');
-            values.push(data.branchId);
+        for (const key in data) {
+            fields.push(`${key} = ?`);
+            values.push(data[key]);
         }
-        if (data.date) {
-            fields.push('Date = ?');
-            values.push(data.date);
-        }
+        values.push(shiftId);
 
-        if (fields.length === 0) {
-            throw new Error('No fields to update');
-        }
+        const sql = `UPDATE shift SET ${fields.join(', ')} WHERE ShiftID = ?`;
+        await conn.query(sql, values);
 
-        const query = `UPDATE inventory SET ${fields.join(', ')} WHERE InventoryID = ?`;
-        values.push(inventoryId);
-
-        const result = await conn.query(query, values);
-
-        if (result.affectedRows === 0) {
-            throw new Error('Inventory not found');
-        }
-        return { id: inventoryId, ...data };
+        return { id: shiftId, ...data };
     } catch (error) {
         throw error;
     } finally {
         if (conn) conn.release();
     }
 }
+
 module.exports = {
     getAll,
     create,
     getById,
+    getByUserId,
     update
 };
