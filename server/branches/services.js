@@ -1,5 +1,6 @@
 const pool = require('../db');
 const moment = require('moment-timezone');
+const { get } = require('./routes');
 
 async function getAll() {
     let conn;
@@ -38,13 +39,14 @@ async function create(data) {
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO branch (Name, Location, Status, OpeningDate, CreatedAt) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO branch (Name, Location, Status, OpeningDate, CreatedAt, OwnerID) VALUES (?, ?, ?, ?, ?, ?)',
             [
                 data.name,
                 data.location,
                 data.status || 'active',
                 data.openingDate,
-                createdAt
+                createdAt,
+                data.ownerId // Added OwnerID field
             ]
         );
 
@@ -57,11 +59,46 @@ async function create(data) {
     }
 }
 
-async function getById(branchId) {
+async function getByOwnerId(ownerId) {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM branch WHERE BranchID = ?', [branchId]);
+        const rows = await conn.query('SELECT * FROM branch WHERE OwnerID = ?', [ownerId]);
+        return rows; // Return the first row if found
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getByUsername(username) {
+    let conn;
+    console.log('Passing UserID to branchService:', user.UserID);
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(
+            `SELECT b.* FROM branch b
+             JOIN user u ON b.OwnerID = u.UserID
+             WHERE u.Username = ?`,
+            [username]
+        );
+        return rows; // Return all branches for the given username
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getOwnerByReferenceId(referenceId, ownerType) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(
+            'SELECT * FROM owner WHERE ReferenceID = ? AND OwnerType = ?',
+            [referenceId, ownerType]
+        );
         return rows[0]; // Return the first row if found
     } catch (error) {
         throw error;
@@ -136,7 +173,9 @@ async function update(branchId, data) {
 module.exports = {
     getAll,
     create,
-    getById,
+    getByOwnerId,
     update,
+    getByUsername,
+    getOwnerByReferenceId
     // remove
 };

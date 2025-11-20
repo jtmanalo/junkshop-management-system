@@ -1,0 +1,254 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Button, Table, Modal, Form } from 'react-bootstrap';
+import axios from 'axios';
+
+function BranchPage() {
+    const [branches, setBranches] = useState([]);
+    const [showAdd, setShowAdd] = useState(false);
+    const [showEdit, setShowEdit] = useState(false);
+    const [formData, setFormData] = useState({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
+    const { username } = useParams();
+
+    const fetchBranches = useCallback(() => {
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches?username=${username}`)
+            .then(response => {
+                // console.log('API Response:', response.data);
+                setBranches(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching branches:', error);
+            });
+    }, [username]);
+
+    useEffect(() => {
+        fetchBranches();
+        // console.log('Branches State:', branches);
+    }, [fetchBranches]);
+
+    const handleAddBranch = () => {
+        setShowAdd(true);
+    };
+
+    const handleCloseAdd = () => {
+        setShowAdd(false);
+    };
+
+    const handleEditBranch = (BranchID) => {
+        BranchID = Number(BranchID); // Convert BranchID to a number
+        // console.log('BranchID:', BranchID);
+        const branch = branches.find(branch => branch.BranchID === BranchID);
+        // console.log('Found Branch:', branch);
+        if (!branch) {
+            console.error('Branch not found!');
+        } else {
+            console.log('Selected Branch:', branch);
+        }
+        setFormData({
+            name: branch?.Name || '',
+            location: branch?.Location || '',
+            openingDate: branch?.OpeningDate || '',
+            ownerId: branch?.OwnerID || '',
+            status: branch?.Status || '',
+            BranchID: branch?.BranchID || ''
+        });
+        setShowEdit(true);
+    };
+
+    const handleCloseEdit = () => {
+        setShowEdit(false);
+    };
+
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+    };
+
+    const handleEditFormSubmit = async (e) => {
+        e.preventDefault();
+        // console.log('Submitting Edit Form with data:', formData);
+        try {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/branches/${formData.BranchID}`, {
+                name: formData.name,
+                location: formData.location,
+                openingDate: formData.openingDate,
+                status: formData.status
+            });
+            setShowEdit(false);
+            fetchBranches(); // Refresh the branches after editing
+            alert('Branch updated successfully!'); // Notify the user
+        } catch (error) {
+            console.error('Error updating branch:', error);
+            alert('Failed to update branch. Please try again.');
+        }
+    };
+
+    const handleAddFormSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`${process.env.REACT_APP_BASE_URL}/api/branches`, {
+                name: formData.name,
+                location: formData.location,
+                openingDate: formData.openingDate,
+                username: username
+            });
+            setShowAdd(false);
+            fetchBranches(); // Refresh the branches after adding a new one
+            alert('Branch added successfully!'); // Notify the user
+        } catch (error) {
+            console.error('Error adding branch:', error);
+        }
+    };
+
+    return (
+        <div>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h1>Branches</h1>
+                <Button variant="success" onClick={handleAddBranch} className="btn-circle">
+                    +
+                </Button>
+            </div>
+            <Table striped bordered hover>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {branches.length === 0 ? (
+                        <tr>
+                            <td colSpan="5">No branches found</td>
+                        </tr>
+                    ) : (
+                        branches.map((branch, index) => {
+                            // console.log('Branch Object:', branch);
+                            return (
+                                <tr key={branch.BranchID}>
+                                    <td>{index + 1}</td>
+                                    <td>{branch.Name}</td>
+                                    <td>{branch.Location}</td>
+                                    <td>{branch.Status}</td>
+                                    <td>
+                                        <Button
+                                            onClick={() => {
+                                                // console.log('Edit button clicked for BranchID:', branch.BranchID);
+                                                handleEditBranch(branch.BranchID);
+                                            }}
+                                            variant="warning" size="sm" className="me-2"
+                                        >
+                                            Edit
+                                        </Button>
+
+                                    </td>
+                                </tr>
+                            );
+                        }))}
+                </tbody>
+            </Table>
+
+            <Modal show={showAdd} onHide={handleCloseAdd}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Add New Branch</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form onSubmit={handleAddFormSubmit}>
+                        <Form.Group className="mb-3" controlId="formBranchName">
+                            <Form.Label>Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="Enter branch name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleFormChange}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formBranchLocation">
+                            <Form.Label>Location</Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="Enter branch location"
+                                name="location"
+                                value={formData.location}
+                                onChange={handleFormChange}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formBranchOpeningDate">
+                            <Form.Label>Opening Date</Form.Label>
+                            <Form.Control
+                                type="date"
+                                name="openingDate"
+                                value={formData.openingDate}
+                                onChange={handleFormChange}
+                                required
+                            />
+                        </Form.Group>
+                        <Button variant="primary" type="submit">
+                            Submit
+                        </Button>
+                    </Form>
+                </Modal.Body>
+            </Modal>
+
+            <Modal show={showEdit} onHide={handleCloseEdit}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Branch</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form onSubmit={handleEditFormSubmit}>
+                        <Form.Group className="mb-3" controlId="formBranchName">
+                            <Form.Label>Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="Enter branch name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleFormChange}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formBranchLocation">
+                            <Form.Label>Location</Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="Enter branch location"
+                                name="location"
+                                value={formData.location}
+                                onChange={handleFormChange}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formBranchStatus">
+                            <Form.Label>Status</Form.Label>
+                            <Form.Select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleFormChange}
+                                required
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="closed">Closed</option>
+                            </Form.Select>
+                        </Form.Group>
+
+                        <Button variant="primary" type="submit">
+                            Submit
+                        </Button>
+                    </Form>
+                </Modal.Body>
+            </Modal>
+        </div>
+    );
+}
+
+export default BranchPage;

@@ -2,14 +2,15 @@ const express = require('express');
 const branchController = require('./controllers');
 const router = express.Router();
 
-// Get all branches
-router.get('/branches', branchController.getAll);
+// Get all branches of owner by username
+// router.get('/branches', branchController.getAll);
+router.get('/branches', branchController.getByQuery);
 
 // Create a branch
 router.post('/branches', branchController.create);
 
-// Get branch by ID
-router.get('/branches/:id', branchController.getById);
+// Get branch by owner ID
+router.get('/branches/:id', branchController.getByOwnerId);
 
 // Update a branch
 router.put('/branches/:id', branchController.update);
