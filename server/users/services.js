@@ -1,5 +1,8 @@
 const pool = require('../db');
 const moment = require('moment-timezone');
+const axios = require('axios');
+
+const API_URL = process.env.API_URL || 'http://localhost:3000';
 
 async function getAll() {
     let conn;
@@ -60,13 +63,51 @@ async function create(data) {
     }
 }
 
-async function getById(userId) {
+async function getByEmail(email) {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM user WHERE UserID = ?', [userId]);
+        const rows = await conn.query('SELECT * FROM user WHERE Email = ?', [email]);
         return rows[0]; // Return the first row if found
     } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getByUsername(username) {
+    let conn;
+    console.log('Entering getByUsername function');
+    console.log('Username parameter:', username);
+
+    try {
+        conn = await pool.getConnection();
+        console.log('Querying UserID for username:', username); // Debugging
+        const rows = await conn.query('SELECT UserID FROM user WHERE Username = ?', [username]);
+        console.log('Query result:', rows); // Debugging
+        return rows[0]; // Return the first row if found
+    } catch (error) {
+        console.error('Error during query execution:', error);
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getUserDetailsByUsername(username) {
+    let conn;
+    console.log('Entering getUserDetailsByUsername function');
+    console.log('Username parameter:', username);
+
+    try {
+        conn = await pool.getConnection();
+        console.log('Querying UserID and UserType for username:', username); // Debugging
+        const rows = await conn.query('SELECT UserID, Username, UserType FROM user WHERE Username = ?', [username]);
+        console.log('Query result:', rows); // Debugging
+        return rows[0]; // Return the first row if found
+    } catch (error) {
+        console.error('Error during query execution:', error);
         throw error;
     } finally {
         if (conn) conn.release();
@@ -134,7 +175,9 @@ async function remove(userId) {
 module.exports = {
     getAll,
     create,
-    getById,
+    getByEmail,
     update,
-    remove
+    remove,
+    getByUsername,
+    getUserDetailsByUsername
 };

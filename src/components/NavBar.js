@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   Container,
   Navbar,
@@ -16,15 +16,18 @@ import {
   FaClipboardList,
   FaFileInvoice,
   FaSpinner,
-  FaUser
+  FaUser,
+  FaBuilding
 } from 'react-icons/fa';
 import { BottomNav } from './NavLink';
+import { handleLogout } from '../services/authUtils';
 // import useIsMobile from './useIsMobile';
 
 function UserProfileDropdown() {
-  const [showDropdown, setShowDropdown] = React.useState(false);
-  const dropdownRef = React.useRef(null);
-  React.useEffect(() => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
@@ -56,7 +59,7 @@ function UserProfileDropdown() {
     {
       label: 'Log out',
       icon: FaSignOutAlt,
-      onClick: () => { },
+      onClick: handleLogout,
     },
   ];
   // Responsive: track window size with state
@@ -84,12 +87,13 @@ function UserProfileDropdown() {
         src="https://placehold.co/40x40/dc3545/ffffff?text=JC"
         alt="User"
         className="rounded-circle"
-        style={{ width: avatarSize, height: avatarSize, marginRight: isSmallScreen ? 0 : 8 }}
+        style={{ width: avatarSize, height: avatarSize, marginRight: isSmallScreen ? 0 : 8 }
+        }
       />
-      <div className="d-none d-md-block">
+      < div className="d-none d-md-block" >
         <div className="fw-bold small mb-0 lh-1">Juan dela Cruz</div>
         <div className="text-muted small lh-1">Admin</div>
-      </div>
+      </div >
       <button
         type="button"
         className="btn btn-link p-0 m-0"
@@ -98,50 +102,52 @@ function UserProfileDropdown() {
       >
         <FaChevronDown size={20} color="#212529" />
       </button>
-      {showDropdown && (
-        <div
-          style={{
-            position: 'absolute',
-            top: dropdownIconSize + 12,
-            right: 0,
-            minWidth: dropdownMenuMinWidth,
-            maxWidth: dropdownMenuMaxWidth,
-            background: '#fff',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-            borderRadius: 12,
-            zIndex: 100,
-            padding: isSmallScreen ? '8px 0' : '12px 0',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: isSmallScreen ? 'center' : 'flex-start',
-          }}
-        >
-          {menuOptions.map((option, idx) => (
-            <button
-              key={option.label}
-              style={{
-                width: '100%',
-                background: 'none',
-                border: 'none',
-                padding: isSmallScreen ? '8px 0' : '10px 18px',
-                textAlign: isSmallScreen ? 'center' : 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: isSmallScreen ? 0 : 10,
-                fontSize: isSmallScreen ? 0 : 15,
-                color: idx === 3 ? '#E57373' : '#212529',
-                cursor: 'pointer',
-                justifyContent: isSmallScreen ? 'center' : 'flex-start',
-              }}
-              onClick={option.onClick}
-            >
-              <option.icon size={18} color={idx === 3 ? '#E57373' : '#3973F3'} />
-              <span className="d-none d-md-inline">{option.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      {
+        showDropdown && (
+          <div
+            style={{
+              position: 'absolute',
+              top: dropdownIconSize + 12,
+              right: 0,
+              minWidth: dropdownMenuMinWidth,
+              maxWidth: dropdownMenuMaxWidth,
+              background: '#fff',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+              borderRadius: 12,
+              zIndex: 100,
+              padding: isSmallScreen ? '8px 0' : '12px 0',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: isSmallScreen ? 'center' : 'flex-start',
+            }}
+          >
+            {menuOptions.map((option, idx) => (
+              <button
+                key={option.label}
+                style={{
+                  width: '100%',
+                  background: 'none',
+                  border: 'none',
+                  padding: isSmallScreen ? '8px 0' : '10px 18px',
+                  textAlign: isSmallScreen ? 'center' : 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: isSmallScreen ? 0 : 10,
+                  fontSize: isSmallScreen ? 0 : 15,
+                  color: idx === 3 ? '#E57373' : '#212529',
+                  cursor: 'pointer',
+                  justifyContent: isSmallScreen ? 'center' : 'flex-start',
+                }}
+                onClick={option.onClick}
+              >
+                <option.icon size={18} color={idx === 3 ? '#E57373' : '#3973F3'} />
+                <span className="d-none d-md-inline">{option.label}</span>
+              </button>
+            ))}
+          </div>
+        )
+      }
+    </div >
   );
 }
 
@@ -275,10 +281,11 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
     { name: 'Analytics', icon: FaClipboardList, key: 'analytics' },
     { name: 'Inventory', icon: FaFileInvoice, key: 'inventory' },
     { name: 'User Management', icon: FaUser, key: 'users' },
+    { name: 'Branches', icon: FaBuilding, key: 'branches' },
     { name: 'Pricing', icon: FaSpinner, key: 'pricing' },
     { name: 'Profile Settings', icon: FaUserCog, key: 'settings' },
     { name: 'Help / Tutorial / FAQs', icon: FaListAlt, key: 'help' },
-    { name: 'Log out', icon: FaSignOutAlt, key: 'logout' },
+    { name: 'Log out', icon: FaSignOutAlt, key: 'logout', onClick: handleLogout },
   ];
 
   return (
@@ -307,7 +314,7 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
         {menuItems.map((item) => (
           <Nav.Link
             key={item.key}
-            onClick={() => setActivePage(item.key)}
+            onClick={item.onClick || (() => setActivePage(item.key))}
             className={`d-flex items-center p-3 rounded-lg text-decoration-none transition-colors duration-200 ${activePage === item.key ? 'shadow-md' : 'hover:bg-gray-800'}`}
             style={{
               ...(isCollapsed ? { justifyContent: 'center' } : {}),

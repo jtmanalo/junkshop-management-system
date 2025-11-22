@@ -1,11 +1,11 @@
-
 import React, { useState } from 'react';
 import { Container, Card } from 'react-bootstrap';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { TopNav, SideNav } from '../components/NavBar';
 import SettingsPage from './SettingsPage';
 import AnalyticsPage from './AnalyticsPage';
 import UsersPage from './UsersPage';
+import BranchPage from './BranchPage';
 import InventoryPage from './InventoryPage';
 import PricingPage from './PricingPage';
 import HelpPage from './HelpPage';
@@ -163,7 +163,7 @@ function AdminDashboard() {
     );
 }
 
-function AdminLayout({ activePage, setActivePage, children }) {
+function AdminLayout({ activePage, setActivePage, username, children }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const toggleSidebar = () => setIsCollapsed(!isCollapsed);
@@ -189,7 +189,7 @@ function AdminLayout({ activePage, setActivePage, children }) {
                     paddingTop: '60px' // Offset for the fixed Navbar
                 }}
             >
-                <TopNav toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} />
+                <TopNav toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} username={username} userType="Owner" />
 
                 <Container fluid className="py-4 px-4" style={{ minHeight: 'calc(100vh - 60px)' }}>
                     {children}
@@ -202,42 +202,63 @@ function AdminLayout({ activePage, setActivePage, children }) {
 export default function DesktopRoutes() {
     const location = useLocation();
     const navigate = useNavigate();
+    // const username = 'mtmanalo'
+    // localStorage.setItem('username', username);
+    // const username = localStorage.getItem('username');
+    const { username } = useParams(); // Extract username from URL
+    console.log('Username:', username);
+
+
     // Map path to sidebar key
     const pathToKey = {
-        '/admin-dashboard': 'dashboard', // We keep this for the top-level path match
-        '/admin-dashboard/analytics': 'analytics',
-        '/admin-dashboard/inventory': 'inventory',
-        '/admin-dashboard/users': 'users',
-        '/admin-dashboard/pricing': 'pricing',
-        '/admin-dashboard/settings': 'settings',
-        '/admin-dashboard/help': 'help'
+        [`/admin-dashboard/${username}/analytics`]: 'analytics',
+        [`/admin-dashboard/${username}/inventory`]: 'inventory',
+        [`/admin-dashboard/${username}/users`]: 'users',
+        [`/admin-dashboard/${username}/branches`]: 'branches',
+        [`/admin-dashboard/${username}/pricing`]: 'pricing',
+        [`/admin-dashboard/${username}/settings`]: 'settings',
+        [`/admin-dashboard/${username}/help`]: 'help',
+        [`/admin-dashboard/${username}`]: 'dashboard'
     };
+
+    const currentPath = location.pathname;
 
     // Map key to full path for navigation
     const keyToPath = {
-        dashboard: '/admin-dashboard',
-        analytics: '/admin-dashboard/analytics',
-        inventory: '/admin-dashboard/inventory',
-        users: '/admin-dashboard/users',
-        pricing: '/admin-dashboard/pricing',
-        settings: '/admin-dashboard/settings',
-        help: '/admin-dashboard/help'
+        analytics: `/admin-dashboard/${username}/analytics`,
+        inventory: `/admin-dashboard/${username}/inventory`,
+        users: `/admin-dashboard/${username}/users`,
+        branches: `/admin-dashboard/${username}/branches`,
+        pricing: `/admin-dashboard/${username}/pricing`,
+        settings: `/admin-dashboard/${username}/settings`,
+        help: `/admin-dashboard/${username}/help`,
+        dashboard: `/admin-dashboard/${username}`,
     };
-    const activePage = pathToKey[location.pathname] || 'dashboard';
+
+    const activePage = pathToKey[currentPath] || 'dashboard';
     const setActivePage = (key) => {
-        navigate(keyToPath[key] || '/admin-dashboard');
+        navigate(keyToPath[key] || `/admin-dashboard/${username}`);
     };
+
     return (
-        <AdminLayout activePage={activePage} setActivePage={setActivePage}>
+        <AdminLayout activePage={activePage} setActivePage={setActivePage} username={username}>
             <Routes>
-                <Route index element={<AdminDashboard />} />
-                <Route path="analytics" element={<AnalyticsPage />} />
-                <Route path="inventory" element={<InventoryPage />} />
-                <Route path="users" element={<UsersPage />} />
-                <Route path="pricing" element={<PricingPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="help" element={<HelpPage />} />
-                <Route path="*" element={<Card className="shadow-sm"><Card.Body><h1 className="mb-4">Not Found</h1><p>Page not found.</p></Card.Body></Card>} />
+                <Route path=":username/analytics" element={<AnalyticsPage />} />
+                <Route path=":username/inventory" element={<InventoryPage />} />
+                <Route path=":username/users" element={<UsersPage />} />
+                <Route path=":username/branches" element={<BranchPage />} />
+                <Route path=":username/pricing" element={<PricingPage />} />
+                <Route path=":username/settings" element={<SettingsPage />} />
+                <Route path=":username/help" element={<HelpPage />} />
+                <Route path=":username" element={<AdminDashboard />} />
+                <Route path="*" element={
+                    <Card className="shadow-sm">
+                        <Card.Body>
+                            <h1 className="mb-4">Not Found</h1>
+                            <p>Page not found.</p>
+                        </Card.Body>
+                    </Card>
+                } />
             </Routes>
         </AdminLayout>
     );

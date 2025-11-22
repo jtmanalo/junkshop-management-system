@@ -1,4 +1,12 @@
+const bcrypt = require('bcrypt');
+const validator = require('validator');
+const sanitize = require('sanitize-html');
 const userService = require('./services');
+const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const nodemailer = require('nodemailer'); // Import nodemailer
+
+// Secret key for JWT (should be stored securely in environment variables)
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Get all users
 async function getAll(req, res) {
@@ -14,41 +22,122 @@ async function getAll(req, res) {
     }
 }
 
-// Create a user
-async function create(req, res) {
-    const {
-        username,
-        passwordHash,
-        userType
-    } = req.body;
-
-    if (!username || !passwordHash || !userType) {
-        return res.status(400).json({ error: 'Username, PasswordHash, and UserType are required.' });
-    }
+async function getUserDetails(req, res) {
+    const { username } = req.params;
 
     try {
-        const user = await userService.create({
-            username,
-            passwordHash,
-            userType
-        });
-        res.status(201).json(user);
+        const userDetails = await userService.getUserDetailsByUsername(username);
+        if (!userDetails) {
+            return res.status(404).send("User not found");
+        }
+        console.log('User Details:', userDetails);
+        res.json(userDetails);
     } catch (error) {
-        console.error('Error in createUser:', error);
+        console.error('Error in getUserDetails:', error);
         res.status(500).json({ error: error.message });
     }
 }
 
-// Get user by ID
-async function getById(req, res) {
+// Create a user
+async function register(req, res) {
+    const {
+        name,
+        username,
+        email,
+        password,
+        userType
+    } = req.body;
+
+    if (!name || !username || !email || !password || !userType) {
+        return res.status(400).json({ error: 'Name, Username, Email, Password, and UserType are required.' });
+    }
+
+    // Validate email format
+    if (!validator.isEmail(email)) {
+        return res.status(400).json({ error: 'Invalid email format.' });
+    }
+
+    // Validate user type
+    const allowedUserTypes = ['owner', 'employee'];
+    if (!allowedUserTypes.includes(userType)) {
+        return res.status(400).json({ error: 'Invalid user type.' });
+    }
+    const users = await userService.getAll();
+    // Check for duplicate username or email
+    const existingUser = users.find((user) => user.email === email);
+    const existingUsername = users.find((user) => user.username === username);
+    if (existingUsername) {
+        return res.status(409).json({ error: 'A user with this username already exists.' });
+    }
+    if (existingUser) {
+        return res.status(409).json({ error: 'A user with this email already exists.' });
+    }
+
     try {
-        const user = await userService.getById(parseInt(req.params.id));
+        // Sanitize inputs
+        const sanitizedUsername = sanitize(username);
+        const sanitizedEmail = sanitize(email);
+
+        // Hash the password
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash(password, saltRounds);
+        // console.log('Generated PasswordHash during registration:', passwordHash);
+
+        // Create the user
+        const user = await userService.create({
+            name,
+            username: sanitizedUsername,
+            email: sanitizedEmail,
+            passwordHash,
+            userType
+        });
+
+        res.status(201).json({
+            message: 'User created successfully',
+            user: {
+                id: user.id,
+                name: user.name,
+                username: user.username,
+                email: user.email,
+                userType: user.userType
+            }
+        });
+    } catch (error) {
+        console.error('Error in registerUser:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+// login - Get user by email
+async function login(req, res) {
+    const { email, password } = req.body;
+
+    try {
+        const user = await userService.getByEmail(email);
         if (!user) {
+            // console.error('User not found for email:', email);
             return res.status(404).send("User not found");
         }
-        res.json(user);
+
+        // console.log('User found:', user);
+        // console.log('Comparing password for user:', email);
+        // console.log('Provided password:', password);
+        // console.log('Stored PasswordHash:', user.PasswordHash);
+
+        const isPasswordValid = await bcrypt.compare(password, user.PasswordHash);
+        // console.log('Password comparison result:', isPasswordValid);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid password' });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ id: user.UserID, email: user.Email }, JWT_SECRET, { expiresIn: '7d' });
+        // console.log('Generated JWT token:', token);
+
+        res.json({ message: 'Login successful', token, userType: user.UserType });
     } catch (error) {
-        console.error('Error in getUserById:', error);
+        // console.error('Error during login:', error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -83,10 +172,89 @@ async function remove(req, res) {
     }
 }
 
+// Middleware to validate JWT token
+function authenticateToken(req, res, next) {
+    const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access denied. No token provided.' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid or expired token.' });
+        }
+        req.user = user; // Attach user info to request
+        next();
+    });
+}
+
+// Validate a token
+async function validateToken(req, res) {
+    const { token } = req.body; // Token sent in the request body
+
+    if (!token) {
+        return res.status(400).json({ valid: false, error: 'No token provided.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET); // Verify the token
+        res.json({ valid: true, email: decoded.email }); // Respond with token validity and email
+    } catch (error) {
+        res.json({ valid: false, error: 'Invalid or expired token.' }); // Respond with invalid status
+    }
+}
+
+// Forgot Password
+async function forgotPassword(req, res) {
+    const { email } = req.body;
+
+    try {
+        const user = await userService.getByEmail(email);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Generate a password reset token
+        const resetToken = jwt.sign({ id: user.UserID, email: user.Email }, JWT_SECRET, { expiresIn: '1h' });
+
+        // Send email with reset link
+        const transporter = nodemailer.createTransport({
+            service: 'Gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Password Reset Request',
+            text: `You requested a password reset. Click the link below to reset your password:
+
+http://localhost:3000/reset-password?token=${resetToken}
+
+If you did not request this, please ignore this email.`
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        res.json({ message: 'Password reset email sent successfully' });
+    } catch (error) {
+        console.error('Error in forgotPassword:', error);
+        res.status(500).json({ error: 'An error occurred. Please try again later.' });
+    }
+}
+
 module.exports = {
     getAll,
-    create,
-    getById,
+    register,
+    login,
     update,
     remove,
+    authenticateToken, // Middleware for protected routes
+    validateToken, // Endpoint for token validation
+    forgotPassword,
+    getUserDetails
 };

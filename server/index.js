@@ -1,4 +1,3 @@
-
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
@@ -82,4 +81,8 @@ app.use('/api', inventoryitemRoutes);
 app.use('/api', shiftRoutes);
 app.use('/api', shiftemployeeRoutes);
 app.use('/api', pricelistactivityRoutes);
-app.use('/api', activitylogRoutes); 
+app.use('/api', activitylogRoutes);
+
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'Server is connected to the frontend!' });
+});
