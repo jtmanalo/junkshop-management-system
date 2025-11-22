@@ -11,7 +11,7 @@ router.post('/validate-token', userController.validateToken);
 router.post('/login', userController.login);
 
 // Get all users
-// router.get('/users', userController.authenticateToken, userController.getAll);
+router.get('/users', userController.getAll);
 
 // Get user by username
 router.get('/users/:username', userController.getUserDetails);
