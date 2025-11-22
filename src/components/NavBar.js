@@ -21,7 +21,6 @@ import {
   FaBuilding
 } from 'react-icons/fa';
 import { BottomNav } from './NavLink';
-// import { handleLogout } from '../services/authUtils';
 // import useIsMobile from './useIsMobile';
 
 function UserProfileDropdown() {

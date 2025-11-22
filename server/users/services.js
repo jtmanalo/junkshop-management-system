@@ -2,8 +2,6 @@ const pool = require('../db');
 const moment = require('moment-timezone');
 const axios = require('axios');
 
-const API_URL = process.env.API_URL || 'http://localhost:3000';
-
 async function getAll() {
     let conn;
     try {
@@ -85,7 +83,7 @@ async function getByUsername(username) {
         conn = await pool.getConnection();
         console.log('Querying UserID for username:', username); // Debugging
         const rows = await conn.query('SELECT UserID FROM user WHERE Username = ?', [username]);
-        console.log('Query result:', rows); // Debugging
+        console.log('Query result:', rows[0]); // Debugging
         return rows[0]; // Return the first row if found
     } catch (error) {
         console.error('Error during query execution:', error);

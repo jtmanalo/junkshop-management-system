@@ -2,28 +2,33 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button, Table, Modal, Form } from 'react-bootstrap';
 import axios from 'axios';
+import { useAuth } from '../services/AuthContext';
 
 function BranchPage() {
     const [branches, setBranches] = useState([]);
     const [showAdd, setShowAdd] = useState(false);
     const [showEdit, setShowEdit] = useState(false);
     const [formData, setFormData] = useState({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
-    const { username } = useParams();
+    const { user } = useAuth();
+    console.log('User from context:', user);
+    console.log('Authenticated User:', user.username);
+    console.log('User ID:', user?.userID);
 
     const fetchBranches = useCallback(() => {
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches?username=${username}`)
+        if (!user?.username) return; // Ensure user is defined before making the API call
+        console.log('Fetching branches for username:', user.username);
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches/${user.username}`)
             .then(response => {
-                // console.log('API Response:', response.data);
+                console.log('API Response:', response.data);
                 setBranches(response.data);
             })
             .catch(error => {
                 console.error('Error fetching branches:', error);
             });
-    }, [username]);
+    }, [user?.username]);
 
     useEffect(() => {
-        fetchBranches();
-        // console.log('Branches State:', branches);
+        fetchBranches(); // Call the memoized function
     }, [fetchBranches]);
 
     const handleAddBranch = () => {
@@ -85,12 +90,22 @@ function BranchPage() {
 
     const handleAddFormSubmit = async (e) => {
         e.preventDefault();
+        console.log('Submitting Add Form with data:', formData);
+        console.log('User inside handleAddFormSubmit:', user); // Log the user object
+        console.log('User ID inside handleAddFormSubmit:', user?.userID); // Log userID
+
         try {
+            // Check if user is in the owner table
+            console.log('Checking owner for user:', user);
+            console.log('User ID:', user?.userID);
+            console.log('User Type:', user?.userType);
+
+            // Proceed to add the branch
             await axios.post(`${process.env.REACT_APP_BASE_URL}/api/branches`, {
                 name: formData.name,
                 location: formData.location,
                 openingDate: formData.openingDate,
-                username: username
+                username: user?.username
             });
             setShowAdd(false);
             fetchBranches(); // Refresh the branches after adding a new one

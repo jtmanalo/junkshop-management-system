@@ -5,7 +5,11 @@ import axios from 'axios';
 const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        const storedUser = localStorage.getItem("user");
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
+
     const [token, setToken] = useState(localStorage.getItem("site") || "");
     const navigate = useNavigate();
 
@@ -19,12 +23,14 @@ const AuthProvider = ({ children }) => {
 
             const res = response.data;
             console.log("Login response:", res);
-            if (res.token && res.userType && res.username) {
-                const { token, userType, username } = res;
-                console.log("Login response data:", { token, userType, username });
-                setUser({ username, userType });
+            if (res.token && res.userType && res.username && res.userID) {
+                const { token, userType, username, userID } = res;
+                console.log("Login response data:", { token, userType, username, userID });
+                const userData = { username, userType, userID };
+                setUser(userData);
                 setToken(token);
                 localStorage.setItem("site", token);
+                localStorage.setItem("user", JSON.stringify(userData));
 
                 if (userType === 'owner') {
                     console.log("Navigating to admin-dashboard for user:", username);
@@ -45,6 +51,7 @@ const AuthProvider = ({ children }) => {
         setUser(null);
         setToken("");
         localStorage.removeItem("site");
+        localStorage.removeItem("user");
         navigate("/");
     };
 
