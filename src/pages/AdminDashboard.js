@@ -9,6 +9,7 @@ import BranchPage from './BranchPage';
 import InventoryPage from './InventoryPage';
 import PricingPage from './PricingPage';
 import HelpPage from './HelpPage';
+import { useAuth } from '../services/AuthContext';
 import { MetricCard, MetricChartCard } from '../components/Card';
 import { FaChartLine, FaShoppingCart, FaMoneyBillWave, FaReceipt, FaWallet } from 'react-icons/fa';
 
@@ -205,43 +206,43 @@ export default function DesktopRoutes() {
     // const username = 'mtmanalo'
     // localStorage.setItem('username', username);
     // const username = localStorage.getItem('username');
-    const { username } = useParams(); // Extract username from URL
-    console.log('Username:', username);
+    const { user } = useAuth();
+    console.log('User from context:', user);
 
 
     // Map path to sidebar key
     const pathToKey = {
-        [`/admin-dashboard/${username}/analytics`]: 'analytics',
-        [`/admin-dashboard/${username}/inventory`]: 'inventory',
-        [`/admin-dashboard/${username}/users`]: 'users',
-        [`/admin-dashboard/${username}/branches`]: 'branches',
-        [`/admin-dashboard/${username}/pricing`]: 'pricing',
-        [`/admin-dashboard/${username}/settings`]: 'settings',
-        [`/admin-dashboard/${username}/help`]: 'help',
-        [`/admin-dashboard/${username}`]: 'dashboard'
+        [`/admin-dashboard/${user?.username}/analytics`]: 'analytics',
+        [`/admin-dashboard/${user?.username}/inventory`]: 'inventory',
+        [`/admin-dashboard/${user?.username}/users`]: 'users',
+        [`/admin-dashboard/${user?.username}/branches`]: 'branches',
+        [`/admin-dashboard/${user?.username}/pricing`]: 'pricing',
+        [`/admin-dashboard/${user?.username}/settings`]: 'settings',
+        [`/admin-dashboard/${user?.username}/help`]: 'help',
+        [`/admin-dashboard/${user?.username}`]: 'dashboard'
     };
 
     const currentPath = location.pathname;
 
     // Map key to full path for navigation
     const keyToPath = {
-        analytics: `/admin-dashboard/${username}/analytics`,
-        inventory: `/admin-dashboard/${username}/inventory`,
-        users: `/admin-dashboard/${username}/users`,
-        branches: `/admin-dashboard/${username}/branches`,
-        pricing: `/admin-dashboard/${username}/pricing`,
-        settings: `/admin-dashboard/${username}/settings`,
-        help: `/admin-dashboard/${username}/help`,
-        dashboard: `/admin-dashboard/${username}`,
+        analytics: `/admin-dashboard/${user?.username}/analytics`,
+        inventory: `/admin-dashboard/${user?.username}/inventory`,
+        users: `/admin-dashboard/${user?.username}/users`,
+        branches: `/admin-dashboard/${user?.username}/branches`,
+        pricing: `/admin-dashboard/${user?.username}/pricing`,
+        settings: `/admin-dashboard/${user?.username}/settings`,
+        help: `/admin-dashboard/${user?.username}/help`,
+        dashboard: `/admin-dashboard/${user?.username}`,
     };
 
     const activePage = pathToKey[currentPath] || 'dashboard';
     const setActivePage = (key) => {
-        navigate(keyToPath[key] || `/admin-dashboard/${username}`);
+        navigate(keyToPath[key] || `/admin-dashboard/${user?.username}`);
     };
 
     return (
-        <AdminLayout activePage={activePage} setActivePage={setActivePage} username={username}>
+        <AdminLayout activePage={activePage} setActivePage={setActivePage} username={user?.username}>
             <Routes>
                 <Route path=":username/analytics" element={<AnalyticsPage />} />
                 <Route path=":username/inventory" element={<InventoryPage />} />

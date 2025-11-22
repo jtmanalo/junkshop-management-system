@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useAuth } from '../services/AuthContext';
 import {
   Container,
   Navbar,
@@ -20,12 +21,14 @@ import {
   FaBuilding
 } from 'react-icons/fa';
 import { BottomNav } from './NavLink';
-import { handleLogout } from '../services/authUtils';
+// import { handleLogout } from '../services/authUtils';
 // import useIsMobile from './useIsMobile';
 
 function UserProfileDropdown() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const auth = useAuth();
+  const { user } = auth;
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -59,7 +62,7 @@ function UserProfileDropdown() {
     {
       label: 'Log out',
       icon: FaSignOutAlt,
-      onClick: handleLogout,
+      onClick: () => auth.logOut(),
     },
   ];
   // Responsive: track window size with state
@@ -84,15 +87,15 @@ function UserProfileDropdown() {
       style={{ gap: isSmallScreen ? 0 : 8, minWidth: dropdownMenuMinWidth, maxWidth: dropdownMenuMaxWidth }}
     >
       <img
-        src="https://placehold.co/40x40/dc3545/ffffff?text=JC"
+        src={`https://placehold.co/40x40/dc3545/ffffff?text=${user?.username?.charAt(0).toUpperCase() || 'U'}`}
         alt="User"
         className="rounded-circle"
         style={{ width: avatarSize, height: avatarSize, marginRight: isSmallScreen ? 0 : 8 }
         }
       />
       < div className="d-none d-md-block" >
-        <div className="fw-bold small mb-0 lh-1">Juan dela Cruz</div>
-        <div className="text-muted small lh-1">Admin</div>
+        <div className="fw-bold small mb-0 lh-1">{user?.username || 'User'}</div>
+        <div className="text-muted small lh-1">{user?.userType || 'Admin'}</div>
       </div >
       <button
         type="button"
@@ -272,6 +275,7 @@ function MobileNav() {
 //   );
 // }
 export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar }) {
+  const auth = useAuth();
 
   const sidebarWidth = isCollapsed ? '72px' : '260px'; // Width for collapsed/expanded state
 
@@ -285,7 +289,7 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
     { name: 'Pricing', icon: FaSpinner, key: 'pricing' },
     { name: 'Profile Settings', icon: FaUserCog, key: 'settings' },
     { name: 'Help / Tutorial / FAQs', icon: FaListAlt, key: 'help' },
-    { name: 'Log out', icon: FaSignOutAlt, key: 'logout', onClick: handleLogout },
+    { name: 'Log out', icon: FaSignOutAlt, key: 'logout', onClick: () => auth.logOut() },
   ];
 
   return (

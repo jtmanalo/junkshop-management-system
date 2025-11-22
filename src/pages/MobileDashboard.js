@@ -28,7 +28,7 @@ function MobileDashboard() {
   const navigate = useNavigate();
 
   const handlePurchaseClick = () => {
-    navigate('/purchase');
+    navigate('/purchases');
   };
 
   // const handleExpenseClick = () => {

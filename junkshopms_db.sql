@@ -44,6 +44,12 @@ CREATE TABLE buyer (
     Status ENUM('active', 'inactive', 'closed') DEFAULT 'active',
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE owner (
+    OwnerID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    OwnerType ENUM('user', 'buyer') NOT NULL,
+    ReferenceID INT UNSIGNED NOT NULL,
+    UNIQUE (OwnerType, ReferenceID)
+);
 CREATE TABLE buyer_contact (
     ContactID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     BuyerID INT UNSIGNED NOT NULL,

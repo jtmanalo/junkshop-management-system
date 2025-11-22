@@ -10,51 +10,54 @@ import {
     Alert
 } from 'react-bootstrap';
 import axios from 'axios';
+import { useAuth } from '../services/AuthContext';
 
 function LoginPage() {
     const [activeTab, setActiveTab] = useState('login');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+
     const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
-        name: '',
-        username: '',
-        email: '',
-        password: '',
+        name: "",
+        username: "",
+        email: "",
+        password: "",
         userType: 'owner' // Default user type
     });
+
+    const auth = useAuth();
+
     const [showModal, setShowModal] = useState(false); // State for modal visibility
     // const [rememberMe, setRememberMe] = useState(false); // State for Remember Me checkbox
     // const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false); // State for Forgot Password modal
     // const [forgotPasswordEmail, setForgotPasswordEmail] = useState(''); // State for email input
 
-    useEffect(() => {
-        // Check if Remember Me token exists in localStorage
-        const savedToken = localStorage.getItem('rememberMeToken');
-        if (savedToken) {
-            // Optionally, validate the token with the server
-            fetch('/api/validate-token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: savedToken })
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.valid) {
-                        setFormData((prevData) => ({
-                            ...prevData,
-                            email: data.email // Populate email from token payload
-                        }));
-                        // setRememberMe(true);
-                    } else {
-                        localStorage.removeItem('rememberMeToken'); // Remove invalid token
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error validating token:', error);
-                });
-        }
-    }, []);
+    // useEffect(() => {
+    //     // Check if Remember Me token exists in localStorage
+    //     const savedToken = localStorage.getItem('rememberMeToken');
+    //     if (savedToken) {
+    //         // Optionally, validate the token with the server
+    //         fetch('/api/validate-token', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ token: savedToken })
+    //         })
+    //             .then((response) => response.json())
+    //             .then((data) => {
+    //                 if (data.valid) {
+    //                     setFormData((prevData) => ({
+    //                         ...prevData,
+    //                         email: data.email // Populate email from token payload
+    //                     }));
+    //                     // setRememberMe(true);
+    //                 } else {
+    //                     localStorage.removeItem('rememberMeToken'); // Remove invalid token
+    //                 }
+    //             })
+    //             .catch((error) => {
+    //                 console.error('Error validating token:', error);
+    //             });
+    //     }
+    // }, []);
 
     const validateForm = () => {
         const newErrors = {};
@@ -85,40 +88,25 @@ function LoginPage() {
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleLogin = async (e) => {
+    const handleLogin = (e) => {
         e.preventDefault();
         const formErrors = validateForm();
-        // console.log('Login attempted with:', { email: formData.email, password: formData.password });
+        console.log('Login attempted with:', { email: formData.email, password: formData.password });
         if (Object.keys(formErrors).length > 0) {
             setErrors(formErrors);
             return;
         } else {
             setErrors({});
             try {
-                console.log('Attempting login with:', { email: formData.email, password: formData.password });
-
-                const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/login`, {
-                    email: formData.email,
-                    password: formData.password
-                });
-
-                if (response.status === 200 && response.data) {
-                    console.log('Login successful:', response.data);
-                    const userType = response.data.userType; // Assuming userType is returned in the response
-
-                    // Redirect based on userType
-                    if (userType === 'owner') {
-                        window.location.href = `/admin-dashboard/${formData.username}`;
-                    } else if (userType === 'employee') {
-                        window.location.href = '/employee-dashboard';
-                    } else {
-                        console.error('Unknown userType:', userType);
-                        alert('Login successful, but user type is unknown.');
-                    }
-                } else {
-                    console.error('Login failed:', response.data?.error || 'Unknown error');
-                    setErrors({ general: response.data?.error || 'Login failed. Please try again.' });
+                if (formData.email !== "" && formData.password !== "") {
+                    auth.loginAction(formData);
+                    return;
                 }
+                console.log("email:", formData.email);
+                console.log("password:", formData.password);
+                console.log("Please fill in all fields.");
+                alert("Please fill in all fields.");
+
             } catch (error) {
                 if (error.response && error.response.status === 401) {
                     setErrors({ general: 'Invalid email or password. Please try again.' });
