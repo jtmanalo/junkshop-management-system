@@ -1,22 +1,8 @@
 const branchService = require('./services');
 const userService = require('../users/services');
-const { use } = require('./routes');
-
-// Get all branches
-// async function getAll(req, res) {
-//     try {
-//         const branches = await branchService.getAll();
-//         if (branches.length === 0) {
-//             return res.status(204).send("No branches found");
-//         }
-//         res.json(branches);
-//     } catch (error) {
-//         console.error('Error in getAllBranches:', error);
-//         res.status(500).json({ error: error.message });
-//     }
-// }
 
 // BranchPage create branch for user
+// adds user to owner table if not yet existing
 async function create(req, res) {
     const { name, location, openingDate, username } = req.body;
 
@@ -31,17 +17,16 @@ async function create(req, res) {
             return res.status(400).json({ error: 'Invalid Username provided.' });
         }
 
-        console.log('UserID for new branch:', user.UserID);
-
+        // console.log('UserID for new branch:', user.UserID);
         // Fetch OwnerID from the owner table
-        const owner = await branchService.getOwnerByReferenceId(user.UserID, 'user');
+        const owner = await branchService.getOwner(user.UserID, 'user');
         if (!owner || !owner.OwnerID) {
-            console.log('Owner not found, creating new owner.');
+            // console.log('Owner not found, creating new owner.');
             const newOwner = await branchService.addOwner({
                 referenceId: user.UserID,
                 ownerType: 'user'
             });
-            console.log('New owner created:', newOwner);
+            // console.log('New owner created:', newOwner);
 
             owner = { OwnerID: newOwner.id, ...newOwner };
         }
@@ -61,50 +46,16 @@ async function create(req, res) {
     }
 }
 
-// BranchPage get branches by UserID
-// async function getByUserId(req, res) {
-//     // console.log("REQ", req.params)
-//     const userId = parseInt(req.params.id, 10);
-//     // const ownerId = parseInt(req.params.id, 10);
-//     // console.log('OwnerID:', ownerId);
-
-//     if (isNaN(userId)) {
-//         return res.status(400).json({ error: 'Invalid UserID' });
-//     }
-
-//     try {
-//         const branch = await branchService.getByUserId(userId);
-//         if (!branch) {
-//             return res.status(404).send("Branch not found");
-//         }
-//         res.json(branch);
-//     } catch (error) {
-//         console.error('Error in getBranchByOwnerId:', error);
-//         res.status(500).json({ error: error.message });
-//     }
-// }
-
 // BranchPage get branches by Username
 async function getByUsername(req, res) {
     const { username } = req.params;
-    console.log('Passing Username to getByUsername:', username);
+    // console.log('Passing Username to getByUsername:', username);
 
     try {
-        console.log('Username:', username);
+        // console.log('Username:', username);
         if (!username) {
             return res.status(400).json({ error: 'Username is required' });
         }
-        // const user = await userService.getByUsername(username);
-        // console.log('User fetched for username:', user);
-        // if (!user) {
-        //     return res.status(404).send("User not found");
-        // }
-
-        // console.log('UserID:', user.UserID);
-
-        // if (!user.UserID || isNaN(user.UserID)) {
-        //     return res.status(400).json({ error: 'Invalid UserID retrieved for username' });
-        // }
 
         const branches = await branchService.getByUsername(username);
         if (!branches || branches.length === 0) {
@@ -113,45 +64,6 @@ async function getByUsername(req, res) {
         res.json(branches);
     } catch (error) {
         console.error('Error in getBranchByUsername:', error);
-        res.status(500).json({ error: error.message });
-    }
-}
-
-async function getByQuery(req, res) {
-    const { username } = req.query;
-    // console.log('Fetching branches for User:', username);
-
-    try {
-        // if (ownerId) {
-        //     const branch = await branchService.getByOwnerId(parseInt(ownerId, 10));
-        //     if (!branch) {
-        //         return res.status(404).send("Branch not found");
-        //     }
-        //     return res.json(branch);
-        // }
-
-        if (username) {
-            // console.log('Entering getByUsername function');
-            const user = await userService.getByUsername(username);
-            // console.log('Username parameter:', username);
-
-            if (!user) {
-                return res.status(404).send("User not found");
-            }
-
-            // console.log('UserID:', user.UserID);
-
-            const branches = await branchService.getByOwnerId(user.UserID);
-            if (!branches || branches.length === 0) {
-                return res.status(404).send("No branches found for this user");
-            }
-            // console.log('Fetched branches:', branches);
-            return res.json(branches);
-        }
-
-        return res.status(400).json({ error: 'Please provide a username as a query parameter.' });
-    } catch (error) {
-        console.error('Error in getByQuery:', error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -205,12 +117,9 @@ async function update(req, res) {
 }
 
 module.exports = {
-    // getAll,
     create,
-    // getByOwnerId,
     update,
     getByUsername,
-    getByQuery,
     createOwner,
     getOwner
 };
