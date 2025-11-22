@@ -283,7 +283,7 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
     { name: 'Dashboard', icon: FaHome, key: 'dashboard' },
     { name: 'Analytics', icon: FaClipboardList, key: 'analytics' },
     { name: 'Inventory', icon: FaFileInvoice, key: 'inventory' },
-    { name: 'User Management', icon: FaUser, key: 'users' },
+    { name: 'Employees', icon: FaUser, key: 'employees' },
     { name: 'Branches', icon: FaBuilding, key: 'branches' },
     { name: 'Pricing', icon: FaSpinner, key: 'pricing' },
     { name: 'Profile Settings', icon: FaUserCog, key: 'settings' },

@@ -26,6 +26,7 @@ async function getAll() {
     }
 }
 
+// LoginRegisterPage create new user
 async function create(data) {
     let conn;
     try {
@@ -36,18 +37,20 @@ async function create(data) {
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO user (Username, PasswordHash, UserType' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?' + (data.email ? ', ?' : '') + ', ?)',
+            'INSERT INTO user (Username, PasswordHash, UserType, Status' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?, ?' + (data.email ? ', ?' : '') + ', ?)',
             data.email ?
                 [
                     data.username,
                     data.passwordHash,
                     data.userType,
+                    data.status,
                     data.email,
                     createdAt
                 ] : [
                     data.username,
                     data.passwordHash,
                     data.userType,
+                    data.status,
                     createdAt
                 ]
         );

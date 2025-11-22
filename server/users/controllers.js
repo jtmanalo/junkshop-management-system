@@ -62,6 +62,7 @@ async function register(req, res) {
     if (!allowedUserTypes.includes(userType)) {
         return res.status(400).json({ error: 'Invalid user type.' });
     }
+
     const users = await userService.getAll();
     // Check for duplicate username or email
     const existingUser = users.find((user) => user.email === email);
@@ -81,7 +82,9 @@ async function register(req, res) {
         // Hash the password
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
-        // console.log('Generated PasswordHash during registration:', passwordHash);
+
+        // Determine status based on userType
+        const status = userType === 'owner' ? 'approved' : 'pending';
 
         // Create the user
         const user = await userService.create({
@@ -89,19 +92,36 @@ async function register(req, res) {
             username: sanitizedUsername,
             email: sanitizedEmail,
             passwordHash,
-            userType
+            userType,
+            status
         });
 
-        res.status(201).json({
-            message: 'User created successfully',
-            user: {
-                id: user.id,
-                name: user.name,
-                username: user.username,
-                email: user.email,
-                userType: user.userType
-            }
-        });
+        // Respond based on userType
+        if (userType === 'owner') {
+            res.status(201).json({
+                message: 'User created successfully',
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    username: user.username,
+                    email: user.email,
+                    userType: user.userType,
+                    status: user.status
+                }
+            });
+        } else {
+            res.status(201).json({
+                message: 'Registration successful. Your account is pending approval.',
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    username: user.username,
+                    email: user.email,
+                    userType: user.userType,
+                    status: user.status
+                }
+            });
+        }
     } catch (error) {
         console.error('Error in registerUser:', error);
         res.status(500).json({ error: error.message });
@@ -115,29 +135,29 @@ async function login(req, res) {
     try {
         const user = await userService.getByEmail(email);
         if (!user) {
-            // console.error('User not found for email:', email);
             return res.status(404).send("User not found");
         }
 
-        // console.log('User found:', user);
-        // console.log('Comparing password for user:', email);
-        // console.log('Provided password:', password);
-        // console.log('Stored PasswordHash:', user.PasswordHash);
+        // Check if the user's status is approved
+        if (user.Status === 'pending') {
+            res.status(200).json({ error: 'Your account is not approved yet. Please contact the owner.' });
+            return;
+        } else if (user.Status === 'rejected') {
+            res.status(200).json({ error: 'Your account is rejected. Please contact the owner.' });
+            return;
+        }
 
         const isPasswordValid = await bcrypt.compare(password, user.PasswordHash);
-        // console.log('Password comparison result:', isPasswordValid);
-
         if (!isPasswordValid) {
             return res.status(401).json({ error: 'Invalid password' });
         }
 
         // Generate JWT token
         const token = jwt.sign({ id: user.UserID, email: user.Email }, JWT_SECRET, { expiresIn: '7d' });
-        // console.log('Generated JWT token:', token);
 
         res.json({ message: 'Login successful', token, userType: user.UserType, username: user.Username, userID: user.UserID });
     } catch (error) {
-        // console.error('Error during login:', error);
+        console.error('Error during login:', error);
         res.status(500).json({ error: error.message });
     }
 }

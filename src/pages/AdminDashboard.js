@@ -4,7 +4,7 @@ import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router
 import { TopNav, SideNav } from '../components/NavBar';
 import SettingsPage from './SettingsPage';
 import AnalyticsPage from './AnalyticsPage';
-import UsersPage from './UsersPage';
+import EmployeesPage from './EmployeesPage';
 import BranchPage from './BranchPage';
 import InventoryPage from './InventoryPage';
 import PricingPage from './PricingPage';
@@ -214,7 +214,7 @@ export default function DesktopRoutes() {
     const pathToKey = {
         [`/admin-dashboard/${user?.username}/analytics`]: 'analytics',
         [`/admin-dashboard/${user?.username}/inventory`]: 'inventory',
-        [`/admin-dashboard/${user?.username}/users`]: 'users',
+        [`/admin-dashboard/${user?.username}/employees`]: 'employees',
         [`/admin-dashboard/${user?.username}/branches`]: 'branches',
         [`/admin-dashboard/${user?.username}/pricing`]: 'pricing',
         [`/admin-dashboard/${user?.username}/settings`]: 'settings',
@@ -228,7 +228,7 @@ export default function DesktopRoutes() {
     const keyToPath = {
         analytics: `/admin-dashboard/${user?.username}/analytics`,
         inventory: `/admin-dashboard/${user?.username}/inventory`,
-        users: `/admin-dashboard/${user?.username}/users`,
+        employees: `/admin-dashboard/${user?.username}/employees`,
         branches: `/admin-dashboard/${user?.username}/branches`,
         pricing: `/admin-dashboard/${user?.username}/pricing`,
         settings: `/admin-dashboard/${user?.username}/settings`,
@@ -246,7 +246,7 @@ export default function DesktopRoutes() {
             <Routes>
                 <Route path=":username/analytics" element={<AnalyticsPage />} />
                 <Route path=":username/inventory" element={<InventoryPage />} />
-                <Route path=":username/users" element={<UsersPage />} />
+                <Route path=":username/employees" element={<EmployeesPage />} />
                 <Route path=":username/branches" element={<BranchPage />} />
                 <Route path=":username/pricing" element={<PricingPage />} />
                 <Route path=":username/settings" element={<SettingsPage />} />

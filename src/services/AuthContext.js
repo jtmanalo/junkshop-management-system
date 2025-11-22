@@ -22,7 +22,13 @@ const AuthProvider = ({ children }) => {
             });
 
             const res = response.data;
-            console.log("Login response:", res);
+            // console.log("Login response:", res);
+
+            if (res.error) {
+                alert(res.error);
+                return;
+            }
+
             if (res.token && res.userType && res.username && res.userID) {
                 const { token, userType, username, userID } = res;
                 console.log("Login response data:", { token, userType, username, userID });
@@ -43,7 +49,11 @@ const AuthProvider = ({ children }) => {
             }
             throw new Error(res.message);
         } catch (err) {
-            console.error(err);
+            if (err.response && err.response.status === 403) {
+                alert(err.response.data.error);
+            } else {
+                console.error(err);
+            }
         }
     };
 

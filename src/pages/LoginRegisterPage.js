@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     Container,
     Nav,
@@ -26,38 +26,7 @@ function LoginPage() {
 
     const auth = useAuth();
 
-    const [showModal, setShowModal] = useState(false); // State for modal visibility
-    // const [rememberMe, setRememberMe] = useState(false); // State for Remember Me checkbox
-    // const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false); // State for Forgot Password modal
-    // const [forgotPasswordEmail, setForgotPasswordEmail] = useState(''); // State for email input
-
-    // useEffect(() => {
-    //     // Check if Remember Me token exists in localStorage
-    //     const savedToken = localStorage.getItem('rememberMeToken');
-    //     if (savedToken) {
-    //         // Optionally, validate the token with the server
-    //         fetch('/api/validate-token', {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify({ token: savedToken })
-    //         })
-    //             .then((response) => response.json())
-    //             .then((data) => {
-    //                 if (data.valid) {
-    //                     setFormData((prevData) => ({
-    //                         ...prevData,
-    //                         email: data.email // Populate email from token payload
-    //                     }));
-    //                     // setRememberMe(true);
-    //                 } else {
-    //                     localStorage.removeItem('rememberMeToken'); // Remove invalid token
-    //                 }
-    //             })
-    //             .catch((error) => {
-    //                 console.error('Error validating token:', error);
-    //             });
-    //     }
-    // }, []);
+    const [showModal, setShowModal] = useState(false);
 
     const validateForm = () => {
         const newErrors = {};
@@ -124,9 +93,14 @@ function LoginPage() {
             const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/sign-up`, formData);
             if (response.status === 201 && response.data) {
                 console.log('Registration successful:', response.data);
-                setShowModal(true); // Show success modal
-                // Display the user details returned by the backend
-                const { user } = response.data;
+
+                if (formData.userType === 'owner') {
+                    // setShowModal(true); // Show success modal for owners
+                    alert('Your account has been created successfully!')
+                } else {
+                    alert('Registration successful. Your account is pending approval.'); // Alert for employees
+                }
+
                 // Reset the form fields to their default empty state
                 setFormData({
                     name: '',
@@ -153,31 +127,6 @@ function LoginPage() {
             }
         }
     };
-
-    // const handleRememberMeChange = (e) => {
-    //     setRememberMe(e.target.checked);
-    // };
-
-    // const handleForgotPassword = async (e) => {
-    //     e.preventDefault();
-    //     try {
-    //         const response = await fetch('/api/users/forgot-password', {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify({ email: forgotPasswordEmail })
-    //         });
-    //         const data = await response.json();
-    //         if (response.ok) {
-    //             alert('Password reset email sent successfully!');
-    //             setShowForgotPasswordModal(false);
-    //         } else {
-    //             alert(`Error: ${data.error}`);
-    //         }
-    //     } catch (error) {
-    //         console.error('Error during forgot password:', error);
-    //         alert('An error occurred. Please try again later.');
-    //     }
-    // };
 
     return (
         <Container className="d-flex align-items-center justify-content-center min-vh-100">
@@ -223,16 +172,6 @@ function LoginPage() {
                                             {errors.password}
                                         </Form.Control.Feedback>
                                     </Form.Group>
-
-                                    {/* <div className="d-flex justify-content-between mx-9 mb-4">
-                                        <Form.Check
-                                            type="checkbox"
-                                            label="Remember me"
-                                            checked={rememberMe}
-                                            onChange={handleRememberMeChange}
-                                        />
-                                        <a href="#!" onClick={() => setShowForgotPasswordModal(true)}>Forgot password?</a>
-                                    </div> */}
 
                                     <Button className="mb-4 w-100" type="submit">Sign in</Button>
                                     <p className="text-center">Not a member? <Nav.Link onClick={() => setActiveTab('register')} className="d-inline-block p-0" style={{ color: 'blue', textDecoration: 'underline' }}>Register</Nav.Link></p>
@@ -306,7 +245,7 @@ function LoginPage() {
             </Card>
 
             {/* Success Modal */}
-            <Modal show={showModal} onHide={() => setShowModal(false)}>
+            {/* <Modal show={showModal} onHide={() => setShowModal(false)}>
                 <Modal.Header closeButton>
                     <Modal.Title>Registration Successful</Modal.Title>
                 </Modal.Header>
@@ -318,7 +257,7 @@ function LoginPage() {
                         Close
                     </Button>
                 </Modal.Footer>
-            </Modal>
+            </Modal> */}
 
             {/* Forgot Password Modal */}
             {/* <Modal show={showForgotPasswordModal} onHide={() => setShowForgotPasswordModal(false)} centered>
