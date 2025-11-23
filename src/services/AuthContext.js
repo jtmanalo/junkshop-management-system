@@ -22,7 +22,7 @@ const AuthProvider = ({ children }) => {
             });
 
             const res = response.data;
-            // console.log("Login response:", res);
+            console.log("Login response:", res);
 
             if (res.error) {
                 alert(res.error);
