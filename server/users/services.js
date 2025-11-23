@@ -136,6 +136,10 @@ async function update(userId, data) {
             fields.push('UserType = ?');
             values.push(data.userType);
         }
+        if (data.status) {
+            fields.push('Status = ?');
+            values.push(data.status);
+        }
 
         // If no fields are provided, throw an error
         if (fields.length === 0) {

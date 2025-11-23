@@ -5,6 +5,9 @@ const router = express.Router();
 // Get all employees
 router.get('/employees', employeeController.getAll);
 
+// Get users and their associated employees
+router.get('/employees-and-users', employeeController.getUsersandEmployees);
+
 // Create an employee
 router.post('/employees', employeeController.create);
 

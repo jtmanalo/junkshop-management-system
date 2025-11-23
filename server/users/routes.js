@@ -17,7 +17,7 @@ router.get('/users', userController.getAll);
 router.get('/users/:username', userController.getUserDetails);
 
 // Update a user
-router.put('/users/:id', userController.authenticateToken, userController.update);
+router.put('/users/:id', userController.update);
 
 router.get('/protected-route', userController.authenticateToken, (req, res) => {
     res.json({ message: 'Access granted', user: req.user });

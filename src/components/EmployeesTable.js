@@ -1,23 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Form, Modal } from 'react-bootstrap';
+import { Table, Button, Form, Modal, Row, Col } from 'react-bootstrap';
 import { FaInfoCircle } from 'react-icons/fa';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 
 function EmployeesTable() {
-    const { user } = useAuth();
+    const { token, user } = useAuth();
     const currentUsername = user ? user.username : null;
     const [users, setUsers] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-    const [filter, setFilter] = useState({ userType: 'all', status: 'all' });
+    const [filter, setFilter] = useState({ userType: 'all', AccountStatus: 'all', EmployeeStatus: 'all' });
     const [showModal, setShowModal] = useState(false);
     const [modalAction, setModalAction] = useState(null);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const [newEmployeeStatus, setNewEmployeeStatus] = useState('');
+    const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+    const [newEmployee, setNewEmployee] = useState({
+        firstName: '',
+        lastName: '',
+        positionTitle: '',
+        hireDate: '',
+        middleName: '',
+        nickname: '',
+        contactNumber: '',
+        address: '',
+        status: 'active', // Default status
+    });
 
     useEffect(() => {
         const fetchEmployees = async () => {
             try {
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/users`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/employees-and-users`);
                 const employees = response.data;
                 console.log('Fetched employees:', employees);
                 setUsers(employees);
@@ -43,20 +57,28 @@ function EmployeesTable() {
     };
 
     const filteredUsers = users.filter((user) => {
-        const matchesUserType = filter.userType === 'all' || user.UserType === filter.userType;
-        const matchesStatus = filter.status === 'all' || user.Status === filter.status;
+        const matchesAccountStatus = filter.AccountStatus === 'all' || user.AccountStatus?.toLowerCase() === filter.AccountStatus.toLowerCase();
+        const matchesEmployeeStatus = filter.EmployeeStatus === 'all' || user.EmployeeStatus?.toLowerCase() === filter.EmployeeStatus.toLowerCase();
 
         // Use username from useAuth context
         const isNotCurrentUser = user.Username !== currentUsername;
-        // console.log('Filtering user:', user.Username, 'Current user:', currentUsername, 'Include:', isNotCurrentUser);
 
-        return matchesUserType && matchesStatus && isNotCurrentUser;
+        return matchesAccountStatus && matchesEmployeeStatus && isNotCurrentUser;
     });
 
+    // FIX SORTING FOR ACCOUNT STATUS
     const sortedUsers = [...filteredUsers].sort((a, b) => {
+        if (sortConfig.key === 'AccountStatus') {
+            const statusOrder = ['approved', 'pending', 'rejected'];
+            const aIndex = statusOrder.indexOf(a.AccountStatus?.toLowerCase()) || statusOrder.length;
+            const bIndex = statusOrder.indexOf(b.AccountStatus?.toLowerCase()) || statusOrder.length;
+
+            return sortConfig.direction === 'asc' ? aIndex - bIndex : bIndex - aIndex;
+        }
+
         if (sortConfig.key) {
-            const aValue = a[sortConfig.key];
-            const bValue = b[sortConfig.key];
+            const aValue = a[sortConfig.key]?.toString().toLowerCase() || '';
+            const bValue = b[sortConfig.key]?.toString().toLowerCase() || '';
 
             if (aValue < bValue) {
                 return sortConfig.direction === 'asc' ? -1 : 1;
@@ -67,6 +89,7 @@ function EmployeesTable() {
         }
         return 0;
     });
+    console.log('Sorted users:', sortedUsers);
 
     const handleActionClick = (action, user) => {
         setModalAction(action);
@@ -74,23 +97,84 @@ function EmployeesTable() {
         setShowModal(true);
     };
 
-    const handleUpdateClick = (user) => {
-        console.log(`Updating user: ${user.Username}`);
-        // Add update logic here
+    const handleInfoClick = (user) => {
+        setSelectedUser(user);
+        setModalAction('info');
+        setShowModal(true);
     };
 
-    const handleConfirmAction = () => {
-        if (modalAction === 'delete') {
-            console.log(`Deleting user: ${selectedUser.Username}`);
-            // Add delete logic here
-        } else if (modalAction === 'reject') {
-            console.log(`Rejecting user: ${selectedUser.Username}`);
-            // Add reject logic here
-        } else if (modalAction === 'approve') {
-            console.log(`Approving user: ${selectedUser.Username}`);
-            // Add approve logic here
+    const handleUpdateClick = (user) => {
+        setSelectedUser(user);
+        setNewEmployeeStatus(user.EmployeeStatus || ''); // Pre-fill with current status
+        setShowUpdateModal(true);
+    };
+
+    const handleUpdateEmployeeStatus = async () => {
+        try {
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/employees/${selectedUser.UserID}`, {
+                status: newEmployeeStatus,
+            });
+            console.log('Update response:', response.data);
+
+            // Refresh the employee list
+            const updatedUsers = users.map((user) =>
+                user.UserID === selectedUser.UserID
+                    ? { ...user, EmployeeStatus: newEmployeeStatus }
+                    : user
+            );
+            setUsers(updatedUsers);
+
+            setShowUpdateModal(false);
+            setSelectedUser(null);
+        } catch (error) {
+            console.error('Error updating employee status:', error);
         }
-        setShowModal(false);
+    };
+
+    const handleConfirmAction = async () => {
+        try {
+            if (modalAction === 'approve' || modalAction === 'reject') {
+                const updatedStatus = modalAction === 'approve' ? 'approved' : 'rejected';
+
+                // Retrieve the authentication token
+                console.log('Token:', token); // Debugging the user object
+
+                if (!token) {
+                    console.error('Error: Missing authentication token. Redirecting to login.');
+                    // Optionally, redirect to login page or show an error message
+                    return;
+                }
+
+                console.log('Using token:', token); // Debugging the token
+                console.log('Updating user:', selectedUser.Username, 'with userID', selectedUser.UserID, 'to status:', updatedStatus);
+
+                const response = await axios.put(
+                    `${process.env.REACT_APP_BASE_URL}/api/users/${selectedUser.UserID}`,
+                    { status: updatedStatus },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                console.log(`${modalAction} response:`, response.data);
+
+                // Refresh the employee list
+                const updatedUsers = users.map((user) =>
+                    user.UserID === selectedUser.UserID
+                        ? { ...user, AccountStatus: updatedStatus }
+                        : user
+                );
+                setUsers(updatedUsers);
+            }
+
+            setShowModal(false);
+            setModalAction(null);
+            setSelectedUser(null);
+        } catch (error) {
+            if (error.response?.data?.error === 'Invalid or expired token.') {
+                console.error('Error: Token is invalid or expired. Please log in again.');
+                // Optionally, redirect to login page or refresh token here
+            } else {
+                console.error(`Error performing ${modalAction} action:`, error);
+            }
+        }
     };
 
     const handleCancelAction = () => {
@@ -99,25 +183,84 @@ function EmployeesTable() {
         setSelectedUser(null);
     };
 
+    const handleNewEmployeeChange = (e) => {
+        const { name, value } = e.target;
+        setNewEmployee((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddEmployeeSubmit = async (e) => {
+        e.preventDefault();
+
+        // Explicit validation for required fields
+        const { firstName, lastName, positionTitle, hireDate, contactNumber } = newEmployee;
+        if (!firstName || !lastName || !positionTitle || !hireDate) {
+            alert('Please fill out all required fields: First Name, Last Name, Position Title, and Hire Date.');
+            return;
+        }
+
+        const employeeData = {
+            ...newEmployee,
+            contactNumber: contactNumber?.trim() === '' ? null : contactNumber
+        };
+
+        try {
+            const response = await axios.post(
+                `${process.env.REACT_APP_BASE_URL}/api/employees`,
+                employeeData,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            console.log('Add employee response:', response.data);
+
+            // Alert the user of success
+            alert('Employee successfully added!');
+
+            // Fetch updated employee list
+            const updatedResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/employees-and-users`);
+            setUsers(updatedResponse.data);
+
+            setShowAddEmployeeModal(false);
+            setNewEmployee({
+                firstName: '',
+                lastName: '',
+                positionTitle: '',
+                hireDate: '',
+                middleName: '',
+                nickname: '',
+                contactNumber: '',
+                address: '',
+                status: 'active',
+            });
+        } catch (error) {
+            console.error('Error adding employee:', error);
+        }
+    };
+
     return (
         <div>
-            <Form className="mb-3">
-                <Form.Group controlId="filterUserType" className="me-3 d-inline-block">
-                    <Form.Label>User Type</Form.Label>
-                    <Form.Select name="userType" value={filter.userType} onChange={handleFilterChange}>
-                        <option value="all">All</option>
-                        <option value="owner">Owner</option>
-                        <option value="employee">Employee</option>
-                    </Form.Select>
-                </Form.Group>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h1>User and Employees</h1>
+                <Button variant="success" onClick={() => setShowAddEmployeeModal(true)} className="btn-circle">
+                    +
+                </Button>
+            </div>
 
-                <Form.Group controlId="filterStatus" className="d-inline-block">
-                    <Form.Label>Status</Form.Label>
-                    <Form.Select name="status" value={filter.status} onChange={handleFilterChange}>
+            <Form className="mb-3">
+                <Form.Group controlId="filterAccountStatus" className="d-inline-block me-3">
+                    <Form.Label>Account Status</Form.Label>
+                    <Form.Select name="AccountStatus" value={filter.AccountStatus} onChange={handleFilterChange}>
                         <option value="all">All</option>
                         <option value="approved">Approved</option>
                         <option value="pending">Pending</option>
                         <option value="rejected">Rejected</option>
+                    </Form.Select>
+                </Form.Group>
+                <Form.Group controlId="filterEmployeeStatus" className="d-inline-block">
+                    <Form.Label>Employee Status</Form.Label>
+                    <Form.Select name="EmployeeStatus" value={filter.EmployeeStatus} onChange={handleFilterChange}>
+                        <option value="all">All</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="terminated">Terminated</option>
                     </Form.Select>
                 </Form.Group>
             </Form>
@@ -126,10 +269,10 @@ function EmployeesTable() {
                 <thead>
                     <tr>
                         <th style={{ cursor: 'default' }}>#</th>
-                        <th onClick={() => handleSort('Username')} style={{ cursor: 'pointer' }}>Username</th>
+                        <th onClick={() => handleSort('Name')} style={{ cursor: 'pointer' }}>Name</th>
                         <th onClick={() => handleSort('Email')} style={{ cursor: 'pointer' }}>Email</th>
-                        <th onClick={() => handleSort('UserType')} style={{ cursor: 'pointer' }}>User Type</th>
-                        <th onClick={() => handleSort('Status')} style={{ cursor: 'pointer' }}>Status</th>
+                        <th onClick={() => handleSort('AccountStatus')} style={{ cursor: 'pointer' }}>Account Status</th>
+                        <th onClick={() => handleSort('EmployeeStatus')} style={{ cursor: 'pointer' }}>Employee Status</th>
                         <th style={{ cursor: 'default' }}>Actions</th>
                     </tr>
                 </thead>
@@ -140,24 +283,53 @@ function EmployeesTable() {
                         </tr>
                     ) : (
                         sortedUsers.map((user, index) => (
-                            <tr key={user.UserID}>
+                            <tr key={user.UserID || `employee-${index}`}>
                                 <td>{index + 1}</td>
-                                <td>{user.Username}</td>
-                                <td>{user.Email}</td>
-                                <td>{user.UserType}</td>
-                                <td>{user.Status}</td>
+                                <td>{
+                                    `${user.FirstName || ''} ${user.MiddleName ? user.MiddleName + ' ' : ''}${user.LastName || ''}`.trim() || 'N/A'
+                                }</td>
+                                <td>{user.Email || 'N/A'}</td>
+                                <td>{user.AccountStatus || 'N/A'}</td>
+                                <td>{user.EmployeeStatus || 'N/A'}</td>
                                 <td>
-                                    <Button variant="outline-secondary" size="sm" className="me-2">
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        className="me-2"
+                                        onClick={() => handleInfoClick(user)}
+                                    >
                                         <FaInfoCircle /> Info
                                     </Button>
-                                    {user.Status === 'approved' ? (
-                                        <Button variant="outline-primary" size="sm" className="me-2">Update</Button>
-                                    ) : user.Status === 'rejected' ? (
-                                        <Button variant="outline-danger" size="sm" onClick={() => handleActionClick('delete', user)}>Delete</Button>
+                                    {(user.AccountStatus === 'approved' || user.AccountStatus === null) ? (
+                                        <Button
+                                            variant="outline-primary"
+                                            size="sm"
+                                            className="me-2"
+                                            onClick={() => handleUpdateClick(user)}
+                                        >
+                                            Update
+                                        </Button>
+                                    ) : user.AccountStatus === 'rejected' ? (
+                                        null
                                     ) : (
                                         <>
-                                            <Button variant="outline-success" size="sm" className="me-2" disabled={user.Status !== 'pending'} onClick={() => handleActionClick('approve', user)}>Approve</Button>
-                                            <Button variant="outline-danger" size="sm" disabled={user.Status !== 'pending'} onClick={() => handleActionClick('reject', user)}>Reject</Button>
+                                            <Button
+                                                variant="outline-success"
+                                                size="sm"
+                                                className="me-2"
+                                                disabled={user.AccountStatus !== 'pending'}
+                                                onClick={() => handleActionClick('approve', user)}
+                                            >
+                                                Approve
+                                            </Button>
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                disabled={user.AccountStatus !== 'pending'}
+                                                onClick={() => handleActionClick('reject', user)}
+                                            >
+                                                Reject
+                                            </Button>
                                         </>
                                     )}
                                 </td>
@@ -167,18 +339,238 @@ function EmployeesTable() {
                 </tbody>
             </Table>
 
-            <Modal show={showModal} onHide={handleCancelAction}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Confirm Action</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    Are you sure you want to {modalAction} this user?
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleCancelAction}>No, cancel</Button>
-                    <Button variant={modalAction === 'approve' ? 'primary' : 'danger'} onClick={handleConfirmAction}>Yes, {modalAction}</Button>
-                </Modal.Footer>
-            </Modal>
+            {/* Info Modal */}
+            {modalAction === 'info' && selectedUser && (
+                <Modal show={showModal} onHide={() => setShowModal(false)}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Employee Details</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Table striped bordered hover>
+                            <tbody>
+                                {selectedUser && (
+                                    <>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>First Name</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.FirstName || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Middle Name</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.MiddleName || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Last Name</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.LastName || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Position Title</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.PositionTitle || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Nickname</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.Nickname || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Contact Number</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.ContactNumber || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Address</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.Address || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Hire Date</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.HireDate ? new Date(selectedUser.HireDate).toLocaleDateString() : 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Status</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.EmployeeStatus || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style={{ width: '35%' }}><strong>Created At</strong></td>
+                                            <td style={{ width: '65%' }}>{selectedUser.CreatedAt ? new Date(selectedUser.CreatedAt).toLocaleString() : 'N/A'}</td>
+                                        </tr>
+                                    </>
+                                )}
+                            </tbody>
+                        </Table>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowModal(false)}>
+                            Close
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+            )}
+
+            {/* Action Modal */}
+            {modalAction !== 'info' && (
+                <Modal show={showModal} onHide={handleCancelAction}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Confirm Action</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        Are you sure you want to {modalAction} this user?
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCancelAction}>No, cancel</Button>
+                        <Button variant={modalAction === 'approve' ? 'primary' : 'danger'} onClick={handleConfirmAction}>Yes, {modalAction}</Button>
+                    </Modal.Footer>
+                </Modal>
+            )}
+
+            {/* Update Modal */}
+            {showUpdateModal && selectedUser && (
+                <Modal show={showUpdateModal} onHide={() => setShowUpdateModal(false)}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Updating status of {`${selectedUser.FirstName || ''} ${selectedUser.MiddleName ? selectedUser.MiddleName + ' ' : ''}${selectedUser.LastName || ''}`.trim()}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form>
+                            <Form.Group controlId="updateEmployeeStatus">
+                                <Form.Label>New Employee Status</Form.Label>
+                                <Form.Select
+                                    value={newEmployeeStatus}
+                                    onChange={(e) => setNewEmployeeStatus(e.target.value)}
+                                >
+                                    {selectedUser.EmployeeStatus !== 'active' && <option value="active">Active</option>}
+                                    {selectedUser.EmployeeStatus !== 'inactive' && <option value="inactive">Inactive</option>}
+                                    {selectedUser.EmployeeStatus !== 'terminated' && <option value="terminated">Terminated</option>}
+                                </Form.Select>
+                            </Form.Group>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowUpdateModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="primary" onClick={handleUpdateEmployeeStatus}>
+                            Update
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+            )}
+
+            {/* Add Employee Modal */}
+            {showAddEmployeeModal && (
+                <Modal show={showAddEmployeeModal} onHide={() => setShowAddEmployeeModal(false)}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Add New Employee</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form onSubmit={handleAddEmployeeSubmit}>
+                            <Row className="mb-3">
+                                <Col>
+                                    <Form.Group controlId="formEmployeeFirstName">
+                                        <Form.Label>
+                                            First Name <span style={{ color: 'red' }}>*</span>
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="First name"
+                                            name="firstName"
+                                            value={newEmployee.firstName}
+                                            onChange={handleNewEmployeeChange}
+                                            required
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col>
+                                    <Form.Group controlId="formEmployeeMiddleName">
+                                        <Form.Label>Middle Name</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Middle name"
+                                            name="middleName"
+                                            value={newEmployee.middleName}
+                                            onChange={handleNewEmployeeChange}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col>
+                                    <Form.Group controlId="formEmployeeLastName">
+                                        <Form.Label>
+                                            Last Name <span style={{ color: 'red' }}>*</span>
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Last name"
+                                            name="lastName"
+                                            value={newEmployee.lastName}
+                                            onChange={handleNewEmployeeChange}
+                                            required
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Form.Group className="mb-3" controlId="formEmployeeNickname">
+                                <Form.Label>Nickname</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Nickname (optional)"
+                                    name="nickname"
+                                    value={newEmployee.nickname}
+                                    onChange={handleNewEmployeeChange}
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3" controlId="formEmployeePosition">
+                                <Form.Label>
+                                    Position Title <span style={{ color: 'red' }}>*</span>
+                                </Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Position title"
+                                    name="positionTitle" // Corrected to match the state key
+                                    value={newEmployee.positionTitle}
+                                    onChange={handleNewEmployeeChange}
+                                    required
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3" controlId="formEmployeeHireDate">
+                                <Form.Label>
+                                    Date Hired <span style={{ color: 'red' }}>*</span>
+                                </Form.Label>
+                                <Form.Control
+                                    type="date"
+                                    name="hireDate"
+                                    value={newEmployee.hireDate}
+                                    onChange={handleNewEmployeeChange}
+                                    required
+                                />
+                            </Form.Group>
+
+
+                            <Form.Group className="mb-3" controlId="formEmployeeContactNumber">
+                                <Form.Label>Contact Number</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Contact number (optional)"
+                                    name="contactNumber"
+                                    value={newEmployee.contactNumber}
+                                    onChange={handleNewEmployeeChange}
+                                />
+                            </Form.Group>
+
+                            <Form.Group className="mb-3" controlId="formEmployeeAddress">
+                                <Form.Label>Complete Address</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Complete address (optional)"
+                                    name="address"
+                                    value={newEmployee.address}
+                                    onChange={handleNewEmployeeChange}
+                                />
+                            </Form.Group>
+
+                            <Button variant="primary" type="submit">
+                                Submit
+                            </Button>
+                        </Form>
+                    </Modal.Body>
+                </Modal>
+            )}
         </div>
     );
 }

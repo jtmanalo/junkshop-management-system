@@ -9,6 +9,7 @@ function BranchPage() {
     const [showAdd, setShowAdd] = useState(false);
     const [showEdit, setShowEdit] = useState(false);
     const [formData, setFormData] = useState({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const { user } = useAuth();
     // console.log('User from context:', user);
     // console.log('Authenticated User:', user.username);
@@ -37,6 +38,8 @@ function BranchPage() {
 
     const handleCloseAdd = () => {
         setShowAdd(false);
+        // Clear form data
+        setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
     };
 
     const handleEditBranch = (BranchID) => {
@@ -63,6 +66,8 @@ function BranchPage() {
 
     const handleCloseEdit = () => {
         setShowEdit(false);
+        // Clear form data
+        setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
     };
 
     const handleFormChange = (e) => {
@@ -83,6 +88,9 @@ function BranchPage() {
             setShowEdit(false);
             fetchBranches(); // Refresh the branches after editing
             alert('Branch updated successfully!'); // Notify the user
+
+            // Clear form data
+            setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
         } catch (error) {
             console.error('Error updating branch:', error);
             alert('Failed to update branch. Please try again.');
@@ -111,10 +119,36 @@ function BranchPage() {
             setShowAdd(false);
             fetchBranches(); // Refresh the branches after adding a new one
             alert('Branch added successfully!'); // Notify the user
+
+            // Clear form data
+            setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
         } catch (error) {
             console.error('Error adding branch:', error);
         }
     };
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedBranches = [...branches].sort((a, b) => {
+        if (sortConfig.key) {
+            const aValue = a[sortConfig.key]?.toString().toLowerCase() || '';
+            const bValue = b[sortConfig.key]?.toString().toLowerCase() || '';
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+        }
+        return 0;
+    });
 
     return (
         <div>
@@ -128,41 +162,36 @@ function BranchPage() {
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Name</th>
-                        <th>Location</th>
-                        <th>Status</th>
+                        <th onClick={() => handleSort('Name')} style={{ cursor: 'pointer' }}>Name</th>
+                        <th onClick={() => handleSort('Location')} style={{ cursor: 'pointer' }}>Location</th>
+                        <th onClick={() => handleSort('Status')} style={{ cursor: 'pointer' }}>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {branches.length === 0 ? (
+                    {sortedBranches.length === 0 ? (
                         <tr>
                             <td colSpan="5">No branches found</td>
                         </tr>
                     ) : (
-                        branches.map((branch, index) => {
-                            // console.log('Branch Object:', branch);
-                            return (
-                                <tr key={branch.BranchID}>
-                                    <td>{index + 1}</td>
-                                    <td>{branch.Name}</td>
-                                    <td>{branch.Location}</td>
-                                    <td>{branch.Status}</td>
-                                    <td>
-                                        <Button
-                                            onClick={() => {
-                                                // console.log('Edit button clicked for BranchID:', branch.BranchID);
-                                                handleEditBranch(branch.BranchID);
-                                            }}
-                                            variant="warning" size="sm" className="me-2"
-                                        >
-                                            Edit
-                                        </Button>
+                        sortedBranches.map((branch, index) => (
+                            <tr key={branch.BranchID}>
+                                <td>{index + 1}</td>
+                                <td>{branch.Name}</td>
+                                <td>{branch.Location}</td>
+                                <td>{branch.Status}</td>
+                                <td>
+                                    <Button
+                                        onClick={() => handleEditBranch(branch.BranchID)}
+                                        variant="warning" size="sm" className="me-2"
+                                    >
+                                        Edit
+                                    </Button>
 
-                                    </td>
-                                </tr>
-                            );
-                        }))}
+                                </td>
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </Table>
 
@@ -173,10 +202,12 @@ function BranchPage() {
                 <Modal.Body>
                     <Form onSubmit={handleAddFormSubmit}>
                         <Form.Group className="mb-3" controlId="formBranchName">
-                            <Form.Label>Name</Form.Label>
+                            <Form.Label>
+                                Branch Name <span style={{ color: 'red' }}>*</span>
+                            </Form.Label>
                             <Form.Control
                                 type="text"
-                                placeholder="Enter branch name"
+                                placeholder="Branch name"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleFormChange}
@@ -185,10 +216,12 @@ function BranchPage() {
                         </Form.Group>
 
                         <Form.Group className="mb-3" controlId="formBranchLocation">
-                            <Form.Label>Location</Form.Label>
+                            <Form.Label>
+                                Branch Location <span style={{ color: 'red' }}>*</span>
+                            </Form.Label>
                             <Form.Control
                                 type="text"
-                                placeholder="Enter branch location"
+                                placeholder="Branch location"
                                 name="location"
                                 value={formData.location}
                                 onChange={handleFormChange}
@@ -197,7 +230,9 @@ function BranchPage() {
                         </Form.Group>
 
                         <Form.Group className="mb-3" controlId="formBranchOpeningDate">
-                            <Form.Label>Opening Date</Form.Label>
+                            <Form.Label>
+                                Opening Date <span style={{ color: 'red' }}>*</span>
+                            </Form.Label>
                             <Form.Control
                                 type="date"
                                 name="openingDate"

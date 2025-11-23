@@ -1,5 +1,6 @@
 const pool = require('../db');
 const moment = require('moment-timezone');
+const { get } = require('./routes');
 
 async function getAll() {
     let conn;
@@ -18,6 +19,40 @@ async function getAll() {
                 row.HireDate = moment(row.HireDate).tz('Asia/Manila').format('YYYY-MM-DD');
             }
         });
+
+        // Return all rows
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getUsersandEmployees() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query with LEFT JOIN and return FirstName, MiddleName, and LastName as separate fields
+        const rows = await conn.query(
+            `SELECT 
+                u.UserID, 
+                u.Email, 
+                u.UserType, 
+                u.Status AS AccountStatus,
+                e.EmployeeID, 
+                e.FirstName, 
+                e.MiddleName, 
+                e.LastName, 
+                e.PositionTitle, 
+                e.ContactNumber, 
+                e.Status AS EmployeeStatus,
+                e.HireDate,
+                e.CreatedAt
+             FROM employee e
+             LEFT JOIN user u ON e.UserID = u.UserID`
+        );
 
         // Return all rows
         return rows;
@@ -173,6 +208,7 @@ module.exports = {
     getAll,
     create,
     getById,
-    update
+    update,
+    getUsersandEmployees
     // remove
 };

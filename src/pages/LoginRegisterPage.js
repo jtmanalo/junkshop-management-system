@@ -216,10 +216,12 @@ function LoginPage() {
             const userResponse = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/sign-up`, userPayload);
             if (userResponse.status === 201 && userResponse.data) {
                 console.log('User registration successful:', userResponse.data);
+                console.log('User ID:', userResponse.data.user.id);
 
                 if (formattedData.userType === 'employee') {
                     // Create employee data
                     const employeePayload = {
+                        userId: userResponse.data.user.id, // Use the returned user ID
                         positionTitle: formattedData.positionTitle,
                         firstName: formattedData.firstName,
                         middleName: formattedData.middleName,
@@ -280,9 +282,11 @@ function LoginPage() {
         }
     };
 
-    // Reset errors when switching tabs or user types
+    // Reset errors and showPassword state when switching tabs or user types
     useEffect(() => {
+        // Reset errors and showPassword state when switching tabs or user types
         setErrors({});
+        setShowPassword(false);
     }, [activeTab, formData.userType]);
 
     return (
@@ -341,7 +345,7 @@ function LoginPage() {
                                                     }}
                                                     onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
                                                 >
-                                                    {showPassword ? <FaEyeSlash /> : <FaEye />} {/* Show appropriate icon */}
+                                                    {showPassword ? <FaEye /> : <FaEyeSlash />} {/* Show appropriate icon */}
                                                 </span>
                                             </div>
                                         </div>

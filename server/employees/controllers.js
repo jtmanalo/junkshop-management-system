@@ -14,6 +14,19 @@ async function getAll(req, res) {
     }
 }
 
+async function getUsersandEmployees(req, res) {
+    try {
+        const data = await employeeService.getUsersandEmployees();
+        if (data.length === 0) {
+            return res.status(204).send("No data found");
+        }
+        res.json(data);
+    } catch (error) {
+        console.error('Error in getUsersandEmployees:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 // Create an employee
 async function create(req, res) {
     const {
@@ -103,6 +116,7 @@ module.exports = {
     getAll,
     create,
     getById,
-    update
+    update,
+    getUsersandEmployees
     // remove,
 };
