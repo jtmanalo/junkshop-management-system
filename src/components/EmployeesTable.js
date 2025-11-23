@@ -59,11 +59,12 @@ function EmployeesTable() {
     const filteredUsers = users.filter((user) => {
         const matchesAccountStatus = filter.AccountStatus === 'all' || user.AccountStatus?.toLowerCase() === filter.AccountStatus.toLowerCase();
         const matchesEmployeeStatus = filter.EmployeeStatus === 'all' || user.EmployeeStatus?.toLowerCase() === filter.EmployeeStatus.toLowerCase();
+        const matchesUserType = filter.userType === 'all' || (filter.userType === 'user' && user.AccountStatus) || (filter.userType === 'employee' && !user.AccountStatus);
 
         // Use username from useAuth context
         const isNotCurrentUser = user.Username !== currentUsername;
 
-        return matchesAccountStatus && matchesEmployeeStatus && isNotCurrentUser;
+        return matchesAccountStatus && matchesEmployeeStatus && matchesUserType && isNotCurrentUser;
     });
 
     // FIX SORTING FOR ACCOUNT STATUS
@@ -245,6 +246,14 @@ function EmployeesTable() {
             </div>
 
             <Form className="mb-3">
+                <Form.Group controlId="filterUserType" className="d-inline-block me-3">
+                    <Form.Label>User Type</Form.Label>
+                    <Form.Select name="userType" value={filter.userType} onChange={handleFilterChange}>
+                        <option value="all">All</option>
+                        <option value="user">Registered Employee</option>
+                        <option value="employee">Employee</option>
+                    </Form.Select>
+                </Form.Group>
                 <Form.Group controlId="filterAccountStatus" className="d-inline-block me-3">
                     <Form.Label>Account Status</Form.Label>
                     <Form.Select name="AccountStatus" value={filter.AccountStatus} onChange={handleFilterChange}>
@@ -288,9 +297,9 @@ function EmployeesTable() {
                                 <td>{
                                     `${user.FirstName || ''} ${user.MiddleName ? user.MiddleName + ' ' : ''}${user.LastName || ''}`.trim() || 'N/A'
                                 }</td>
-                                <td>{user.Email || 'N/A'}</td>
-                                <td>{user.AccountStatus || 'N/A'}</td>
-                                <td>{user.EmployeeStatus || 'N/A'}</td>
+                                <td>{user.Email || 'Not Registered'}</td>
+                                <td>{user.AccountStatus?.toString().charAt(0).toUpperCase() + user.AccountStatus?.toString().slice(1) || 'No Account'}</td>
+                                <td>{user.EmployeeStatus?.toString().charAt(0).toUpperCase() + user.EmployeeStatus?.toString().slice(1) || 'N/A'}</td>
                                 <td>
                                     <Button
                                         variant="outline-secondary"

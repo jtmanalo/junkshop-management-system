@@ -163,7 +163,7 @@ function BranchPage() {
                     <tr>
                         <th>#</th>
                         <th onClick={() => handleSort('Name')} style={{ cursor: 'pointer' }}>Name</th>
-                        <th onClick={() => handleSort('Location')} style={{ cursor: 'pointer' }}>Location</th>
+                        <th onClick={() => handleSort('OpeningDate')} style={{ cursor: 'pointer' }}>Opening Date</th>
                         <th onClick={() => handleSort('Status')} style={{ cursor: 'pointer' }}>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -177,8 +177,8 @@ function BranchPage() {
                         sortedBranches.map((branch, index) => (
                             <tr key={branch.BranchID}>
                                 <td>{index + 1}</td>
-                                <td>{branch.Name}</td>
-                                <td>{branch.Location}</td>
+                                <td>{`${branch.Name} - ${branch.Location}`}</td>
+                                <td>{branch.OpeningDate ? new Date(branch.OpeningDate).toLocaleDateString() : 'N/A'}</td>
                                 <td>{branch.Status}</td>
                                 <td>
                                     <Button
