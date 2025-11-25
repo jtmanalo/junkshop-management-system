@@ -27,7 +27,7 @@ async function getAll() {
 }
 
 // LoginRegisterPage create new user
-async function create(data) {
+async function createUser(data) {
     let conn;
     try {
         conn = await pool.getConnection();
@@ -179,7 +179,7 @@ async function remove(userId) {
 
 module.exports = {
     getAll,
-    create,
+    createUser,
     getByEmail,
     update,
     remove,

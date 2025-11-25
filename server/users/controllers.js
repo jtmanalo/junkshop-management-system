@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const validator = require('validator');
 const sanitize = require('sanitize-html');
 const userService = require('./services');
+const ownerService = require('../owners/services');
+const employeeService = require('../employees/services');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const nodemailer = require('nodemailer'); // Import nodemailer
 
@@ -38,22 +40,16 @@ async function getUserDetails(req, res) {
     }
 }
 
-// Create a user
+// Create a user+owner OR user+employee
 async function register(req, res) {
-    const {
-        name,
-        username,
-        email,
-        password,
-        userType
-    } = req.body;
+    const { userType, ...data } = req.body;
 
-    if (!name || !username || !email || !password || !userType) {
+    if (!data.name || !data.username || !data.email || !data.password || !userType) {
         return res.status(400).json({ error: 'Name, Username, Email, Password, and UserType are required.' });
     }
 
     // Validate email format
-    if (!validator.isEmail(email)) {
+    if (!validator.isEmail(data.email)) {
         return res.status(400).json({ error: 'Invalid email format.' });
     }
 
@@ -65,8 +61,8 @@ async function register(req, res) {
 
     const users = await userService.getAll();
     // Check for duplicate username or email
-    const existingUser = users.find((user) => user.email === email);
-    const existingUsername = users.find((user) => user.username === username);
+    const existingUser = users.find((user) => user.email === data.email);
+    const existingUsername = users.find((user) => user.username === data.username);
     if (existingUsername) {
         return res.status(409).json({ error: 'A user with this username already exists.' });
     }
@@ -76,19 +72,19 @@ async function register(req, res) {
 
     try {
         // Sanitize inputs
-        const sanitizedUsername = sanitize(username);
-        const sanitizedEmail = sanitize(email);
+        const sanitizedUsername = sanitize(data.username);
+        const sanitizedEmail = sanitize(data.email);
 
         // Hash the password
         const saltRounds = 10;
-        const passwordHash = await bcrypt.hash(password, saltRounds);
+        const passwordHash = await bcrypt.hash(data.password, saltRounds);
 
         // Determine status based on userType
         const status = userType === 'owner' ? 'approved' : 'pending';
 
         // Create the user
-        const user = await userService.create({
-            name,
+        const user = await userService.createUser({
+            name: data.name,
             username: sanitizedUsername,
             email: sanitizedEmail,
             passwordHash,
@@ -96,10 +92,14 @@ async function register(req, res) {
             status
         });
 
-        // Respond based on userType
         if (userType === 'owner') {
-            res.status(201).json({
-                message: 'User created successfully',
+            await ownerService.createOwner({
+                referenceId: user.id,
+                ownerType: 'user'
+            });
+
+            return res.status(201).json({
+                message: 'User and owner created successfully',
                 user: {
                     id: user.id,
                     name: user.name,
@@ -109,8 +109,22 @@ async function register(req, res) {
                     status: user.status
                 }
             });
-        } else {
-            res.status(201).json({
+        }
+
+        if (userType === 'employee') {
+            await employeeService.createEmployee({
+                userId: user.id,
+                positionTitle: data.positionTitle,
+                firstName: data.firstName,
+                middleName: data.middleName,
+                lastName: data.lastName,
+                contactNumber: data.contactNumber,
+                address: data.address,
+                hireDate: data.hireDate,
+                status: 'inactive'
+            });
+
+            return res.status(201).json({
                 message: 'Registration successful. Your account is pending approval.',
                 user: {
                     id: user.id,
@@ -135,13 +149,12 @@ async function login(req, res) {
     try {
         const user = await userService.getByEmail(email);
         if (!user) {
-            return res.status(404).send("User not found");
+            return res.status(404).json({ error: 'User does not exist.' });
         }
 
         // Check if the user's status is approved
         if (user.Status === 'pending') {
-            res.status(200).json({ error: 'Your account is not approved yet. Please contact the owner.' });
-            return;
+            return res.status(403).json({ error: 'Your account is not yet approved. Please wait for the owner to approve your account.' });
         } else if (user.Status === 'rejected') {
             res.status(200).json({ error: 'Your account is rejected. Please contact the owner.' });
             return;
@@ -149,7 +162,7 @@ async function login(req, res) {
 
         const isPasswordValid = await bcrypt.compare(password, user.PasswordHash);
         if (!isPasswordValid) {
-            return res.status(401).json({ error: 'Invalid password' });
+            return res.status(401).json({ error: 'Invalid email or password.' });
         }
 
         // Generate JWT token

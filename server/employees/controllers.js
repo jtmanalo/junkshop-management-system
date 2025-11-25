@@ -48,7 +48,7 @@ async function create(req, res) {
     }
 
     try {
-        const employee = await employeeService.create({
+        const employee = await employeeService.createEmployee({
             userId,
             positionTitle,
             firstName,

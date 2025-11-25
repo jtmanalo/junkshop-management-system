@@ -23,18 +23,16 @@ function LoginPage() {
         email: "",
         password: "",
         userType: 'owner', // Default user type
-        positionTitle: '',
-        firstName: '',
-        middleName: '',
-        lastName: '',
-        contactNumber: '',
-        address: '',
-        hireDate: ''
+        positionTitle: "",
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        contactNumber: "",
+        address: "",
+        hireDate: ""
     });
 
     const auth = useAuth();
-
-    const [showModal, setShowModal] = useState(false);
     const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
 
     useEffect(() => {
@@ -84,13 +82,6 @@ function LoginPage() {
             newErrors.password = 'Password must be at least 6 characters';
         }
 
-        // Validate contact number
-        if (!formData.contactNumber) {
-            newErrors.contactNumber = 'Contact number is required';
-        } else if (!/^\d{1,11}$/.test(formData.contactNumber)) {
-            newErrors.contactNumber = 'Contact number must be up to 11 digits';
-        }
-
         // Validate username
         if (!formData.username) {
             newErrors.username = 'Username is required';
@@ -111,6 +102,11 @@ function LoginPage() {
             }
             if (!formData.address) {
                 newErrors.address = 'Complete address is required';
+            }
+            if (!formData.contactNumber) {
+                newErrors.contactNumber = 'Contact number is required';
+            } else if (!/^\d{1,11}$/.test(formData.contactNumber)) {
+                newErrors.contactNumber = 'Contact number must be up to 11 digits';
             }
         }
 
@@ -140,7 +136,6 @@ function LoginPage() {
         setFormData({ ...formData, [name]: value });
     };
 
-    // Add debugging logs to handleLogin to check errors state
     const handleLogin = (e) => {
         e.preventDefault();
         const formErrors = validateLoginForm();
@@ -198,55 +193,30 @@ function LoginPage() {
                 address: toPascalCase(formData.address),
             };
 
-            // Combine first name and last name as Name if userType is employee
-            const name = formattedData.userType === 'employee'
-                ? `${formattedData.firstName} ${formattedData.lastName}`
-                : formattedData.name;
-
             // Create user data
             const userPayload = {
-                name: name, // Use combined name for employees
+                name: formattedData.name || `${formattedData.firstName} ${formattedData.lastName}`,
                 username: formattedData.username,
                 userType: formattedData.userType,
                 email: formattedData.email,
-                password: formattedData.password, // Ensure password is included
-                status: formattedData.userType === 'owner' ? 'approved' : 'pending' // Default status based on userType
+                password: formattedData.password,
+                positionTitle: formattedData.positionTitle,
+                firstName: formattedData.firstName,
+                middleName: formattedData.middleName,
+                lastName: formattedData.lastName,
+                contactNumber: formattedData.contactNumber,
+                address: formattedData.address,
+                hireDate: formattedData.hireDate,
             };
+
+            console.log('User payload for registration:', userPayload);
 
             const userResponse = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/sign-up`, userPayload);
             if (userResponse.status === 201 && userResponse.data) {
-                console.log('User registration successful:', userResponse.data);
-                console.log('User ID:', userResponse.data.user.id);
+                const { user } = userResponse.data;
 
-                if (formattedData.userType === 'employee') {
-                    // Create employee data
-                    const employeePayload = {
-                        userId: userResponse.data.user.id, // Use the returned user ID
-                        positionTitle: formattedData.positionTitle,
-                        firstName: formattedData.firstName,
-                        middleName: formattedData.middleName,
-                        lastName: formattedData.lastName,
-                        contactNumber: formattedData.contactNumber,
-                        address: formattedData.address,
-                        hireDate: formattedData.hireDate,
-                        status: 'inactive' // Default status for employees
-                    };
-
-                    try {
-                        const employeeResponse = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/employees`, employeePayload);
-
-                        if (employeeResponse.status === 201) {
-                            alert('Registration successful. Your account is pending approval, and an employee record has been created.');
-                        } else {
-                            console.error('Failed to create employee record:', employeeResponse.data);
-                            setErrors({ general: 'Employee record creation failed. Please contact support.' });
-                        }
-                    } catch (employeeError) {
-                        console.error('Error creating employee record:', employeeError);
-                        setErrors({ general: 'An error occurred while creating the employee record. Please try again later.' });
-                    }
-                } else {
-                    alert('Your account has been created successfully!');
+                if (user.userType === 'employee') {
+                    alert('Your account is pending approval. Please wait for the owner to activate your account.');
                 }
 
                 // Reset the form fields to their default empty state

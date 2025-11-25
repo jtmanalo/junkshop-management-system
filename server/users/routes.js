@@ -2,7 +2,7 @@ const express = require('express');
 const userController = require('./controllers');
 const router = express.Router();
 
-// Create a user
+// Create a user (User+Owner and User+Employee)
 router.post('/sign-up', userController.register);
 
 router.post('/validate-token', userController.validateToken);

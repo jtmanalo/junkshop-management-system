@@ -63,15 +63,12 @@ async function getUsersandEmployees() {
     }
 }
 
-async function create(data) {
+async function createEmployee(data) {
     let conn;
     try {
         conn = await pool.getConnection();
-
-        // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
-        // Perform the INSERT query
         const result = await conn.query(
             'INSERT INTO employee (UserID, PositionTitle, FirstName, MiddleName, LastName, Nickname, DisplayPictureURL, ContactNumber, Address, HireDate, Status, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
@@ -90,7 +87,6 @@ async function create(data) {
             ]
         );
 
-        // Return the inserted employee data
         return { id: result.insertId.toString(), ...data, createdAt };
     } catch (error) {
         throw error;
@@ -206,7 +202,7 @@ async function update(employeeId, data) {
 
 module.exports = {
     getAll,
-    create,
+    createEmployee,
     getById,
     update,
     getUsersandEmployees
