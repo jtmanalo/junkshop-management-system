@@ -2,8 +2,6 @@ const bcrypt = require('bcrypt');
 const validator = require('validator');
 const sanitize = require('sanitize-html');
 const userService = require('./services');
-const ownerService = require('../owners/services');
-const employeeService = require('../employees/services');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const nodemailer = require('nodemailer'); // Import nodemailer
 
@@ -93,7 +91,7 @@ async function register(req, res) {
         });
 
         if (userType === 'owner') {
-            await ownerService.createOwner({
+            await userService.createOwner({
                 referenceId: user.id,
                 ownerType: 'user'
             });
@@ -112,7 +110,7 @@ async function register(req, res) {
         }
 
         if (userType === 'employee') {
-            await employeeService.createEmployee({
+            await userService.createEmployee({
                 userId: user.id,
                 positionTitle: data.positionTitle,
                 firstName: data.firstName,
@@ -181,6 +179,12 @@ async function update(req, res) {
 
     try {
         const updatedUser = await userService.update(userId, req.body);
+
+        // Check if the status is being updated to 'approved'
+        if (req.body.status === 'approved') {
+            await userService.updateEmployeeStatus(userId, 'active');
+        }
+
         res.json(updatedUser);
     } catch (error) {
         console.error('Error in updateUser:', error);

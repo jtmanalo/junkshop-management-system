@@ -62,10 +62,16 @@ function EmployeesTable() {
         setFilter((prevFilter) => ({ ...prevFilter, [name]: value }));
     };
 
+    // Update the filteredUsers logic to exclude users with AccountStatus = 'rejected' when filtering for registered employees
     const filteredUsers = users.filter((user) => {
-        const matchesAccountStatus = filter.AccountStatus === 'all' || user.AccountStatus?.toLowerCase() === filter.AccountStatus.toLowerCase();
-        const matchesEmployeeStatus = filter.EmployeeStatus === 'all' || user.EmployeeStatus?.toLowerCase() === filter.EmployeeStatus.toLowerCase();
-        const matchesUserType = filter.userType === 'all' || (filter.userType === 'user' && user.AccountStatus) || (filter.userType === 'employee' && !user.AccountStatus);
+        const matchesAccountStatus =
+            filter.AccountStatus === 'all' || user.AccountStatus?.toLowerCase() === filter.AccountStatus.toLowerCase();
+        const matchesEmployeeStatus =
+            filter.EmployeeStatus === 'all' || user.EmployeeStatus?.toLowerCase() === filter.EmployeeStatus.toLowerCase();
+        const matchesUserType =
+            filter.userType === 'all' ||
+            (filter.userType === 'user' && user.AccountStatus && user.AccountStatus.toLowerCase() !== 'rejected') ||
+            (filter.userType === 'employee' && !user.AccountStatus);
 
         // Use username from useAuth context
         const isNotCurrentUser = user.Username !== currentUsername;
@@ -95,7 +101,10 @@ function EmployeesTable() {
             }
         }
         return 0;
-    });
+    }).map((user) => ({
+        ...user,
+        EmployeeStatus: user.AccountStatus === 'rejected' ? 'Not Employed' : user.EmployeeStatus
+    }));
     console.log('Sorted users:', sortedUsers);
 
     const handleActionClick = (action, user) => {
@@ -341,8 +350,8 @@ function EmployeesTable() {
                     <Form.Label>User Type</Form.Label>
                     <Form.Select name="userType" value={filter.userType} onChange={handleFilterChange}>
                         <option value="all">All</option>
-                        <option value="user">Registered Employee</option>
-                        <option value="employee">Employee</option>
+                        <option value="user">Registered Employees</option>
+                        <option value="employee">Employees</option>
                     </Form.Select>
                 </Form.Group>
                 <Form.Group controlId="filterAccountStatus" className="d-inline-block me-3">

@@ -205,6 +205,6 @@ module.exports = {
     createEmployee,
     getById,
     update,
-    getUsersandEmployees
+    getUsersandEmployees,
     // remove
 };

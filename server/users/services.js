@@ -177,6 +177,80 @@ async function remove(userId) {
     }
 }
 
+async function createEmployee(data) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+
+        const result = await conn.query(
+            'INSERT INTO employee (UserID, PositionTitle, FirstName, MiddleName, LastName, Nickname, DisplayPictureURL, ContactNumber, Address, HireDate, Status, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                data.userId,
+                data.positionTitle,
+                data.firstName,
+                data.middleName,
+                data.lastName,
+                data.nickname,
+                data.displayPictureURL,
+                data.contactNumber,
+                data.address,
+                data.hireDate,
+                data.status || 'active',
+                createdAt
+            ]
+        );
+
+        return { id: result.insertId.toString(), ...data, createdAt };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function createOwner(data) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const result = await conn.query(
+            'INSERT INTO owner (OwnerType, ReferenceID) VALUES (?, ?)',
+            [
+                data.ownerType,
+                data.referenceId
+            ]
+        );
+
+        return { id: result.insertId.toString(), ...data };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function updateEmployeeStatus(userId, status) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const result = await conn.query(
+            'UPDATE employee SET Status = ? WHERE UserID = ?',
+            [status, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            throw new Error('Employee not found');
+        }
+
+        return { id: userId, status };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     createUser,
@@ -184,5 +258,8 @@ module.exports = {
     update,
     remove,
     getByUsername,
-    getUserDetailsByUsername
+    getUserDetailsByUsername,
+    createEmployee,
+    createOwner,
+    updateEmployeeStatus
 };
