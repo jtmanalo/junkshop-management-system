@@ -17,27 +17,32 @@ async function create(req, res) {
             return res.status(400).json({ error: 'Invalid Username provided.' });
         }
 
-        // console.log('UserID for new branch:', user.UserID);
         // Fetch OwnerID from the owner table
         const owner = await branchService.getOwner(user.UserID, 'user');
         if (!owner || !owner.OwnerID) {
-            // console.log('Owner not found, creating new owner.');
             const newOwner = await branchService.addOwner({
                 referenceId: user.UserID,
                 ownerType: 'user'
             });
-            // console.log('New owner created:', newOwner);
 
             owner = { OwnerID: newOwner.id, ...newOwner };
         }
 
         // Create the branch
-        const newBranch = await branchService.create({
+        const newBranch = await branchService.createBranch({
             name,
             location,
             openingDate,
             ownerId: owner.OwnerID
         });
+
+        try {
+            // Create the pricelist
+            await branchService.createPricelist(newBranch.id);
+        } catch (error) {
+            console.error('Error creating pricelist:', error);
+            return res.status(500).json({ error: 'Failed to create pricelist.' });
+        }
 
         res.status(201).json(newBranch);
     } catch (error) {

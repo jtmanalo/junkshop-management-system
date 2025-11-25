@@ -102,7 +102,7 @@ function BranchPage() {
 
     const handleAddFormSubmit = async (e) => {
         e.preventDefault();
-        // console.log('Submitting Add Form with data:', formData);
+        console.log('Submitting Add Form with data:', formData);
         // console.log('User inside handleAddFormSubmit:', user); // Log the user object
         // console.log('User ID inside handleAddFormSubmit:', user?.userID); // Log userID
 
@@ -112,13 +112,13 @@ function BranchPage() {
             // console.log('User ID:', user?.userID);
             // console.log('User Type:', user?.userType);
 
-            // Proceed to add the branch
             await axios.post(`${process.env.REACT_APP_BASE_URL}/api/branches`, {
                 name: formData.name,
                 location: formData.location,
                 openingDate: formData.openingDate,
                 username: user?.username
             });
+            console.log('Branch added successfully');
             setShowAdd(false);
             fetchBranches(); // Refresh the branches after adding a new one
             setShowAddSuccessAlert(true);
@@ -286,7 +286,7 @@ function BranchPage() {
                     <Button variant="outline-secondary" onClick={handleCloseAdd}>
                         Cancel
                     </Button>
-                    <Button variant="outline-primary" type="submit">
+                    <Button variant="outline-primary" type="submit" onClick={handleAddFormSubmit}>
                         Submit
                     </Button>
                 </Modal.Footer>

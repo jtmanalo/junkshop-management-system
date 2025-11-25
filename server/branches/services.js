@@ -1,7 +1,8 @@
 const pool = require('../db');
 const moment = require('moment-timezone');
+const { create } = require('./controllers');
 
-async function create(data) {
+async function createBranch(data) {
     let conn;
     try {
         conn = await pool.getConnection();
@@ -150,10 +151,36 @@ async function update(branchId, data) {
     }
 }
 
+async function createPricelist(branchId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        dateEffective = createdAt;
+
+        const result = await conn.query(
+            'INSERT INTO pricelist (BranchID, DateEffective, CreatedAt) VALUES (?, ?, ?)',
+            [
+                branchId,
+                dateEffective,
+                createdAt
+            ]
+        );
+
+        return { id: result.insertId.toString(), branchId, dateEffective, createdAt };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
-    create,
+    createBranch,
     update,
     getByUsername,
     addOwner,
-    getOwner
+    getOwner,
+    createPricelist
 };

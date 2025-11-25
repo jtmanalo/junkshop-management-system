@@ -2,7 +2,8 @@ const express = require('express');
 const branchController = require('./controllers');
 const router = express.Router();
 
-// Create a branch
+// Create a branch for owner+user
+// if owner, branch+pricelist
 router.post('/branches', branchController.create);
 
 // Get all branches by username
