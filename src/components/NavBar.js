@@ -19,7 +19,11 @@ import {
   FaSpinner,
   FaUser,
   FaBuilding,
-  FaBox
+  FaBox,
+  FaClock,
+  FaTruckLoading,
+  FaShoppingCart,
+  FaHandHoldingUsd
 } from 'react-icons/fa';
 import { BottomNav } from './NavLink';
 // import useIsMobile from './useIsMobile';
@@ -284,10 +288,12 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
     { name: 'Dashboard', icon: FaHome, key: 'dashboard' },
     { name: 'Analytics', icon: FaClipboardList, key: 'analytics' },
     { name: 'Inventory', icon: FaFileInvoice, key: 'inventory' },
+    { name: 'Items and Pricing', icon: FaBox, key: 'items' },
+    { name: 'Buyers and Pricing', icon: FaHandHoldingUsd, key: 'buyers' },
+    { name: 'Sellers and Loans', icon: FaTruckLoading, key: 'sellers' },
+    { name: 'Shifts', icon: FaClock, key: 'shifts' },
     { name: 'Employees', icon: FaUser, key: 'employees' },
     { name: 'Branches', icon: FaBuilding, key: 'branches' },
-    { name: 'Pricing', icon: FaSpinner, key: 'pricing' },
-    { name: 'Items', icon: FaBox, key: 'items' },
     { name: 'Profile Settings', icon: FaUserCog, key: 'settings' },
     { name: 'Help / Tutorial / FAQs', icon: FaListAlt, key: 'help' },
     { name: 'Log out', icon: FaSignOutAlt, key: 'logout', onClick: () => auth.logOut() },

@@ -209,9 +209,12 @@ export default function DesktopRoutes() {
     const pathToKey = {
         [`/admin-dashboard/${user?.username}/analytics`]: 'analytics',
         [`/admin-dashboard/${user?.username}/inventory`]: 'inventory',
+        [`/admin-dashboard/${user?.username}/items`]: 'items',
+        [`/admin-dashboard/${user?.username}/buyers`]: 'buyers',
+        [`/admin-dashboard/${user?.username}/sellers`]: 'sellers',
+        [`/admin-dashboard/${user?.username}/shifts`]: 'shifts',
         [`/admin-dashboard/${user?.username}/employees`]: 'employees',
         [`/admin-dashboard/${user?.username}/branches`]: 'branches',
-        [`/admin-dashboard/${user?.username}/pricing`]: 'pricing',
         [`/admin-dashboard/${user?.username}/settings`]: 'settings',
         [`/admin-dashboard/${user?.username}/help`]: 'help',
         [`/admin-dashboard/${user?.username}/items`]: 'items',
@@ -223,9 +226,12 @@ export default function DesktopRoutes() {
     const keyToPath = {
         analytics: `/admin-dashboard/${user?.username}/analytics`,
         inventory: `/admin-dashboard/${user?.username}/inventory`,
+        items: `/admin-dashboard/${user?.username}/items`,
+        buyers: `/admin-dashboard/${user?.username}/buyers`,
+        sellers: `/admin-dashboard/${user?.username}/sellers`,
+        shifts: `/admin-dashboard/${user?.username}/shifts`,
         employees: `/admin-dashboard/${user?.username}/employees`,
         branches: `/admin-dashboard/${user?.username}/branches`,
-        pricing: `/admin-dashboard/${user?.username}/pricing`,
         settings: `/admin-dashboard/${user?.username}/settings`,
         help: `/admin-dashboard/${user?.username}/help`,
         items: `/admin-dashboard/${user?.username}/items`,
@@ -242,12 +248,14 @@ export default function DesktopRoutes() {
             <Routes>
                 <Route path=":username/analytics" element={<AnalyticsPage />} />
                 <Route path=":username/inventory" element={<InventoryPage />} />
+                <Route path=":username/items" element={<ItemsPage />} />
+                <Route path=":username/buyers" element={<PricingPage />} />
+                {/* <Route path=":username/sellers" element={<SellerLoansPage />} /> */}
+                {/* add shifts */}
                 <Route path=":username/employees" element={<EmployeesPage />} />
                 <Route path=":username/branches" element={<BranchPage />} />
-                <Route path=":username/pricing" element={<PricingPage />} />
                 <Route path=":username/settings" element={<SettingsPage />} />
                 <Route path=":username/help" element={<HelpPage />} />
-                <Route path=":username/items" element={<ItemsPage />} /> {/* Added Items route */}
                 <Route path=":username" element={<AdminDashboard />} />
                 <Route path="*" element={
                     <Card className="shadow-sm">
