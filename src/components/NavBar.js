@@ -18,7 +18,8 @@ import {
   FaFileInvoice,
   FaSpinner,
   FaUser,
-  FaBuilding
+  FaBuilding,
+  FaBox
 } from 'react-icons/fa';
 import { BottomNav } from './NavLink';
 // import useIsMobile from './useIsMobile';
@@ -286,6 +287,7 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
     { name: 'Employees', icon: FaUser, key: 'employees' },
     { name: 'Branches', icon: FaBuilding, key: 'branches' },
     { name: 'Pricing', icon: FaSpinner, key: 'pricing' },
+    { name: 'Items', icon: FaBox, key: 'items' },
     { name: 'Profile Settings', icon: FaUserCog, key: 'settings' },
     { name: 'Help / Tutorial / FAQs', icon: FaListAlt, key: 'help' },
     { name: 'Log out', icon: FaSignOutAlt, key: 'logout', onClick: () => auth.logOut() },
@@ -300,19 +302,9 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
         transition: 'width 0.3s ease',
         position: 'fixed',
         height: '100vh',
-        zIndex: 1030, // Above the content
+        zIndex: 1030,
       }}
     >
-      {/* Logo/Header Section */}
-      <div className="flex items-center p-3" style={{ height: '60px' }}>
-        <div className="w-10 h-10 flex items-center justify-center rounded-lg">
-          <div className="mb-2 d-flex justify-content-center align-items-center" style={{ width: '100%', height: 40 }}>
-            <img src={isCollapsed ? "/jmslogo.png" : "/logo1.jpg"} alt="Logo" style={{ width: isCollapsed ? 40 : '100%', height: 40, objectFit: 'contain', margin: 0, transition: 'width 0.2s' }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Navigation Links */}
       <Nav className="flex-column flex-grow-1 p-2 space-y-2 overflow-y-auto">
         {menuItems.map((item) => (
           <Nav.Link
@@ -329,8 +321,6 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
             {!isCollapsed && <span className="ms-3 font-medium" style={{ color: activePage === item.key ? '#fff' : '#222' }}>{item.name}</span>}
           </Nav.Link>
         ))}
-
-
       </Nav>
     </div>
   );

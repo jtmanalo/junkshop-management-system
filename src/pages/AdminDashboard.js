@@ -9,6 +9,7 @@ import BranchPage from './BranchPage';
 import InventoryPage from './InventoryPage';
 import PricingPage from './PricingPage';
 import HelpPage from './HelpPage';
+import ItemsPage from './ItemsPage';
 import { useAuth } from '../services/AuthContext';
 import { MetricCard, MetricChartCard } from '../components/Card';
 import { FaChartLine, FaShoppingCart, FaMoneyBillWave, FaReceipt, FaWallet } from 'react-icons/fa';
@@ -203,14 +204,8 @@ function AdminLayout({ activePage, setActivePage, username, children }) {
 export default function DesktopRoutes() {
     const location = useLocation();
     const navigate = useNavigate();
-    // const username = 'mtmanalo'
-    // localStorage.setItem('username', username);
-    // const username = localStorage.getItem('username');
     const { user } = useAuth();
-    console.log('User from context:', user);
 
-
-    // Map path to sidebar key
     const pathToKey = {
         [`/admin-dashboard/${user?.username}/analytics`]: 'analytics',
         [`/admin-dashboard/${user?.username}/inventory`]: 'inventory',
@@ -219,12 +214,12 @@ export default function DesktopRoutes() {
         [`/admin-dashboard/${user?.username}/pricing`]: 'pricing',
         [`/admin-dashboard/${user?.username}/settings`]: 'settings',
         [`/admin-dashboard/${user?.username}/help`]: 'help',
+        [`/admin-dashboard/${user?.username}/items`]: 'items',
         [`/admin-dashboard/${user?.username}`]: 'dashboard'
     };
 
     const currentPath = location.pathname;
 
-    // Map key to full path for navigation
     const keyToPath = {
         analytics: `/admin-dashboard/${user?.username}/analytics`,
         inventory: `/admin-dashboard/${user?.username}/inventory`,
@@ -233,6 +228,7 @@ export default function DesktopRoutes() {
         pricing: `/admin-dashboard/${user?.username}/pricing`,
         settings: `/admin-dashboard/${user?.username}/settings`,
         help: `/admin-dashboard/${user?.username}/help`,
+        items: `/admin-dashboard/${user?.username}/items`,
         dashboard: `/admin-dashboard/${user?.username}`,
     };
 
@@ -251,6 +247,7 @@ export default function DesktopRoutes() {
                 <Route path=":username/pricing" element={<PricingPage />} />
                 <Route path=":username/settings" element={<SettingsPage />} />
                 <Route path=":username/help" element={<HelpPage />} />
+                <Route path=":username/items" element={<ItemsPage />} /> {/* Added Items route */}
                 <Route path=":username" element={<AdminDashboard />} />
                 <Route path="*" element={
                     <Card className="shadow-sm">

@@ -32,14 +32,15 @@ async function create(data) {
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const dateEffective = moment(data.dateEffective).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO pricelist (BuyerID, BranchID, EffectiveDate, CreatedAt) VALUES (?, ?, ?, ?)',
+            'INSERT INTO pricelist (BuyerID, BranchID, DateEffective, CreatedAt) VALUES (?, ?, ?, ?)',
             [
                 data.buyerId,
                 data.branchId,
-                data.effectiveDate,
+                dateEffective,
                 createdAt
             ]
         );

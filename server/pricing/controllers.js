@@ -19,18 +19,18 @@ async function create(req, res) {
     const {
         buyerId,
         branchId,
-        effectiveDate
+        dateEffective
     } = req.body;
 
-    if (!buyerId || !branchId || !effectiveDate) {
-        return res.status(400).json({ error: 'BuyerId, BranchId, and EffectiveDate are required.' });
+    if (!branchId || !dateEffective) {
+        return res.status(400).json({ error: 'BranchId and DateEffective are required.' });
     }
 
     try {
         const pricelist = await pricelistService.create({
-            buyerId,
+            buyerId: buyerId || null,
             branchId,
-            effectiveDate
+            dateEffective
         });
         res.status(201).json(pricelist);
     } catch (error) {

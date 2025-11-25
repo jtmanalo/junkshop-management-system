@@ -19,18 +19,18 @@ async function create(req, res) {
     const {
         pricelistId,
         itemId,
-        pricePerUnit
+        price
     } = req.body;
 
-    if (!pricelistId || !itemId || !pricePerUnit) {
-        return res.status(400).json({ error: 'PricelistID, ItemID, and PricePerUnit are required.' });
+    if (!pricelistId || !itemId || !price) {
+        return res.status(400).json({ error: 'PricelistID, ItemID, and Price are required.' });
     }
 
     try {
         const pricelistItem = await pricelistitemService.create({
             pricelistId,
             itemId,
-            pricePerUnit
+            price
         });
         res.status(201).json(pricelistItem);
     } catch (error) {

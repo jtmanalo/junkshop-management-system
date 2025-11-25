@@ -1,14 +1,42 @@
 const pool = require('../../db');
 const moment = require('moment-timezone');
 
-async function getAll() {
+// Items Page get all items of a branch with pricing
+async function getAllItemsWithPricing(branchId) {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        const rows = await conn.query('SELECT * FROM item');
+        const query = `
+            SELECT 
+                b.BranchID,
+                b.Name AS BranchName,
+                b.Location AS BranchLocation,
+                i.ItemID,
+                i.Name,  
+                i.Classification,
+                i.UnitOfMeasurement,
+                i.Description,
+                pli.Price AS ItemPrice
+            FROM 
+                branch b
+            JOIN 
+                pricelist pl ON b.BranchID = pl.BranchID
+            JOIN 
+                pricelist_item pli ON pl.PriceListID = pli.PriceListID
+            JOIN 
+                item i ON pli.ItemID = i.ItemID
+            WHERE 
+                b.BranchID = ?
+                AND b.Status = 'active'
+                AND pl.BuyerID IS NULL
+            ORDER BY 
+                i.ItemID;
+        `;
 
-        // Ensures timestamps are in UTC+8
+        const rows = await conn.query(query, [branchId]);
+
+        // Ensures timestamps are in UTC+8 if applicable
         rows.forEach(row => {
             if (row.CreatedAt) {
                 row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
@@ -122,7 +150,7 @@ async function update(itemId, data) {
 }
 
 module.exports = {
-    getAll,
+    getAllItemsWithPricing,
     create,
     getById,
     update

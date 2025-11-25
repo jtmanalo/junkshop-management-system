@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Button, Table, Modal, Form } from 'react-bootstrap';
+import { Button, Table, Modal, Form, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 
@@ -10,7 +10,9 @@ function BranchPage() {
     const [showEdit, setShowEdit] = useState(false);
     const [formData, setFormData] = useState({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-    const { user } = useAuth();
+    const [showAddSuccessAlert, setShowAddSuccessAlert] = useState(false);
+    const [showEditSuccessAlert, setShowEditSuccessAlert] = useState(false);
+    const { user, token } = useAuth();
     // console.log('User from context:', user);
     // console.log('Authenticated User:', user.username);
     // console.log('User ID:', user?.userID);
@@ -87,7 +89,8 @@ function BranchPage() {
             });
             setShowEdit(false);
             fetchBranches(); // Refresh the branches after editing
-            alert('Branch updated successfully!'); // Notify the user
+            setShowEditSuccessAlert(true);
+            setTimeout(() => setShowEditSuccessAlert(false), 3000); // Auto-hide after 3 seconds
 
             // Clear form data
             setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
@@ -118,7 +121,8 @@ function BranchPage() {
             });
             setShowAdd(false);
             fetchBranches(); // Refresh the branches after adding a new one
-            alert('Branch added successfully!'); // Notify the user
+            setShowAddSuccessAlert(true);
+            setTimeout(() => setShowAddSuccessAlert(false), 3000); // Auto-hide after 3 seconds
 
             // Clear form data
             setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
@@ -152,10 +156,43 @@ function BranchPage() {
 
     return (
         <div>
+            {showAddSuccessAlert && (
+                <Alert
+                    variant="success"
+                    onClose={() => setShowAddSuccessAlert(false)}
+                    dismissible
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '300px',
+                        zIndex: 1050,
+                    }}
+                >
+                    Branch added successfully!
+                </Alert>
+            )}
+            {showEditSuccessAlert && (
+                <Alert
+                    variant="success"
+                    onClose={() => setShowEditSuccessAlert(false)}
+                    dismissible
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '300px',
+                        zIndex: 1050,
+                    }}
+                >
+                    Branch updated successfully!
+                </Alert>
+            )}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h1>Branches</h1>
-                <Button variant="success" onClick={handleAddBranch} className="btn-circle">
-                    +
+                <Button variant="outline-dark"
+                    className="me-2 btn-circle" onClick={handleAddBranch}>
+                    Add Branch
                 </Button>
             </div>
             <Table striped bordered hover>
@@ -183,7 +220,9 @@ function BranchPage() {
                                 <td>
                                     <Button
                                         onClick={() => handleEditBranch(branch.BranchID)}
-                                        variant="warning" size="sm" className="me-2"
+                                        variant="outline-success"
+                                        size="sm"
+                                        className="me-2"
                                     >
                                         Edit
                                     </Button>
@@ -241,12 +280,18 @@ function BranchPage() {
                                 required
                             />
                         </Form.Group>
-                        <Button variant="primary" type="submit">
-                            Submit
-                        </Button>
                     </Form>
                 </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="outline-secondary" onClick={handleCloseAdd}>
+                        Cancel
+                    </Button>
+                    <Button variant="outline-primary" type="submit">
+                        Submit
+                    </Button>
+                </Modal.Footer>
             </Modal>
+
 
             <Modal show={showEdit} onHide={handleCloseEdit}>
                 <Modal.Header closeButton>
@@ -291,12 +336,16 @@ function BranchPage() {
                                 <option value="closed">Closed</option>
                             </Form.Select>
                         </Form.Group>
-
-                        <Button variant="primary" type="submit">
-                            Submit
-                        </Button>
                     </Form>
                 </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="outline-secondary" onClick={handleCloseAdd}>
+                        Cancel
+                    </Button>
+                    <Button variant="outline-primary" type="submit">
+                        Submit
+                    </Button>
+                </Modal.Footer>
             </Modal>
         </div>
     );

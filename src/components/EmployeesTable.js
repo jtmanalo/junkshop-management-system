@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Form, Modal, Row, Col } from 'react-bootstrap';
+import { Table, Button, Form, Modal, Row, Col, Alert } from 'react-bootstrap';
 import { FaInfoCircle } from 'react-icons/fa';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
@@ -27,6 +27,12 @@ function EmployeesTable() {
         address: '',
         status: 'active', // Default status
     });
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+    const [showAddSuccessAlert, setShowAddSuccessAlert] = useState(false);
+    const [showEditSuccessAlert, setShowEditSuccessAlert] = useState(false);
+    const [showApproveSuccessAlert, setShowApproveSuccessAlert] = useState(false);
+    const [showRejectSuccessAlert, setShowRejectSuccessAlert] = useState(false);
+    const [undoAction, setUndoAction] = useState(null);
 
     useEffect(() => {
         const fetchEmployees = async () => {
@@ -127,6 +133,8 @@ function EmployeesTable() {
 
             setShowUpdateModal(false);
             setSelectedUser(null);
+            setShowEditSuccessAlert(true);
+            setTimeout(() => setShowEditSuccessAlert(false), 3000); // Auto-hide after 3 seconds
         } catch (error) {
             console.error('Error updating employee status:', error);
         }
@@ -149,12 +157,11 @@ function EmployeesTable() {
                 console.log('Using token:', token); // Debugging the token
                 console.log('Updating user:', selectedUser.Username, 'with userID', selectedUser.UserID, 'to status:', updatedStatus);
 
-                const response = await axios.put(
+                await axios.put(
                     `${process.env.REACT_APP_BASE_URL}/api/users/${selectedUser.UserID}`,
                     { status: updatedStatus },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                console.log(`${modalAction} response:`, response.data);
 
                 // Refresh the employee list
                 const updatedUsers = users.map((user) =>
@@ -163,18 +170,37 @@ function EmployeesTable() {
                         : user
                 );
                 setUsers(updatedUsers);
+
+                setUndoAction(() => async () => {
+                    const revertStatus = updatedStatus === 'approved' ? 'pending' : 'pending';
+                    await axios.put(
+                        `${process.env.REACT_APP_BASE_URL}/api/users/${selectedUser.UserID}`,
+                        { status: revertStatus },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    const revertedUsers = users.map((user) =>
+                        user.UserID === selectedUser.UserID
+                            ? { ...user, AccountStatus: revertStatus }
+                            : user
+                    );
+                    setUsers(revertedUsers);
+                    setUndoAction(null);
+                });
+
+                if (modalAction === 'approve') {
+                    setShowApproveSuccessAlert(true);
+                    setTimeout(() => setShowApproveSuccessAlert(false), 10000); // Auto-hide after 10 seconds
+                } else {
+                    setShowRejectSuccessAlert(true);
+                    setTimeout(() => setShowRejectSuccessAlert(false), 10000); // Auto-hide after 10 seconds
+                }
             }
 
             setShowModal(false);
             setModalAction(null);
             setSelectedUser(null);
         } catch (error) {
-            if (error.response?.data?.error === 'Invalid or expired token.') {
-                console.error('Error: Token is invalid or expired. Please log in again.');
-                // Optionally, redirect to login page or refresh token here
-            } else {
-                console.error(`Error performing ${modalAction} action:`, error);
-            }
+            console.error('Error approving/rejecting user:', error);
         }
     };
 
@@ -212,8 +238,9 @@ function EmployeesTable() {
             );
             console.log('Add employee response:', response.data);
 
-            // Alert the user of success
-            alert('Employee successfully added!');
+            // Show success alert
+            setShowSuccessAlert(true);
+            setTimeout(() => setShowSuccessAlert(false), 5000); // Auto-hide after 3 seconds
 
             // Fetch updated employee list
             const updatedResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/employees-and-users`);
@@ -238,10 +265,74 @@ function EmployeesTable() {
 
     return (
         <div>
+            {/* Success Alerts */}
+            {showAddSuccessAlert && (
+                <Alert
+                    variant="success"
+                    onClose={() => setShowAddSuccessAlert(false)}
+                    dismissible
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '300px',
+                        zIndex: 1050,
+                    }}
+                >
+                    Employee added successfully!
+                </Alert>
+            )}
+            {showEditSuccessAlert && (
+                <Alert
+                    variant="success"
+                    onClose={() => setShowEditSuccessAlert(false)}
+                    dismissible
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '300px',
+                        zIndex: 1050,
+                    }}
+                >
+                    Employee status updated successfully!
+                </Alert>
+            )}
+            {showApproveSuccessAlert && (
+                <Alert
+                    variant="success"
+                    dismissible
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '300px',
+                        zIndex: 1050,
+                    }}
+                >
+                    User approved successfully! <Button variant="link" onClick={undoAction}>Undo</Button>
+                </Alert>
+            )}
+            {showRejectSuccessAlert && (
+                <Alert
+                    variant="danger"
+                    dismissible
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '300px',
+                        zIndex: 1050,
+                    }}
+                >
+                    User rejected successfully! <Button variant="link" onClick={undoAction}>Undo</Button>
+                </Alert>
+            )}
+
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h1>User and Employees</h1>
-                <Button variant="success" onClick={() => setShowAddEmployeeModal(true)} className="btn-circle">
-                    +
+                <Button variant="outline-dark" onClick={() => setShowAddEmployeeModal(true)} className="me-2 btn-circle">
+                    Add Employee
                 </Button>
             </div>
 
@@ -311,7 +402,7 @@ function EmployeesTable() {
                                     </Button>
                                     {(user.AccountStatus === 'approved' || user.AccountStatus === null) ? (
                                         <Button
-                                            variant="outline-primary"
+                                            variant="outline-success"
                                             size="sm"
                                             className="me-2"
                                             onClick={() => handleUpdateClick(user)}
@@ -323,7 +414,7 @@ function EmployeesTable() {
                                     ) : (
                                         <>
                                             <Button
-                                                variant="outline-success"
+                                                variant="outline-primary"
                                                 size="sm"
                                                 className="me-2"
                                                 disabled={user.AccountStatus !== 'pending'}
@@ -405,7 +496,7 @@ function EmployeesTable() {
                         </Table>
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="secondary" onClick={() => setShowModal(false)}>
+                        <Button variant="outline-secondary" onClick={() => setShowModal(false)}>
                             Close
                         </Button>
                     </Modal.Footer>
@@ -422,8 +513,8 @@ function EmployeesTable() {
                         Are you sure you want to {modalAction} this user?
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="secondary" onClick={handleCancelAction}>No, cancel</Button>
-                        <Button variant={modalAction === 'approve' ? 'primary' : 'danger'} onClick={handleConfirmAction}>Yes, {modalAction}</Button>
+                        <Button variant="outline-secondary" onClick={handleCancelAction}>No, cancel</Button>
+                        <Button variant={modalAction === 'approve' ? 'outline-primary' : 'outline-danger'} onClick={handleConfirmAction}>Yes, {modalAction}</Button>
                     </Modal.Footer>
                 </Modal>
             )}
@@ -450,10 +541,10 @@ function EmployeesTable() {
                         </Form>
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="secondary" onClick={() => setShowUpdateModal(false)}>
+                        <Button variant="outline-secondary" onClick={() => setShowUpdateModal(false)}>
                             Cancel
                         </Button>
-                        <Button variant="primary" onClick={handleUpdateEmployeeStatus}>
+                        <Button variant="outline-primary" onClick={handleUpdateEmployeeStatus}>
                             Update
                         </Button>
                     </Modal.Footer>
@@ -573,13 +664,15 @@ function EmployeesTable() {
                                 />
                             </Form.Group>
 
-                            <Button variant="primary" type="submit">
+                            <Button variant="outline-primary" type="submit">
                                 Submit
                             </Button>
                         </Form>
                     </Modal.Body>
                 </Modal>
             )}
+
+
         </div>
     );
 }

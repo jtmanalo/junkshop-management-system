@@ -17,4 +17,4 @@ router.put('/pricelist-items/:id', pricelistitemController.update);
 // Delete a pricelist item
 // router.delete('/pricelist-items/:id', pricelistitemController.remove);
 
-module.exports = router;
+module.exports = router; 

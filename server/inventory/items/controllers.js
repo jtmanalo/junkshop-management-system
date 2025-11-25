@@ -1,15 +1,21 @@
 const itemService = require('./services');
 
-// Get all items
-async function getAll(req, res) {
+// Items Page get all items of a branch with pricing
+async function getAllItemsWithPricing(req, res) {
+    const { branchId } = req.query; // Extract branchId from query parameters
+
+    if (!branchId) {
+        return res.status(400).json({ error: 'BranchId is required' });
+    }
+
     try {
-        const items = await itemService.getAll();
+        const items = await itemService.getAllItemsWithPricing(branchId); // Pass branchId to the service
         if (items.length === 0) {
             return res.status(204).send("No items found");
         }
         res.status(200).json(items);
     } catch (error) {
-        console.error('Error in getAllItems:', error);
+        console.error('Error in getAllItemsWithPricing:', error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -69,7 +75,7 @@ async function update(req, res) {
 }
 
 module.exports = {
-    getAll,
+    getAllItemsWithPricing,
     create,
     getById,
     update,
