@@ -40,28 +40,63 @@ async function create(req, res) {
 }
 
 // Get pricelist item by ID
-async function getById(req, res) {
+// async function getById(req, res) {
+//     try {
+//         const pricelistItem = await pricelistitemService.getById(parseInt(req.params.id));
+//         if (!pricelistItem) {
+//             return res.status(404).send("Pricelist item not found");
+//         }
+//         res.json(pricelistItem);
+//     } catch (error) {
+//         console.error('Error in getPricelistItemById:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// }
+
+// Update a pricelist item
+// async function update(req, res) {
+//     const pricelistItemId = parseInt(req.params.id, 10);
+
+//     try {
+//         const updatedPricelistItem = await pricelistitemService.update(pricelistItemId, req.body);
+//         res.json(updatedPricelistItem);
+//     } catch (error) {
+//         console.error('Error in updatePricelistItem:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// }
+
+// Get all items with prices for a branch
+async function getItemsWithPricesForBranch(req, res) {
+    const { branchId } = req.query;
+
+    // Validate branchId
+    if (!branchId || isNaN(branchId)) {
+        return res.status(400).json({ error: 'Invalid or missing BranchID.' });
+    }
+
     try {
-        const pricelistItem = await pricelistitemService.getById(parseInt(req.params.id));
-        if (!pricelistItem) {
-            return res.status(404).send("Pricelist item not found");
-        }
-        res.json(pricelistItem);
+        const items = await pricelistitemService.getItemsWithPricesForBranch(branchId);
+        res.json(items);
     } catch (error) {
-        console.error('Error in getPricelistItemById:', error);
+        console.error('Error in getItemsWithPricesForBranch:', error);
         res.status(500).json({ error: error.message });
     }
 }
 
-// Update a pricelist item
-async function update(req, res) {
-    const pricelistItemId = parseInt(req.params.id, 10);
+// Update or create a pricelist item
+async function updateOrCreatePricelistItem(req, res) {
+    const { branchId, itemId, price } = req.body;
+
+    if (!branchId || !itemId || price === undefined) {
+        return res.status(400).json({ error: 'BranchID, ItemID, and Price are required.' });
+    }
 
     try {
-        const updatedPricelistItem = await pricelistitemService.update(pricelistItemId, req.body);
-        res.json(updatedPricelistItem);
+        const result = await pricelistitemService.updateOrCreatePricelistItem(branchId, itemId, price);
+        res.json(result);
     } catch (error) {
-        console.error('Error in updatePricelistItem:', error);
+        console.error('Error in updateOrCreatePricelistItem:', error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -69,6 +104,8 @@ async function update(req, res) {
 module.exports = {
     getAll,
     create,
-    getById,
-    update
+    // getById,
+    // update,
+    getItemsWithPricesForBranch,
+    updateOrCreatePricelistItem
 };

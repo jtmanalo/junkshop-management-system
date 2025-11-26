@@ -1,8 +1,9 @@
 const pool = require('../../db');
 const moment = require('moment-timezone');
+const { get } = require('./routes');
 
 // Items Page get all items of a branch with pricing
-async function getAllItemsWithPricing(branchId) {
+async function getAllItemsWithPricing(username) {
     let conn;
     try {
         conn = await pool.getConnection();
@@ -19,7 +20,11 @@ async function getAllItemsWithPricing(branchId) {
                 i.Description,
                 pli.Price AS ItemPrice
             FROM 
-                branch b
+                user u
+            JOIN 
+                owner o ON u.UserID = o.ReferenceID
+            JOIN 
+                branch b ON o.OwnerID = b.OwnerID
             JOIN 
                 pricelist pl ON b.BranchID = pl.BranchID
             JOIN 
@@ -27,14 +32,14 @@ async function getAllItemsWithPricing(branchId) {
             JOIN 
                 item i ON pli.ItemID = i.ItemID
             WHERE 
-                b.BranchID = ?
+                u.Username = ?
                 AND b.Status = 'active'
                 AND pl.BuyerID IS NULL
             ORDER BY 
                 i.ItemID;
         `;
 
-        const rows = await conn.query(query, [branchId]);
+        const rows = await conn.query(query, [username]);
 
         // Ensures timestamps are in UTC+8 if applicable
         rows.forEach(row => {
@@ -44,6 +49,53 @@ async function getAllItemsWithPricing(branchId) {
         });
 
         return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getAllItems() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const rows = await conn.query('SELECT ItemID, Name, Classification, UnitOfMeasurement FROM item');
+
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getItemsWithPricesForBranch(branchId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const query = `
+            SELECT 
+                i.ItemID,
+                i.Name,
+                i.Classification,
+                pi.Price AS ItemPrice
+            FROM 
+                item i
+            LEFT JOIN 
+                pricelist_item pi 
+            ON 
+                i.ItemID = pi.ItemID
+            LEFT JOIN 
+                pricelist p 
+            ON 
+                pi.PriceListID = p.PriceListID
+            WHERE 
+                p.BranchID = ? 
+    `;
+        return await conn.query(query, [branchId]);
     } catch (error) {
         throw error;
     } finally {
@@ -82,6 +134,34 @@ async function create(data) {
         return { id: result.insertId.toString(), ...data, createdAt };
     } catch (error) {
         console.error("Error in createItem:", error.message);
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function createPricelistItem(data) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Convert timestamps to MariaDB-compatible format
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+
+        // Perform the INSERT query
+        const result = await conn.query(
+            'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt) VALUES (?, ?, ?, ?)',
+            [
+                data.priceListId,
+                data.itemId,
+                data.price,
+                createdAt
+            ]
+        );
+
+        // Return the inserted pricelist item data
+        return { id: result.insertId.toString(), ...data, createdAt };
+    } catch (error) {
         throw error;
     } finally {
         if (conn) conn.release();
@@ -149,9 +229,83 @@ async function update(itemId, data) {
     }
 }
 
+async function getAllBranches() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query('SELECT BranchID, Name, Location FROM branch WHERE Status = ?', ['active']);
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function updateItemPriceForBranch(branchId, itemId, itemPrice, userId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // First, get the PriceListID for the branch where BuyerID is NULL
+        const pricelistRows = await conn.query(
+            'SELECT PriceListID FROM pricelist WHERE BranchID = ? AND BuyerID IS NULL',
+            [branchId]
+        );
+
+        if (pricelistRows.length === 0) {
+            throw new Error('Pricelist not found for the specified branch');
+        }
+
+        const priceListId = pricelistRows[0].PriceListID;
+
+        // Next, check if a pricelist_item already exists for the given ItemID and PriceListID
+        const pricelistItemRows = await conn.query(
+            'SELECT PriceListItemID, Price FROM pricelist_item WHERE PriceListID = ? AND ItemID = ?',
+            [priceListId, itemId]
+        );
+
+        if (pricelistItemRows.length > 0) {
+            // If it exists, update the price
+            const oldPrice = pricelistItemRows[0].Price;
+            const priceListItemId = pricelistItemRows[0].PriceListItemID;
+
+            await conn.query(
+                'UPDATE pricelist_item SET Price = ? WHERE PriceListItemID = ?',
+                [itemPrice, priceListItemId]
+            );
+
+            // Insert a new record into pricelist_activity
+            const updatedAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+            await conn.query(
+                'INSERT INTO pricelist_activity (PriceListItemID, OldPrice, NewPrice, UpdatedAt, UserID) VALUES (?, ?, ?, ?, ?)',
+                [priceListItemId, oldPrice, itemPrice, updatedAt, userId]
+            );
+        } else {
+            // If it doesn't exist, insert a new record
+            const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+            await conn.query(
+                'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt) VALUES (?, ?, ?, ?)',
+                [priceListId, itemId, itemPrice, createdAt]
+            );
+        }
+
+        return { branchId, itemId, itemPrice };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAllItemsWithPricing,
+    getAllItems,
+    getItemsWithPricesForBranch,
     create,
     getById,
-    update
+    update,
+    createPricelistItem,
+    getAllBranches,
+    updateItemPriceForBranch
 };

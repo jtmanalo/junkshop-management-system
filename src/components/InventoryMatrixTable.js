@@ -13,17 +13,11 @@ function getRandomInt(min, max) {
 }
 
 function InventoryMatrixTable() {
-    const { token, user } = useAuth();
+    const { user } = useAuth();
     const [search, setSearch] = useState('');
     const [branches, setBranches] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState('all');
-    const [showAddItemModal, setShowAddItemModal] = useState(false);
-    const [newItem, setNewItem] = useState({
-        name: '',
-        unitOfMeasurement: 'per piece',
-        classification: '',
-        description: ''
-    });
+
     const [errors, setErrors] = useState({});
     const [showSuccessAlert, setShowSuccessAlert] = useState(false);
     // Month/year dropdowns
@@ -78,73 +72,10 @@ function InventoryMatrixTable() {
     const prevMonthIdx = (selectedMonthIdx - 1 + months.length) % months.length;
     const prevMonthName = months[prevMonthIdx];
 
-    const handleAddItemChange = (e) => {
-        const { name, value } = e.target;
-        setNewItem(prevState => ({ ...prevState, [name]: value }));
-    };
-
-    const validateNewItem = () => {
-        const newErrors = {};
-        if (!newItem.name.trim()) newErrors.name = 'Name is required';
-        if (!newItem.unitOfMeasurement) newErrors.unitOfMeasurement = 'Unit of Measurement is required';
-        return newErrors;
-    };
-
-    const handleAddItemSubmit = () => {
-        const validationErrors = validateNewItem();
-        if (Object.keys(validationErrors).length > 0) {
-            setErrors(validationErrors);
-            return;
-        }
-
-        // Add the new item to the inventory
-        axios.post(`${process.env.REACT_APP_BASE_URL}/api/items`, newItem, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-            .then(response => {
-                console.log('Item added successfully:', response.data);
-                // Show success alert
-                setShowSuccessAlert(true);
-                setTimeout(() => setShowSuccessAlert(false), 5000); // Auto-hide after 3 seconds
-
-                // Reset form and close modal
-                setNewItem({ name: '', unitOfMeasurement: 'per piece', classification: '', description: '' });
-                setErrors({});
-                setShowAddItemModal(false);
-            })
-            .catch(error => {
-                console.error('Error adding item:', error);
-                // Handle error (e.g., show error message to user)
-            });
-    };
-
     return (
         <div>
-            {showSuccessAlert && (
-                <Alert
-                    variant="success"
-                    onClose={() => setShowSuccessAlert(false)}
-                    dismissible
-                    style={{
-                        position: 'fixed',
-                        bottom: '20px',
-                        right: '20px',
-                        width: '300px',
-                        zIndex: 1050,
-                    }}
-                >
-                    Item added successfully!
-                </Alert>
-            )}
-
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h1>Inventory</h1>
-                {/* Remove add item */}
-                <Button variant="success" onClick={() => setShowAddItemModal(true)} className="btn-circle">
-                    Add Item
-                </Button>
             </div>
             <Form className="mb-3 d-flex align-items-center" style={{ gap: '12px' }}>
                 <Form.Select value={selectedBranch} onChange={e => setSelectedBranch(e.target.value)} style={{ width: 405 }}>
@@ -196,77 +127,6 @@ function InventoryMatrixTable() {
                     </tbody>
                 </Table>
             </div>
-
-            <Modal show={showAddItemModal} onHide={() => setShowAddItemModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Add New Item</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>
-                                Name <span style={{ color: 'red' }}>*</span>
-                            </Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="name"
-                                placeholder="Item name"
-                                value={newItem.name}
-                                onChange={handleAddItemChange}
-                                isInvalid={!!errors.name}
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>
-                                Unit of Measurement <span style={{ color: 'red' }}>*</span>
-                            </Form.Label>
-                            <Form.Select
-                                name="unitOfMeasurement"
-                                value={newItem.unitOfMeasurement}
-                                onChange={handleAddItemChange}
-                                isInvalid={!!errors.unitOfMeasurement}
-                            >
-                                <option value="per piece">Per Piece</option>
-                                <option value="per kg">Per Kg</option>
-                                <option value="others">Others</option>
-                            </Form.Select>
-                            <Form.Control.Feedback type="invalid">
-                                {errors.unitOfMeasurement}
-                            </Form.Control.Feedback>
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>Classification</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="classification"
-                                value={newItem.classification}
-                                onChange={handleAddItemChange}
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>Description</Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                rows={3}
-                                name="description"
-                                value={newItem.description}
-                                onChange={handleAddItemChange}
-                            />
-                        </Form.Group>
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddItemModal(false)}>
-                        Cancel
-                    </Button>
-                    <Button variant="primary" onClick={handleAddItemSubmit}>
-                        Add Item
-                    </Button>
-                </Modal.Footer>
-            </Modal>
         </div>
     );
 }
