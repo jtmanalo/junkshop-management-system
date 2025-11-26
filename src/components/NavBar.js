@@ -290,7 +290,7 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
     { name: 'Inventory', icon: FaFileInvoice, key: 'inventory' },
     { name: 'Items and Pricing', icon: FaBox, key: 'items' },
     { name: 'Buyers and Pricing', icon: FaHandHoldingUsd, key: 'buyers' },
-    { name: 'Sellers and Loans', icon: FaTruckLoading, key: 'sellers' },
+    { name: 'Loans', icon: FaTruckLoading, key: 'loans' },
     { name: 'Shifts', icon: FaClock, key: 'shifts' },
     { name: 'Employees', icon: FaUser, key: 'employees' },
     { name: 'Branches', icon: FaBuilding, key: 'branches' },
