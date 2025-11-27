@@ -23,7 +23,7 @@ import {
   FaBox,
   FaClock,
   FaTruckLoading,
-  FaShoppingCart,
+  FaUserTie,
   FaHandHoldingUsd
 } from 'react-icons/fa';
 import { BottomNav } from './NavLink';
@@ -163,18 +163,35 @@ const Icon = ({ icon: IconComponent, className = "" }) => (
   <IconComponent size={20} className={`text-light-500 ${className}`} />
 );
 
-function MobileNav() {
+export function MobileNav({ activePage, setActivePage }) {
+  const menuItems = [
+    { name: 'Home', icon: FaHome, key: 'home' },
+    { name: 'Pricelist', icon: FaClipboardList, key: 'pricelist' },
+    { name: 'Logs', icon: FaFileInvoice, key: 'logs' },
+    { name: 'Ongoing', icon: FaSpinner, key: 'ongoing' },
+    { name: 'Profile', icon: FaUser, key: 'profile' },
+  ];
+
   return (
     <>
       <Navbar fixed="bottom" className="bg-white border-top shadow-md">
-        <Container className="d-flex justify-content-around">
-          <Nav className="w-100 d-flex justify-content-around">
-            <BottomNav href="#home" icon={FaHome} label="Home" />
-            <BottomNav href="#pricing" icon={FaClipboardList} label="Pricing" />
-            <BottomNav href="#logs" icon={FaFileInvoice} label="Logs" />
-            <BottomNav href="#ongoing" icon={FaSpinner} label="Ongoing" />
-            <BottomNav href="#profile" icon={FaUser} label="Profile" />
-          </Nav>
+        <Container className="d-flex justify-content-between">
+          {menuItems.map((item) => (
+            <Nav.Link
+              key={item.key}
+              onClick={() => setActivePage(item.key)}
+              className={`d-flex flex-column align-items-center p-3 rounded-lg text-decoration-none transition-colors duration-200 ${activePage === item.key ? 'shadow-md bg-dark text-white' : 'hover:bg-gray-200 text-dark'}`}
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                background: activePage === item.key ? '#222' : 'transparent',
+                color: activePage === item.key ? '#fff' : '#222',
+              }}
+            >
+              <Icon icon={item.icon} className="mb-1" style={{ color: activePage === item.key ? '#fff' : '#222' }} />
+              <span className="mt-2 font-medium" style={{ color: activePage === item.key ? '#fff' : '#222' }}>{item.name}</span>
+            </Nav.Link>
+          ))}
         </Container>
       </Navbar>
     </>
@@ -284,14 +301,13 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
 
   const sidebarWidth = isCollapsed ? '72px' : '260px'; // Width for collapsed/expanded state
 
-  // Menu items structure (using react-icons)
   const menuItems = [
     { name: 'Dashboard', icon: FaHome, key: 'dashboard' },
     { name: 'Analytics', icon: FaClipboardList, key: 'analytics' },
     { name: 'Inventory', icon: FaFileInvoice, key: 'inventory' },
     { name: 'Items and Pricing', icon: FaBox, key: 'items' },
-    { name: 'Buyers and Pricing', icon: FaHandHoldingUsd, key: 'buyers' },
-    { name: 'Loans', icon: FaTruckLoading, key: 'loans' },
+    { name: 'Buyers and Pricing', icon: FaUserTie, key: 'buyers' },
+    { name: 'Loans', icon: FaHandHoldingUsd, key: 'loans' },
     { name: 'Shifts', icon: FaClock, key: 'shifts' },
     { name: 'Employees', icon: FaUser, key: 'employees' },
     { name: 'Branches', icon: FaBuilding, key: 'branches' },
@@ -335,6 +351,7 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
 
 export function TopNav({ toggleSidebar, isCollapsed }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <Navbar expand="lg" className="bg-white shadow-sm border-bottom py-2 ps-3 pe-4" style={{ position: 'fixed', top: 0, left: isCollapsed ? '72px' : '260px', right: 0, zIndex: 1020, transition: 'left 0.3s ease', minHeight: 55, height: 65 }}>
@@ -343,39 +360,15 @@ export function TopNav({ toggleSidebar, isCollapsed }) {
         <Button variant="link" onClick={toggleSidebar} className="text-dark p-0" style={{ marginRight: 12, minWidth: 32 }}>
           <FaBars size={20} color="#212529" />
         </Button>
-
-        {/* Search Input */}
-        {/* <Form className="d-flex align-items-center flex-grow-1" style={{ marginLeft: 8, marginRight: 16, maxWidth: '600px', width: '100%' }}>
-        <InputGroup className="w-100">
-          <InputGroup.Text className="bg-light border-end-0 rounded-start-pill border-gray-300"> */}
-        {/* <Icon icon={Search} className="text-gray-500" /> */}
-        {/* <svg width="16" height="16" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          </InputGroup.Text>
-          <FormControl
-            type="search"
-            placeholder="Search"
-            className="border-start-0 rounded-end-pill border-gray-300"
-            style={{ minWidth: '100px' }}
-          />
-        </InputGroup>
-      </Form> */}
-
         {/* Spacer to push right section to the end */}
         <div className="flex-grow-1" />
         {/* Right Side Icons and User Profile */}
         <div className="d-flex align-items-center" style={{ gap: 10, marginRight: 8, flexWrap: 'nowrap', minWidth: 0 }}>
-          {/* Notification Icon */}
-          {/* <div style={{ position: 'relative', minWidth: 32, flexShrink: 0 }}>
-            <Nav.Link href="#" className="position-relative text-gray-600" style={{ marginRight: 8, minWidth: 32 }}>
-              <FaBell size={20} color="#212529" />
-              <span style={{ position: 'absolute', top: 0, right: 0, background: '#f44336', color: '#fff', borderRadius: '50%', fontSize: 10, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>0</span>
-            </Nav.Link>
-          </div> */}
           {/* Employee Dashboard Button */}
           <Button
             variant="outline-dark"
             className="me-3"
-            onClick={() => navigate('/employee-dashboard')}
+            onClick={() => navigate(`/employee-dashboard/${user?.username}`)}
           >
             Employee Dashboard
           </Button>

@@ -28,9 +28,10 @@ export const Header = () => {
   );
 };
 
-export const MobileHeader = ({ nickname, userType, handleSwitchLocation }) => {
+export const MobileHeader = ({ nickname, userType }) => {
   const navigate = useNavigate();
   const auth = useAuth();
+  console.log('Nickname prop:', nickname);
 
   return (
     <Container fluid className="bg-white text-dark py-3 shadow-sm">
@@ -42,13 +43,6 @@ export const MobileHeader = ({ nickname, userType, handleSwitchLocation }) => {
               <span style={{ fontFamily: 'inherit', fontSize: '1.25rem', fontWeight: 600, letterSpacing: 1, verticalAlign: 'middle', marginTop: '4px', display: 'inline-block' }}>Hello{nickname ? `, ${nickname}` : ''}!</span>
             </div>
             <div>
-              <Button
-                variant="link"
-                className="me-3"
-                onClick={handleSwitchLocation}
-              >
-                Switch Branch
-              </Button>
               {userType === 'owner' && (
                 <Button
                   variant="outline-dark"

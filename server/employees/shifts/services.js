@@ -93,7 +93,7 @@ async function endShift(shiftId, finalCash) {
     try {
         conn = await pool.getConnection();
 
-        if (!finalCash) {
+        if (finalCash === undefined || finalCash === null) {
             throw new Error('FinalCash is required to end the shift');
         }
 

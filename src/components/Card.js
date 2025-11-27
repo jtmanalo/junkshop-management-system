@@ -86,7 +86,7 @@ export function MetricChartCard({
  * - style: object (additional styles)
  * - children: ReactNode (optional extra content)
  */
-export const ActiveTabCard = ({ title, value, name = '', location = '', color = '#232323', textColor = 'white', style = {}, children }) => (
+export const ActiveTabCard = ({ title, value, branchDisplay, color = '#232323', textColor = 'white', style = {}, handleSwitchLocation, children }) => (
     <Card className="shadow-sm text-center" style={{ background: color, borderRadius: 0, color: textColor, marginTop: 0, borderTop: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', ...style }}>
         <Card.Body>
             <div className="mb-2" style={{ fontWeight: 500, fontSize: '1rem', letterSpacing: 1, color: textColor }}>
@@ -95,7 +95,7 @@ export const ActiveTabCard = ({ title, value, name = '', location = '', color = 
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: textColor }}>
                 {value}
             </div>
-            {name && (
+            {/* {name && (
                 <div className="mt-2" style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 500, color: textColor, letterSpacing: 10 }}>
                     {name}
                 </div>
@@ -104,7 +104,19 @@ export const ActiveTabCard = ({ title, value, name = '', location = '', color = 
                 <div className="mt-1" style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 400, color: textColor, letterSpacing: 5 }}>
                     {location}
                 </div>
+            )} */}
+            {branchDisplay && (
+                <div className="mt-2" style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 500, color: textColor }}>
+                    <strong>{branchDisplay.toUpperCase()}</strong>
+                </div>
             )}
+            <Button
+                variant="link"
+                className="me-3"
+                onClick={handleSwitchLocation}
+            >
+                Switch Branch
+            </Button>
             {children}
         </Card.Body>
     </Card>
