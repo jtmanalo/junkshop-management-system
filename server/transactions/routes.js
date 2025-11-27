@@ -8,8 +8,12 @@ router.get('/transactions', transactionController.getAll);
 // Create a transaction
 router.post('/transactions', transactionController.create);
 
-// Get transaction by ID
-router.get('/transactions/:id', transactionController.getById);
+// Create an expense
+router.post('/expenses', transactionController.createExpense);
+
+router.get('/expense-balance', transactionController.getExpenseBalance);
+router.get('/sale-balance', transactionController.getSaleBalance);
+router.get('/purchase-balance', transactionController.getPurchaseBalance);
 
 // Update a transaction
 router.put('/transactions/:id', transactionController.update);

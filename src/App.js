@@ -1,13 +1,11 @@
 // import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
 import AuthProvider from './services/AuthContext';
 import PrivateRoute from './services/PrivateRoute';
 
 // pages
 import LoginRegisterPage from './pages/LoginRegisterPage';
-import MobileDashboard from './pages/MobileDashboard';
 import DesktopRoutes from './pages/AdminDashboard';
 import MobileRoutes from './pages/MobileDashboard';
 
@@ -24,9 +22,7 @@ const App = () => {
             <Route
               path="/employee-dashboard/*"
               element={
-                <Layout variant='mobile'>
-                  <MobileRoutes />
-                </Layout>
+                <MobileRoutes />
               }
             />
           </Route>
@@ -34,9 +30,7 @@ const App = () => {
           <Route
             path="/admin-dashboard/*"
             element={
-              <Layout variant='desktop'>
-                <DesktopRoutes />
-              </Layout>
+              <DesktopRoutes />
             }
           />
           {/* Fallback for other routes */}

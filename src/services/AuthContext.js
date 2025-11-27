@@ -69,8 +69,17 @@ const AuthProvider = ({ children }) => {
         navigate("/");
     };
 
+    const updateBranchId = (newBranchId) => {
+        setUser((prevUser) => ({
+            ...prevUser,
+            branchId: newBranchId,
+        }));
+        const updatedUser = { ...user, branchId: newBranchId };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+    };
+
     return (
-        <AuthContext.Provider value={{ token, user, loginAction, logOut }}>
+        <AuthContext.Provider value={{ token, user, loginAction, logOut, updateBranchId }}>
             {children}
         </AuthContext.Provider>
     );

@@ -13,6 +13,45 @@ async function getAll(req, res) {
     }
 }
 
+async function createExpense(req, res) {
+    try {
+        const newExpense = await transactionService.createExpense(req.body);
+        res.status(201).json(newExpense);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getExpenseBalance(req, res) {
+    const { branchId, userId } = req.query;
+    try {
+        const balance = await transactionService.getExpenseBalance(branchId, userId);
+        res.status(200).json(balance);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getSaleBalance(req, res) {
+    const { branchId, userId } = req.query;
+    try {
+        const balance = await transactionService.getSaleBalance(branchId, userId);
+        res.status(200).json(balance);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getPurchaseBalance(req, res) {
+    const { branchId, userId } = req.query;
+    try {
+        const balance = await transactionService.getPurchaseBalance(branchId, userId);
+        res.status(200).json(balance);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 // Create a transaction
 async function create(req, res) {
     const {
@@ -50,19 +89,6 @@ async function create(req, res) {
     }
 }
 
-async function getById(req, res) {
-    try {
-        const transaction = await transactionService.getById(parseInt(req.params.id, 10));
-        if (!transaction) {
-            return res.status(404).send("Transaction not found");
-        }
-        res.status(200).json(transaction);
-    } catch (error) {
-        console.error('Error in getTransactionById:', error);
-        res.status(500).json({ error: error.message });
-    }
-}
-
 async function update(req, res) {
     const transactionId = parseInt(req.params.id, 10);
 
@@ -78,6 +104,9 @@ async function update(req, res) {
 module.exports = {
     getAll,
     create,
-    getById,
-    update
+    update,
+    createExpense,
+    getExpenseBalance,
+    getSaleBalance,
+    getPurchaseBalance
 };

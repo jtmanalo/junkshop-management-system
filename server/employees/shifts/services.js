@@ -70,12 +70,13 @@ async function create(data) {
         const result = await conn.query(
             `INSERT INTO shift 
             (BranchID, UserID, StartDatetime, 
-            InitialCash, CreatedAt) VALUES (?, ?, ?, ?, ?)`,
+            InitialCash, RunningTotal, CreatedAt) VALUES (?, ?, ?, ?, ?, ?)`,
             [
                 data.branchId,
                 data.userId,
                 startDatetime,
                 data.initialCash,
+                0,
                 createdAt
             ]
         );
@@ -88,19 +89,29 @@ async function create(data) {
     }
 }
 
-async function endShift(shiftId, finalCash) {
+async function endShift(shiftId) {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        if (finalCash === undefined || finalCash === null) {
-            throw new Error('FinalCash is required to end the shift');
+        const [shift] = await conn.query(
+            `SELECT InitialCash, RunningTotal FROM shift WHERE ShiftID = ?`,
+            [shiftId]
+        );
+
+        if (!shift) {
+            throw new Error('Shift not found');
         }
 
-        const query = `UPDATE shift SET EndDatetime = NOW(), FinalCash = ? WHERE ShiftID = ?`;
-        const values = [finalCash, shiftId];
+        const { InitialCash, RunningTotal } = shift;
 
-        const result = await conn.query(query, values);
+        const finalCash = InitialCash - RunningTotal;
+
+        const result = await conn.query(
+            `UPDATE shift SET EndDatetime = NOW(), FinalCash = ? WHERE ShiftID = ?`,
+            [finalCash, shiftId]
+
+        );
 
         // Check if any rows were updated
         if (result.affectedRows === 0) {
@@ -114,9 +125,43 @@ async function endShift(shiftId, finalCash) {
     }
 }
 
+async function getBalance(branchId, userId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const sale = await conn.query(
+            `SELECT IFNULL(SUM(TotalAmount), 0) AS TotalSales
+             FROM transaction
+             WHERE BranchID = 19 AND UserID = 22 AND TransactionType = 'sale' 
+             AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
+            [branchId, userId]
+        );
+
+        const rows = await conn.query(
+            `SELECT InitialCash - RunningTotal AS Balance
+             FROM shift
+             WHERE BranchID = ? AND UserID = ? AND EndDatetime IS NULL`,
+            [branchId, userId]
+        );
+
+        if (rows.length === 0) {
+            return 0;
+        }
+
+        const balance = sale[0].TotalSales + rows[0].Balance;
+        return balance || 0;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
     endShift,
-    getActivebyUserID
+    getActivebyUserID,
+    getBalance
 };

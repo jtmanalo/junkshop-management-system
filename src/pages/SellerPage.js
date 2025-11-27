@@ -2,11 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
-import { MobileHeader } from '../components/Header';
 
 // Page tab 1 to add/manage sellers, view their details, and keep track of their loans and payments
 // Page tab 2 to keep track of employee loans and payments
-function SellerPage({ variant = 'desktop' }) {
+function SellerPage() {
     const { token, user } = useAuth();
     const [errors, setErrors] = useState({});
     const [sellers, setSellers] = useState([]);
@@ -40,12 +39,6 @@ function SellerPage({ variant = 'desktop' }) {
 
     return (
         <div>
-            {variant === 'mobile' && (
-                <MobileHeader
-                    nickname={user?.username}
-                    userType={user?.userType}
-                />
-            )}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h1>Loans</h1>
             </div>

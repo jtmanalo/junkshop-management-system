@@ -67,26 +67,129 @@ async function create(data) {
     }
 }
 
-async function getById(transactionId) {
+async function createExpense(data) {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        // Perform the SELECT query
-        const rows = await conn.query('SELECT * FROM transaction WHERE TransactionID = ?', [transactionId]);
+        // Convert timestamps to MariaDB-compatible format
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const transactionDate = createdAt;
 
-        // Ensures timestamps are in UTC+8
-        rows.forEach(row => {
-            if (row.TransactionDate) {
-                row.TransactionDate = moment(row.TransactionDate).tz('Asia/Manila').format();
-            }
-            if (row.CreatedAt) {
-                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
-            }
-        });
+        if (data.totalAmount <= 0) {
+            throw new Error('Total amount must be greater than zero for an expense.');
+        }
 
-        // Return the transaction data
-        return rows[0];
+        // Perform the INSERT query
+        const result = await conn.query(
+            `INSERT INTO transaction 
+            (BranchID, UserID, TransactionType, 
+            TransactionDate, TotalAmount, 
+            PaymentMethod, Status, Notes, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.branchId,
+                data.userId,
+                'expense',
+                transactionDate,
+                data.totalAmount,
+                data.paymentMethod || 'cash',
+                data.status || 'completed',
+                data.notes || null,
+                createdAt
+            ]
+        );
+
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [data.userId, data.branchId]
+        );
+
+        if (!shift[0]?.ShiftID) {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
+
+        // Update the RunningTotal for the active shift
+        await conn.query(
+            `UPDATE shift 
+            SET RunningTotal = RunningTotal + ? 
+            WHERE ShiftID = ?`,
+            [data.totalAmount, shift[0]?.ShiftID]
+        );
+
+        // Return the inserted transaction data
+        return { id: result.insertId.toString(), ...data, transactionDate, createdAt };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getExpenseBalance(branchId, userID) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const [balance] = await conn.query(
+            `SELECT SUM(TotalAmount) AS TotalExpenses
+                FROM transaction
+                WHERE TransactionType = 'expense'
+                AND BranchID = ?
+                AND UserID = ?
+                AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
+            [branchId, userID]
+        );
+
+        return balance ? balance.TotalExpenses || 0 : 0;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getSaleBalance(branchId, userID) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const [balance] = await conn.query(
+            `SELECT SUM(TotalAmount) AS TotalSales
+                FROM transaction
+                WHERE TransactionType = 'sale'
+                AND BranchID = ?
+                AND UserID = ?
+                AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
+            [branchId, userID]
+        );
+
+        return balance ? balance.TotalSales || 0 : 0;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getPurchaseBalance(branchId, userID) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const [balance] = await conn.query(
+            `SELECT SUM(TotalAmount) AS TotalPurchases
+                FROM transaction
+                WHERE TransactionType = 'purchase'
+                AND BranchID = ?
+                AND UserID = ?
+                AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
+            [branchId, userID]
+        );
+
+        return balance ? balance.TotalPurchases || 0 : 0;
     } catch (error) {
         throw error;
     } finally {
@@ -163,6 +266,9 @@ async function update(transactionId, data) {
 module.exports = {
     getAll,
     create,
-    getById,
-    update
+    update,
+    createExpense,
+    getExpenseBalance,
+    getSaleBalance,
+    getPurchaseBalance
 };

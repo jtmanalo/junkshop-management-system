@@ -1,3 +1,4 @@
+const { get } = require('./routes');
 const shiftService = require('./services');
 
 // Get all shifts
@@ -64,9 +65,21 @@ async function update(req, res) {
     }
 }
 
+async function getBalance(req, res) {
+    const { branchId, userId } = req.query;
+    try {
+        const balance = await shiftService.getBalance(branchId, userId);
+        res.json(balance);
+    } catch (error) {
+        console.error('Error in getBalance:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     create,
     update,
-    getActivebyUserID
+    getActivebyUserID,
+    getBalance
 };

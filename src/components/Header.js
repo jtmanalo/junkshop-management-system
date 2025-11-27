@@ -31,7 +31,7 @@ export const Header = () => {
 export const MobileHeader = ({ nickname, userType }) => {
   const navigate = useNavigate();
   const auth = useAuth();
-  console.log('Nickname prop:', nickname);
+  // console.log('Nickname prop:', nickname);
 
   return (
     <Container fluid className="bg-white text-dark py-3 shadow-sm">

@@ -7,6 +7,8 @@ import CustomButton from '../components/CustomButton';
 import { MobileHeader } from '../components/Header';
 import { StartShiftModal, EndShiftConfirmModal } from '../components/Modal';
 import { useAuth } from '../services/AuthContext';
+import { DashboardProvider } from '../services/DashboardContext';
+import { useDashboard } from '../services/DashboardContext';
 import LoadingScreen from '../components/LoadingScreen';
 import { MobileNav } from '../components/NavBar';
 import SettingsPage from './SettingsPage';
@@ -64,13 +66,10 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
 }
 
 function MobileDashboard() {
-  const { user, token } = useAuth();
+  const { balance, refreshBalance, totalExpense, refreshTotalExpense, totalPurchase, refreshTotalPurchase, totalSale, refreshTotalSale } = useDashboard();
+  const { user, token, updateBranchId } = useAuth();
   const [showEndShiftModal, setShowEndShiftModal] = useState(false);
   const [activeTab, setActiveTab] = useState('Balance');
-  const [balance, setBalance] = useState(0); // Start at 0
-  // const [expense, setExpense] = useState(0);
-  // const [sale, setSale] = useState(0);
-  // const [purchase, setPurchase] = useState(0);
   const [shiftStarted, setShiftStarted] = useState(false); // false = not started
   const [showModal, setShowModal] = useState(false);
   const [branch, setBranch] = useState('');
@@ -79,13 +78,30 @@ function MobileDashboard() {
   const [showSetBranchModal, setShowSetBranchModal] = useState(true);
   const [shiftId, setShiftId] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const navigate = useNavigate();
   // Example: update balance from data (replace with real data logic)
   // useEffect(() => {
   //   fetchBalance().then(val => setBalance(val));
   // }, []);
 
-  const navigate = useNavigate();
+  console.log("balance:", balance);
+  console.log("totalExpense:", totalExpense);
+  console.log("totalPurchase:", totalPurchase);
+  console.log("totalSale:", totalSale);
+
+  useEffect(() => {
+    if (!user?.branchId) {
+      fetchActiveShift().then((data) => {
+        if (data && data.length > 0) {
+          const activeShift = data[0];
+          updateBranchId(activeShift.BranchID);
+          console.log('Branch ID updated to:', activeShift.BranchID);
+        }
+      }).catch((error) => {
+        console.error('Failed to fetch active shift:', error);
+      });
+    }
+  }, [user, updateBranchId]);
 
   const handleSwitchLocation = () => {
     if (shiftStarted) {
@@ -95,9 +111,14 @@ function MobileDashboard() {
     }
   };
 
-  const handleSellerPageClick = () => {
-    navigate('/employee-dashboard/sellers');
-  };
+  useEffect(() => {
+    if (shiftStarted) {
+      refreshBalance(); // Refresh balance when shift starts
+      refreshTotalExpense(); // Refresh expense balance when shift starts
+      refreshTotalPurchase(); // Refresh purchase balance when shift starts
+      refreshTotalSale(); // Refresh sale balance when shift starts
+    }
+  }, [shiftStarted, refreshBalance, refreshTotalExpense, refreshTotalPurchase, refreshTotalSale]);
 
   const fetchActiveShift = async () => {
     try {
@@ -201,11 +222,10 @@ function MobileDashboard() {
     }
   };
 
-  const endShift = async (shiftId, finalCash, token) => {
+  const endShift = async (shiftId, token) => {
     try {
       const payload = {
-        shiftId,
-        finalCash
+        shiftId
       };
       // console.log('Ending shift with payload:', payload);
 
@@ -225,6 +245,14 @@ function MobileDashboard() {
       throw error;
     }
   };
+
+  // useEffect(() => {
+  //   // Fetch the initial balance when the dashboard loads
+  //   refreshBalance();
+  //   refreshTotalExpense();
+  //   refreshTotalPurchase();
+  //   refreshTotalSale();
+  // }, [refreshBalance, refreshTotalExpense, refreshTotalPurchase, refreshTotalSale]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -280,7 +308,7 @@ function MobileDashboard() {
           {activeTab === 'Balance' && (
             <ActiveTabCard
               title="AVAILABLE BALANCE"
-              value={`₱ ${(shiftStarted ? balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              value={`₱ ${(shiftStarted ? (balance || 0) : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               color="#232323"
               textColor="white"
               branchDisplay={branch?.display || ''}
@@ -290,7 +318,7 @@ function MobileDashboard() {
           {activeTab === 'Purchase' && (
             <ActiveTabCard
               title="SPENT ON PURCHASES ( - )"
-              value={`₱ ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              value={`₱ ${(shiftStarted ? (totalPurchase || 0) : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               color="#232323"
               textColor="white"
               branchDisplay={branch?.display || ''}
@@ -300,7 +328,7 @@ function MobileDashboard() {
           {activeTab === 'Expense' && (
             <ActiveTabCard
               title="SPENT ON EXPENSES ( - )"
-              value={`₱ ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              value={`₱ ${(shiftStarted ? (totalExpense || 0) : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               color="#232323"
               textColor="white"
               branchDisplay={branch?.display || ''}
@@ -310,7 +338,7 @@ function MobileDashboard() {
           {activeTab === 'Sale' && (
             <ActiveTabCard
               title="EARNED FROM SALES ( + )"
-              value={`₱ ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              value={`₱ ${(shiftStarted ? (totalSale || 0) : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               color="#232323"
               textColor="white"
               branchDisplay={branch?.display || ''}
@@ -449,7 +477,7 @@ function MobileDashboard() {
                     const shiftData = await createShift(branchId, userId, initialCash, token);
                     setShiftId(shiftData.id);
 
-                    setBalance(initialCash);
+                    refreshBalance(); // Refresh balance after starting shift
                     setShiftStarted(true);
                     setShowModal(false);
                   } catch (error) {
@@ -465,25 +493,43 @@ function MobileDashboard() {
   );
 }
 
+const soloPages = [
+  '/:username/purchases',
+  '/:username/expenses',
+  '/:username/sales',
+  '/:username/debts',
+];
+
 function MobileLayout({ activePage, setActivePage, username, userType, children }) {
+  const location = useLocation();
+
+  // Check if the current route matches any of the soloPages
+  const isSoloPage = soloPages.some((path) => {
+    const regex = new RegExp(path.replace(':username', username));
+    return regex.test(location.pathname);
+  });
+
   return (
     <div className="App d-flex min-vh-100 bg-light">
-
-      {/* Sidebar (Fixed) */}
-      <MobileNav
-        activePage={activePage}
-        setActivePage={setActivePage}
-      />
+      {/* Conditionally render MobileNav */}
+      {!isSoloPage && (
+        <MobileNav
+          activePage={activePage}
+          setActivePage={setActivePage}
+        />
+      )}
 
       {/* Main Content Area */}
       <div
         className="flex-grow-1"
         style={{
-          transition: 'margin-left 0.3s ease'
+          transition: 'margin-left 0.3s ease',
         }}
       >
-        <MobileHeader nickname={username} userType={userType} />
-
+        {/* Conditionally render MobileHeader */}
+        {!isSoloPage && (
+          <MobileHeader nickname={username} userType={userType} />
+        )}
 
         <Container fluid className="py-4 px-4" style={{ minHeight: 'calc(100vh - 60px)' }}>
           {children}
@@ -497,7 +543,6 @@ export default function MobileRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  console.log('User object in MobileRoutes:', user);
 
   const pathToKey = {
     [`/employee-dashboard/${user?.username}/pricelist`]: 'pricelist',
@@ -523,33 +568,35 @@ export default function MobileRoutes() {
   };
 
   return (
-    <MobileLayout activePage={activePage} setActivePage={setActivePage} username={user?.username} userType={user?.userType}>
-      <Routes>
-        {/* BottomNav */}
-        <Route path=":username/pricelist" element={<ItemsPage />} />
-        <Route path=":username/logs" element={<LogsPage />} />
-        <Route path=":username/ongoing" element={<OngoingPage />} />
-        <Route path=":username/profile" element={<SettingsPage />} />
-        {/* Manage */}
-        <Route path=":username/loans" element={<SellerPage />} />
-        <Route path=":username/buyers" element={<BuyersPage />} />
-        <Route path=":username/items" element={<ItemsPage />} />
-        {/* Record */}
-        <Route path=":username/purchases" element={<PurchasePage />} />
-        <Route path=":username/expenses" element={<ExpensePage />} />
-        <Route path=":username/sales" element={<SalePage />} />
-        <Route path=":username/debts" element={<div>Debts Page</div>} />
-        {/* Dashboard */}
-        <Route path=":username" element={<MobileDashboard />} />
-        <Route path="*" element={
-          <Card className="shadow-sm">
-            <Card.Body>
-              <h1 className="mb-4">Not Found</h1>
-              <p>Page not found.</p>
-            </Card.Body>
-          </Card>
-        } />
-      </Routes>
-    </MobileLayout>
+    <DashboardProvider user={user}>
+      <MobileLayout activePage={activePage} setActivePage={setActivePage} username={user?.username} userType={user?.userType}>
+        <Routes>
+          {/* BottomNav */}
+          <Route path=":username/pricelist" element={<ItemsPage />} />
+          <Route path=":username/logs" element={<LogsPage />} />
+          <Route path=":username/ongoing" element={<OngoingPage />} />
+          <Route path=":username/profile" element={<SettingsPage />} />
+          {/* Manage */}
+          <Route path=":username/loans" element={<SellerPage />} />
+          <Route path=":username/buyers" element={<BuyersPage />} />
+          <Route path=":username/items" element={<ItemsPage />} />
+          {/* Record */}
+          <Route path=":username/purchases" element={<PurchasePage />} />
+          <Route path=":username/expenses" element={<ExpensePage />} />
+          <Route path=":username/sales" element={<SalePage />} />
+          <Route path=":username/debts" element={<div>Debts Page</div>} />
+          {/* Dashboard */}
+          <Route path=":username" element={<MobileDashboard />} />
+          <Route path="*" element={
+            <Card className="shadow-sm">
+              <Card.Body>
+                <h1 className="mb-4">Not Found</h1>
+                <p>Page not found.</p>
+              </Card.Body>
+            </Card>
+          } />
+        </Routes>
+      </MobileLayout>
+    </DashboardProvider>
   );
 }
