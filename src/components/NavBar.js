@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../services/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Navbar,
@@ -333,6 +334,8 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
 }
 
 export function TopNav({ toggleSidebar, isCollapsed }) {
+  const navigate = useNavigate();
+
   return (
     <Navbar expand="lg" className="bg-white shadow-sm border-bottom py-2 ps-3 pe-4" style={{ position: 'fixed', top: 0, left: isCollapsed ? '72px' : '260px', right: 0, zIndex: 1020, transition: 'left 0.3s ease', minHeight: 55, height: 65 }}>
       <div className="d-flex align-items-center w-100" style={{ minHeight: 40, flexWrap: 'nowrap' }}>
@@ -368,6 +371,14 @@ export function TopNav({ toggleSidebar, isCollapsed }) {
               <span style={{ position: 'absolute', top: 0, right: 0, background: '#f44336', color: '#fff', borderRadius: '50%', fontSize: 10, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>0</span>
             </Nav.Link>
           </div> */}
+          {/* Employee Dashboard Button */}
+          <Button
+            variant="outline-dark"
+            className="me-3"
+            onClick={() => navigate('/employee-dashboard')}
+          >
+            Employee Dashboard
+          </Button>
           {/* User Profile Dropdown */}
           <div style={{ minWidth: 32, flexShrink: 0 }}>
             <UserProfileDropdown />

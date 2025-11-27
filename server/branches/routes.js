@@ -9,6 +9,9 @@ router.post('/branches', branchController.create);
 // Get all branches by username
 router.get('/branches/:username', branchController.getByUsername);
 
+// Get all branches where owner has usertype 'owner'
+router.get('/branches-with-owner-usertype', branchController.getBrancheswithUserTypeOwner);
+
 // Update a branch
 router.put('/branches/:id', branchController.update);
 

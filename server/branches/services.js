@@ -176,11 +176,31 @@ async function createPricelist(branchId) {
     }
 }
 
+async function getBrancheswithUserTypeOwner() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(
+            `SELECT b.BranchID, b.Name, b.Location
+             FROM branch b
+             JOIN owner o ON b.OwnerID = o.OwnerID
+             JOIN user u ON o.ReferenceID = u.UserID
+             WHERE o.OwnerType = 'user' AND u.UserType = 'owner' AND b.Status = 'active'`
+        );
+        return rows; // Return all branches with owner user type
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     createBranch,
     update,
     getByUsername,
     addOwner,
     getOwner,
-    createPricelist
+    createPricelist,
+    getBrancheswithUserTypeOwner
 };

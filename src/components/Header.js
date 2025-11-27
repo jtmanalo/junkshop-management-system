@@ -8,6 +8,8 @@ import {
   Button,
   Card
 } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../services/AuthContext';
 
 export const Header = () => {
   return (
@@ -26,8 +28,10 @@ export const Header = () => {
   );
 };
 
-export const MobileHeader = (props) => {
-  const { nickname = 'user' } = props;
+export const MobileHeader = ({ nickname, userType, handleSwitchLocation }) => {
+  const navigate = useNavigate();
+  const auth = useAuth();
+
   return (
     <Container fluid className="bg-white text-dark py-3 shadow-sm">
       <Row className="align-items-center">
@@ -37,13 +41,32 @@ export const MobileHeader = (props) => {
               <Image src="/jmslogo.png" alt="Logo" style={{ height: 32, marginRight: 8 }} />
               <span style={{ fontFamily: 'inherit', fontSize: '1.25rem', fontWeight: 600, letterSpacing: 1, verticalAlign: 'middle', marginTop: '4px', display: 'inline-block' }}>Hello{nickname ? `, ${nickname}` : ''}!</span>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              style={{ fontFamily: 'inherit', fontWeight: 'bold', backgroundColor: '#232323', borderColor: '#343a40', marginLeft: 8 }}
-            >
-              HELP
-            </Button>
+            <div>
+              <Button
+                variant="link"
+                className="me-3"
+                onClick={handleSwitchLocation}
+              >
+                Switch Branch
+              </Button>
+              {userType === 'owner' && (
+                <Button
+                  variant="outline-dark"
+                  className="me-3"
+                  onClick={() => navigate(`/admin-dashboard/${nickname}`)}
+                >
+                  Back to Admin
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                style={{ fontFamily: 'inherit', fontWeight: 'bold', backgroundColor: '#232323', borderColor: '#343a40', marginLeft: 8 }}
+                onClick={() => auth.logOut()}
+              >
+                LOGOUT
+              </Button>
+            </div>
           </div>
         </Col>
       </Row>
@@ -51,18 +74,22 @@ export const MobileHeader = (props) => {
   );
 };
 
-export const BackHeader = ({ text, onBack }) => (
-  <Card.Header className="d-flex align-items-center" style={{ background: '#fff', borderBottom: '1px solid #343a40', paddingLeft: '0.5rem' }}>
-    <Button
-      variant="link"
-      style={{ color: '#343a40', fontSize: '1.5rem', marginRight: '0.5rem', paddingLeft: 0 }}
-      onClick={onBack ? onBack : () => window.history.back()}
-    >
-      <FaChevronLeft />
-    </Button>
-    <span style={{ fontFamily: 'inherit', fontSize: '1.25rem', fontWeight: 600, letterSpacing: 1, verticalAlign: 'middle', marginTop: '4px', display: 'inline-block' }}>{text}</span>
-  </Card.Header>
-);
+export const BackHeader = ({ text, onBack }) => {
+  const navigate = useNavigate();
+
+  return (
+    <Card.Header className="d-flex align-items-center" style={{ background: '#fff', borderBottom: '1px solid #343a40', paddingLeft: '0.5rem' }}>
+      <Button
+        variant="link"
+        style={{ color: '#343a40', fontSize: '1.5rem', marginRight: '0.5rem', paddingLeft: 0 }}
+        onClick={onBack ? onBack : () => navigate(-1)}
+      >
+        <FaChevronLeft />
+      </Button>
+      <span style={{ fontFamily: 'inherit', fontSize: '1.25rem', fontWeight: 600, letterSpacing: 1, verticalAlign: 'middle', marginTop: '4px', display: 'inline-block' }}>{text}</span>
+    </Card.Header>
+  )
+};
 
 export const DesktopHeader = ({ title, subtitle }) => (
   <div style={{ padding: '16px 32px', borderBottom: '1px solid #e0e0e0', backgroundColor: '#fff' }}>

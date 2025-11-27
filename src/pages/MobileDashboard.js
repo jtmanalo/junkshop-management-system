@@ -1,14 +1,61 @@
 import { Container } from 'react-bootstrap';
 import { MobileHeader } from '../components/Header';
 import { FaShoppingCart, FaMoneyBillWave, FaChartLine, FaFileInvoiceDollar, FaUser, FaUserTie, FaBoxOpen, FaUserFriends } from 'react-icons/fa';
-import { Card } from 'react-bootstrap';
+import { Card, Button } from 'react-bootstrap';
 import { ActiveTabCard, ButtonsCard } from '../components/Card';
 import CustomButton from '../components/CustomButton';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { StartShiftModal, DeleteConfirmModal } from '../components/Modal';
+import { StartShiftModal, EndShiftConfirmModal } from '../components/Modal';
+import { useAuth } from '../services/AuthContext';
+import { Modal, Form } from 'react-bootstrap';
+import axios from 'axios';
+import LoadingScreen from '../components/LoadingScreen';
+
+function SetBranchModal({ show, branchOptions, onSetBranch }) {
+  const [selectedBranch, setSelectedBranch] = useState('');
+
+  const handleSetBranch = () => {
+    if (selectedBranch) {
+      onSetBranch(selectedBranch);
+    } else {
+      alert('Please select a branch location.');
+    }
+  };
+
+  return (
+    <Modal show={show} backdrop="static" keyboard={false} centered>
+      <Modal.Header>
+        <Modal.Title>Select Branch Location</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form>
+          <Form.Group>
+            <Form.Label>Branch Location</Form.Label>
+            <Form.Control
+              as="select"
+              value={selectedBranch?.display || ''}
+              onChange={(e) => setSelectedBranch(branchOptions.find(branch => branch.display === e.target.value))}
+            >
+              <option value="">Select a branch</option>
+              {branchOptions.map((branch, index) => (
+                <option key={index} value={branch.display}>{branch.display}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="primary" onClick={handleSetBranch}>
+          Set Location
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
 
 function MobileDashboard() {
+  const { user, token } = useAuth();
   const [showEndShiftModal, setShowEndShiftModal] = useState(false);
   const [activeTab, setActiveTab] = useState('Balance');
   const [balance, setBalance] = useState(0); // Start at 0
@@ -17,8 +64,12 @@ function MobileDashboard() {
   // const [purchase, setPurchase] = useState(0);
   const [shiftStarted, setShiftStarted] = useState(false); // false = not started
   const [showModal, setShowModal] = useState(false);
-  const [branch, setBranch] = useState('Alaminos');
+  const [branch, setBranch] = useState('');
   const [startingCash, setStartingCash] = useState('1000.00');
+  const [branchOptions, setBranchOptions] = useState([]); // State to store branch options
+  const [showSetBranchModal, setShowSetBranchModal] = useState(true);
+  const [shiftId, setShiftId] = useState(null);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   // Example: update balance from data (replace with real data logic)
   // useEffect(() => {
@@ -39,16 +90,164 @@ function MobileDashboard() {
     navigate('/sale');
   };
 
-  const branchOptions = [
-    "Alaminos",
-    "Tiaong"
-  ];
+  const fetchActiveShift = async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/shifts/active/${user.userID}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+      });
+      const data = response.data;
+      console.log('Fetched active shift data:', data);
+      if (data && data.length > 0) {
+        const activeShift = data[0];
+        console.log('Active shift found:', activeShift);
+        setShiftId(activeShift.ShiftID); // Set the active shift ID
+        setBranch({
+          display: `${activeShift.Name} - ${activeShift.Location}`,
+          id: activeShift.BranchID
+        }); // Set the branch details
+        setShiftStarted(true); // Mark the shift as started
+      } else {
+        setShiftStarted(false); // No active shift
+      }
+      return data;
+    } catch (error) {
+      console.error('Error fetching active shift:', error.response?.data || error.message);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const initializeShift = async () => {
+      setLoading(true); // Start loading
+      const response = await fetchActiveShift(); // Fetch active shift first
+
+      if (response && response.length > 0) {
+        setShowSetBranchModal(false);
+      } else {
+        setShowSetBranchModal(true);
+      }
+      setLoading(false); // Stop loading
+    };
+
+    initializeShift();
+  }, []);
+
+  // fetch branches where owner has usertype 'owner'
+  const fetchBranches = async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches-with-owner-usertype`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+      });
+      const data = response.data;
+      console.log('Fetched branches with owner usertype:', data);
+      const branches = data.map(branch => ({
+        display: `${branch.Name} - ${branch.Location}`,
+        id: branch.BranchID
+      }));
+      console.log('Extracted branch names and locations:', branches);
+      setBranchOptions(branches); // Save to state
+    } catch (error) {
+      console.error('Error fetching branches with owner usertype:', error.response?.data || error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  const handleSetBranch = (branch) => {
+    setBranch(branch); // Save the full branch object to state
+    console.log('Branch location set to:', branch);
+    setShowSetBranchModal(false);
+  };
+
+  const handleSwitchLocation = () => {
+    if (shiftStarted) {
+      alert('You should end your shift before switching location.');
+    } else {
+      setShowSetBranchModal(true);
+    }
+  };
+
+  // Create shift function
+  const createShift = async (branchId, userId, initialCash, token) => {
+    try {
+      const payload = {
+        branchId,
+        userId,
+        initialCash
+      };
+      console.log('Creating shift with payload:', payload);
+
+      const response = await axios.post(
+        `${process.env.REACT_APP_BASE_URL}/api/shifts`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      console.log('Shift created successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating shift:', error.response?.data || error.message);
+      throw error;
+    }
+  };
+
+  const endShift = async (shiftId, finalCash, token) => {
+    try {
+      const payload = {
+        shiftId,
+        finalCash
+      };
+      console.log('Ending shift with payload:', payload);
+
+      const response = await axios.put(
+        `${process.env.REACT_APP_BASE_URL}/api/shifts/${shiftId}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      console.log('Shift ended successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error ending shift:', error.response?.data || error.message);
+      throw error;
+    }
+  };
+
+  if (loading) {
+    return <LoadingScreen />; // Show loading screen while loading
+  }
 
   return (
     <>
+      <SetBranchModal
+        show={showSetBranchModal}
+        branchOptions={branchOptions}
+        onSetBranch={handleSetBranch}
+      />
       <Container fluid className="p-0 d-flex flex-column min-vh-100" style={{ position: 'relative' }}>
         <div style={{ position: 'sticky', top: 0, zIndex: 1001, background: '#fff' }}>
-          <MobileHeader nickname="user" />
+          <MobileHeader
+            nickname={user?.username}
+            userType={user?.userType}
+            handleSwitchLocation={handleSwitchLocation}
+          />
+          <div style={{ padding: '1rem', textAlign: 'center' }}>
+            <div>
+              <strong>Branch:</strong> {branch?.display}
+            </div>
+          </div>
           <div style={{ maxWidth: 480, margin: '0 auto', background: 'transparent', border: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
               {['Balance', 'Purchase', 'Expense', 'Sale'].map(tab => (
@@ -84,7 +283,6 @@ function MobileDashboard() {
                 value={`₱ ${(shiftStarted ? balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 color="#232323"
                 textColor="white"
-                branch="ALAMINOS"
               />
             )}
             {activeTab === 'Purchase' && (
@@ -93,7 +291,6 @@ function MobileDashboard() {
                 value={`₱ ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 color="#232323"
                 textColor="white"
-                branch="ALAMINOS"
               />
             )}
             {activeTab === 'Expense' && (
@@ -102,7 +299,6 @@ function MobileDashboard() {
                 value={`₱ ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 color="#232323"
                 textColor="white"
-                branch="ALAMINOS"
               />
             )}
             {activeTab === 'Sale' && (
@@ -111,7 +307,6 @@ function MobileDashboard() {
                 value={`₱ ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 color="#232323"
                 textColor="white"
-                branch="ALAMINOS"
               />
             )}
           </div>
@@ -182,12 +377,21 @@ function MobileDashboard() {
                     onClick={() => setShowEndShiftModal(true)}
                   />
                 </div>
-                <DeleteConfirmModal
+                <EndShiftConfirmModal
                   show={showEndShiftModal}
                   onCancel={() => setShowEndShiftModal(false)}
-                  onConfirm={() => {
-                    setShiftStarted(false);
-                    setShowEndShiftModal(false);
+                  onConfirm={async () => {
+                    try {
+                      const finalCash = balance;
+
+                      await endShift(shiftId, finalCash, token);
+
+                      setShiftStarted(false);
+                      setShowEndShiftModal(false);
+                      alert('Shift ended successfully.');
+                    } catch (error) {
+                      alert('Error ending shift. Please try again.');
+                    }
                   }}
                 />
 
@@ -231,10 +435,22 @@ function MobileDashboard() {
                   branch={branch}
                   setBranch={setBranch}
                   branchOptions={branchOptions}
-                  onSubmit={() => {
-                    setBalance(Number(startingCash));
-                    setShiftStarted(true);
-                    setShowModal(false);
+                  onSubmit={async () => {
+                    try {
+                      // Create shift via API
+                      const branchId = branch.id;
+                      const userId = user?.userID;
+                      const initialCash = Number(startingCash);
+
+                      const shiftData = await createShift(branchId, userId, initialCash, token);
+                      setShiftId(shiftData.id);
+
+                      setBalance(initialCash);
+                      setShiftStarted(true);
+                      setShowModal(false);
+                    } catch (error) {
+                      alert('Error starting shift. Please try again.');
+                    }
                   }}
                 />
               </>

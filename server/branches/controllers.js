@@ -121,10 +121,21 @@ async function update(req, res) {
     }
 }
 
+async function getBrancheswithUserTypeOwner(req, res) {
+    try {
+        const branches = await branchService.getBrancheswithUserTypeOwner();
+        res.json(branches);
+    } catch (error) {
+        console.error('Error in getBrancheswithUserTypeOwner:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     create,
     update,
     getByUsername,
     createOwner,
-    getOwner
+    getOwner,
+    getBrancheswithUserTypeOwner
 };

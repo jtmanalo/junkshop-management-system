@@ -57,3 +57,28 @@ export const DeleteConfirmModal = ({ show, onCancel, onConfirm }) => (
     </Modal.Body>
   </Modal>
 );
+
+export const EndShiftConfirmModal = ({ show, onCancel, onConfirm }) => (
+  <Modal
+    show={show}
+    onHide={onCancel}
+    centered
+    dialogClassName="custom-dark-modal"
+  >
+    <Modal.Body style={{ padding: '1.25rem 1rem', background: '#232323', borderRadius: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: '2.5rem' }}>
+        <span style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 500, marginRight: '0.75rem', paddingLeft: '1rem' }}>
+          Are you sure you want to end your shift?
+        </span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%' }}>
+        <Button variant="secondary" style={{ borderRadius: '0.75rem', fontWeight: 600, fontFamily: 'inherit', fontSize: '1rem', letterSpacing: 1, marginRight: '0.5rem' }} onClick={onCancel}>
+          No, cancel
+        </Button>
+        <Button variant="danger" style={{ borderRadius: '0.75rem', fontWeight: 600, fontFamily: 'inherit', fontSize: '1rem', letterSpacing: 1 }} onClick={onConfirm}>
+          Yes, end shift
+        </Button>
+      </div>
+    </Modal.Body>
+  </Modal>
+);

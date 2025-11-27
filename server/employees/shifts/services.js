@@ -28,6 +28,36 @@ async function getAll() {
     }
 }
 
+async function getActivebyUserID(userId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const rows = await conn.query(
+            `SELECT s.*, b.Name, b.Location
+             FROM shift s
+             JOIN branch b ON s.BranchID = b.BranchID
+             WHERE s.UserID = ? AND s.EndDatetime IS NULL`,
+            [userId]
+        );
+
+        // Ensures timestamps are in UTC+8
+        rows.forEach(row => {
+            if (row.StartDatetime) {
+                row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format();
+            }
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function create(data) {
     let conn;
     try {
@@ -35,21 +65,22 @@ async function create(data) {
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const startDatetime = moment(data.startDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
         const result = await conn.query(
-            'INSERT INTO shift (BranchID, UserID, StartDatetime, EndDatetime, InitialCash, FinalCash, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            `INSERT INTO shift 
+            (BranchID, UserID, StartDatetime, 
+            InitialCash, CreatedAt) VALUES (?, ?, ?, ?, ?)`,
             [
                 data.branchId,
                 data.userId,
-                data.startDatetime,
-                data.endDatetime,
+                startDatetime,
                 data.initialCash,
-                data.finalCash,
                 createdAt
             ]
         );
 
-        return { id: result.insertId.toString(), ...data, createdAt };
+        return { id: result.insertId.toString(), ...data, startDatetime, createdAt };
     } catch (error) {
         throw error;
     } finally {
@@ -57,52 +88,25 @@ async function create(data) {
     }
 }
 
-async function getById(shiftId) {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM shift WHERE ShiftID = ?', [shiftId]);
-
-        return rows[0];
-    } catch (error) {
-        throw error;
-    } finally {
-        if (conn) conn.release();
-    }
-}
-
-async function getByUserId(userId) {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM shift WHERE UserID = ?', [userId]);
-
-        return rows[0];
-    } catch (error) {
-        throw error;
-    } finally {
-        if (conn) conn.release();
-    }
-}
-
-async function update(shiftId, data) {
+async function endShift(shiftId, finalCash) {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        const fields = [];
-        const values = [];
-
-        for (const key in data) {
-            fields.push(`${key} = ?`);
-            values.push(data[key]);
+        if (!finalCash) {
+            throw new Error('FinalCash is required to end the shift');
         }
-        values.push(shiftId);
 
-        const sql = `UPDATE shift SET ${fields.join(', ')} WHERE ShiftID = ?`;
-        await conn.query(sql, values);
+        const query = `UPDATE shift SET EndDatetime = NOW(), FinalCash = ? WHERE ShiftID = ?`;
+        const values = [finalCash, shiftId];
 
-        return { id: shiftId, ...data };
+        const result = await conn.query(query, values);
+
+        // Check if any rows were updated
+        if (result.affectedRows === 0) {
+            throw new Error('Shift not found');
+        }
+        return { id: shiftId, finalCash, endDatetime: moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss') };
     } catch (error) {
         throw error;
     } finally {
@@ -113,7 +117,6 @@ async function update(shiftId, data) {
 module.exports = {
     getAll,
     create,
-    getById,
-    getByUserId,
-    update
+    endShift,
+    getActivebyUserID
 };
