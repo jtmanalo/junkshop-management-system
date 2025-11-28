@@ -13,7 +13,7 @@ import { useAuth } from '../services/AuthContext';
 import { useDashboard } from '../services/DashboardContext';
 import { useNavigate } from 'react-router-dom';
 
-function ExpensePage() {
+function DebtPage() {
     const { refreshBalance, refreshExpenses } = useDashboard();
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
@@ -129,4 +129,4 @@ function ExpensePage() {
     );
 }
 
-export default ExpensePage;
+export default DebtPage;

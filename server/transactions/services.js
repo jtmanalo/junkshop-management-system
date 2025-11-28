@@ -67,6 +67,130 @@ async function create(data) {
     }
 }
 
+async function createRepayment(data) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Convert timestamps to MariaDB-compatible format
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const transactionDate = createdAt;
+
+        if (data.totalAmount <= 0) {
+            throw new Error('Total amount must be greater than zero for a loan.');
+        }
+        // Perform the INSERT query
+        const result = await conn.query(
+            `INSERT INTO transaction 
+            (BranchID, SellerID, EmployeeID, UserID, TransactionType, 
+            TransactionDate, TotalAmount, 
+            PaymentMethod, Status, Notes, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.branchId,
+                data.sellerId || null,
+                data.employeeId || null,
+                data.userId,
+                'repayment',
+                transactionDate,
+                data.totalAmount,
+                data.paymentMethod || 'cash',
+                data.status || 'completed',
+                data.notes || null,
+                createdAt
+            ]
+        );
+
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [data.userId, data.branchId]
+        );
+
+        if (!shift[0]?.ShiftID) {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
+
+        // Update the RunningTotal for the active shift
+        await conn.query(
+            `UPDATE shift 
+            SET RunningTotal = RunningTotal - ? 
+            WHERE ShiftID = ?`,
+            [data.totalAmount, shift[0]?.ShiftID]
+        );
+
+        // Return the inserted transaction data
+        return { id: result.insertId.toString(), ...data, transactionDate, createdAt };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function createLoan(data) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Convert timestamps to MariaDB-compatible format
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const transactionDate = createdAt;
+
+        if (data.totalAmount <= 0) {
+            throw new Error('Total amount must be greater than zero for a loan.');
+        }
+        // Perform the INSERT query
+        const result = await conn.query(
+            `INSERT INTO transaction 
+            (BranchID, SellerID, EmployeeID, UserID, TransactionType, 
+            TransactionDate, TotalAmount, 
+            PaymentMethod, Status, Notes, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.branchId,
+                data.sellerId || null,
+                data.employeeId || null,
+                data.userId,
+                'loan',
+                transactionDate,
+                data.totalAmount,
+                data.paymentMethod || 'cash',
+                data.status || 'completed',
+                data.notes || null,
+                createdAt
+            ]
+        );
+
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [data.userId, data.branchId]
+        );
+
+        if (!shift[0]?.ShiftID) {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
+
+        // Update the RunningTotal for the active shift
+        await conn.query(
+            `UPDATE shift 
+            SET RunningTotal = RunningTotal + ? 
+            WHERE ShiftID = ?`,
+            [data.totalAmount, shift[0]?.ShiftID]
+        );
+
+        // Return the inserted transaction data
+        return { id: result.insertId.toString(), ...data, transactionDate, createdAt };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function createExpense(data) {
     let conn;
     try {
@@ -270,5 +394,9 @@ module.exports = {
     createExpense,
     getExpenseBalance,
     getSaleBalance,
-    getPurchaseBalance
+    getPurchaseBalance,
+    createLoan,
+    createRepayment,
+    // createPurchase,
+    // createSale
 };

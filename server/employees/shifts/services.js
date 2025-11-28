@@ -149,7 +149,7 @@ async function getBalance(branchId, userId) {
             return 0;
         }
 
-        const balance = sale[0].TotalSales + rows[0].Balance;
+        const balance = Number(sale[0].TotalSales) + Number(rows[0].Balance);
         return balance || 0;
     } catch (error) {
         throw error;

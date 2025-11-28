@@ -13,6 +13,24 @@ async function getAll(req, res) {
     }
 }
 
+async function createLoan(req, res) {
+    try {
+        const newLoan = await transactionService.createLoan(req.body);
+        res.status(201).json(newLoan);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function createRepayment(req, res) {
+    try {
+        const newRepayment = await transactionService.createRepayment(req.body);
+        res.status(201).json(newRepayment);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 async function createExpense(req, res) {
     try {
         const newExpense = await transactionService.createExpense(req.body);
@@ -108,5 +126,7 @@ module.exports = {
     createExpense,
     getExpenseBalance,
     getSaleBalance,
-    getPurchaseBalance
+    getPurchaseBalance,
+    createLoan,
+    createRepayment
 };

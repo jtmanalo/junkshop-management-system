@@ -20,6 +20,7 @@ import ItemsPage from './ItemsPage';
 import PurchasePage from './PurchasePage';
 import ExpensePage from './ExpensePage';
 import SalePage from './SalePage';
+import DebtPage from './DebtPage';
 import axios from 'axios';
 
 
@@ -584,7 +585,7 @@ export default function MobileRoutes() {
           <Route path=":username/purchases" element={<PurchasePage />} />
           <Route path=":username/expenses" element={<ExpensePage />} />
           <Route path=":username/sales" element={<SalePage />} />
-          <Route path=":username/debts" element={<div>Debts Page</div>} />
+          <Route path=":username/debts" element={<DebtPage />} />
           {/* Dashboard */}
           <Route path=":username" element={<MobileDashboard />} />
           <Route path="*" element={
