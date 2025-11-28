@@ -15,7 +15,7 @@ import SettingsPage from './SettingsPage';
 import OngoingPage from './OngoingPage';
 import LogsPage from './LogsPage';
 import BuyersPage from './PricingPage';
-import SellerPage from './SellerPage';
+import LoanPage from './LoanPage';
 import ItemsPage from './ItemsPage';
 import PurchasePage from './PurchasePage';
 import ExpensePage from './ExpensePage';
@@ -578,7 +578,7 @@ export default function MobileRoutes() {
           <Route path=":username/ongoing" element={<OngoingPage />} />
           <Route path=":username/profile" element={<SettingsPage />} />
           {/* Manage */}
-          <Route path=":username/loans" element={<SellerPage />} />
+          <Route path=":username/loans" element={<LoanPage />} />
           <Route path=":username/buyers" element={<BuyersPage />} />
           <Route path=":username/items" element={<ItemsPage />} />
           {/* Record */}

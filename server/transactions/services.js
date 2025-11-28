@@ -28,6 +28,107 @@ async function getAll() {
     }
 }
 
+async function getSellerLoans() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query
+        const rows = await conn.query(`
+            SELECT 
+                s.SellerID,
+                s.Name,
+                s.ContactNumber,
+                s.CreatedAt,
+                COALESCE(SUM(CASE WHEN t.TransactionType = 'loan' THEN t.TotalAmount ELSE 0 END), 0) AS LoanAmount,
+                COALESCE(SUM(CASE WHEN t.TransactionType = 'repayment' THEN t.TotalAmount ELSE 0 END), 0) AS RepaymentAmount,
+                COALESCE(SUM(CASE WHEN t.TransactionType = 'loan' THEN t.TotalAmount ELSE 0 END), 0) - 
+                COALESCE(SUM(CASE WHEN t.TransactionType = 'repayment' THEN t.TotalAmount ELSE 0 END), 0) AS OutstandingBalance,
+                COALESCE(MAX(t.TransactionDate), 'N/A') AS LastTransactionDate
+            FROM 
+                seller s
+            LEFT JOIN 
+                transaction t ON t.SellerID = s.SellerID AND t.TransactionType IN ('loan', 'repayment')
+            GROUP BY 
+                s.SellerID, s.Name, s.ContactNumber, s.CreatedAt`
+        );
+
+        // Ensures timestamps are in UTC+8
+        rows.forEach(row => {
+            if (row.TransactionDate) {
+                row.TransactionDate = moment(row.TransactionDate).tz('Asia/Manila').format();
+            }
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+            }
+        });
+
+        // Return all rows
+        return rows;
+    }
+    catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getEmployeeLoans() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query
+        const rows = await conn.query(`
+            SELECT 
+                e.EmployeeID,
+                CONCAT(e.FirstName, ' ', COALESCE(e.MiddleName, ''), ' ', e.LastName) AS Name,
+                e.PositionTitle,
+                e.Nickname,
+                e.ContactNumber,
+                e.Address,
+                e.HireDate,
+                e.Status,
+                e.CreatedAt,
+                SUM(CASE WHEN t.TransactionType = 'loan' THEN t.TotalAmount ELSE 0 END) AS LoanAmount,
+                SUM(CASE WHEN t.TransactionType = 'repayment' THEN t.TotalAmount ELSE 0 END) AS RepaymentAmount,
+                SUM(CASE WHEN t.TransactionType = 'loan' THEN t.TotalAmount ELSE 0 END) - 
+                SUM(CASE WHEN t.TransactionType = 'repayment' THEN t.TotalAmount ELSE 0 END) AS OutstandingBalance,
+                COALESCE(MAX(t.TransactionDate), 'N/A') AS LastTransactionDate
+            FROM 
+                employee e
+            LEFT JOIN 
+                transaction t ON t.EmployeeID = e.EmployeeID AND t.TransactionType IN ('loan', 'repayment')
+            WHERE 
+                e.EmployeeID IS NOT NULL
+            GROUP BY 
+                e.EmployeeID, e.FirstName, e.MiddleName, e.LastName, e.PositionTitle, e.Nickname, e.ContactNumber, e.Address, e.HireDate, e.Status, e.CreatedAt;`
+        );
+
+        // Ensures timestamps are in UTC+8
+        rows.forEach(row => {
+            if (row.TransactionDate) {
+                row.TransactionDate = moment(row.TransactionDate).tz('Asia/Manila').format();
+            }
+            // Ensures timestamps are in readable format (YYYY-MM-DD HH:mm:ss)
+            if (row.HireDate) {
+                row.HireDate = moment(row.HireDate).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+            }
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+            }
+        });
+
+        // Return all rows
+        return rows;
+    }
+    catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function create(data) {
     let conn;
     try {
@@ -108,7 +209,7 @@ async function createRepayment(data) {
             [data.userId, data.branchId]
         );
 
-        if (!shift[0]?.ShiftID) {
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
             throw new Error('No active shift found for the user to record the expense.');
         }
 
@@ -170,7 +271,7 @@ async function createLoan(data) {
             [data.userId, data.branchId]
         );
 
-        if (!shift[0]?.ShiftID) {
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
             throw new Error('No active shift found for the user to record the expense.');
         }
 
@@ -231,7 +332,7 @@ async function createExpense(data) {
             [data.userId, data.branchId]
         );
 
-        if (!shift[0]?.ShiftID) {
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
             throw new Error('No active shift found for the user to record the expense.');
         }
 
@@ -397,6 +498,8 @@ module.exports = {
     getPurchaseBalance,
     createLoan,
     createRepayment,
+    getEmployeeLoans,
+    getSellerLoans,
     // createPurchase,
     // createSale
 };

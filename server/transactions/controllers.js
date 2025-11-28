@@ -1,3 +1,4 @@
+const { get } = require('./routes');
 const transactionService = require('./services');
 
 // Get all transactions
@@ -8,6 +9,30 @@ async function getAll(req, res) {
             return res.status(204).send("No transactions found");
         }
         res.status(200).json(transactions);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getSellerLoans(req, res) {
+    try {
+        const loans = await transactionService.getSellerLoans();
+        if (loans.length === 0) {
+            return res.status(204).send("No loans found");
+        }
+        res.status(200).json(loans);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getEmployeeLoans(req, res) {
+    try {
+        const loans = await transactionService.getEmployeeLoans();
+        if (loans.length === 0) {
+            return res.status(204).send("No loans found");
+        }
+        res.status(200).json(loans);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -128,5 +153,7 @@ module.exports = {
     getSaleBalance,
     getPurchaseBalance,
     createLoan,
-    createRepayment
+    createRepayment,
+    getSellerLoans,
+    getEmployeeLoans
 };

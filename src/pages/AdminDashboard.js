@@ -7,7 +7,7 @@ import AnalyticsPage from './AnalyticsPage';
 import EmployeesPage from './EmployeesPage';
 import BranchPage from './BranchPage';
 import InventoryPage from './InventoryPage';
-import SellerPage from './SellerPage';
+import LoanPage from './LoanPage';
 import ShiftsPage from './ShiftsPage';
 import PricingPage from './PricingPage';
 import HelpPage from './HelpPage';
@@ -252,7 +252,7 @@ export default function DesktopRoutes() {
                 <Route path=":username/inventory" element={<InventoryPage />} />
                 <Route path=":username/items" element={<ItemsPage />} />
                 <Route path=":username/buyers" element={<PricingPage />} />
-                <Route path=":username/loans" element={<SellerPage />} />
+                <Route path=":username/loans" element={<LoanPage />} />
                 <Route path=":username/shifts" element={<ShiftsPage />} />
                 <Route path=":username/employees" element={<EmployeesPage />} />
                 <Route path=":username/branches" element={<BranchPage />} />
