@@ -5,6 +5,7 @@ import { useAuth } from '../services/AuthContext';
 
 function BuyersPage() {
     const { token, user } = useAuth();
+    const isEmployee = user?.userType === 'employee';
     const [errors, setErrors] = useState({});
     const [branches, setBranches] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState('');

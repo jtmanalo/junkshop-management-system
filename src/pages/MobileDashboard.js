@@ -73,7 +73,7 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
 
 function MobileDashboard() {
   const { balance, refreshBalance, totalExpense, refreshTotalExpense, totalPurchase, refreshTotalPurchase, totalSale, refreshTotalSale } = useDashboard();
-  const { user, token, updateBranchId } = useAuth();
+  const { user, token } = useAuth();
   const [showEndShiftModal, setShowEndShiftModal] = useState(false);
   const [activeTab, setActiveTab] = useState('Balance');
   const [shiftStarted, setShiftStarted] = useState(false); // false = not started

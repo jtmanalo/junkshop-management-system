@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
 const { get } = require('./routes');
 
 // Items Page get all items of a branch with pricing
-async function getAllItemsWithPricing(username) {
+async function getAllItemsWithPricing() {
     let conn;
     try {
         conn = await pool.getConnection();
@@ -32,14 +32,14 @@ async function getAllItemsWithPricing(username) {
             JOIN 
                 item i ON pli.ItemID = i.ItemID
             WHERE 
-                u.Username = ?
+                u.UserType = 'owner'
                 AND b.Status = 'active'
                 AND pl.BuyerID IS NULL
             ORDER BY 
                 i.ItemID;
         `;
 
-        const rows = await conn.query(query, [username]);
+        const rows = await conn.query(query);
 
         // Ensures timestamps are in UTC+8 if applicable
         rows.forEach(row => {

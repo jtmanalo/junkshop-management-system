@@ -182,6 +182,9 @@ function ItemsPage() {
                 setNewItem({ name: '', unitOfMeasurement: 'per piece', classification: '', description: '' });
                 setErrors({});
                 setShowAddItemModal(false);
+
+                // Fetch updated items for the table
+                fetchItemsforItemTable();
             })
             .catch(error => {
                 console.error('Error adding item:', error);
