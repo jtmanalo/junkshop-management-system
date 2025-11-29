@@ -14,7 +14,7 @@ import { MobileNav } from '../components/NavBar';
 import SettingsPage from './SettingsPage';
 import OngoingPage from './OngoingPage';
 import LogsPage from './LogsPage';
-import BuyersPage from './PricingPage';
+import BuyersPage from './BuyersPage';
 import LoanPage from './LoanPage';
 import ItemsPage from './ItemsPage';
 import PurchasePage from './PurchasePage';
@@ -25,11 +25,17 @@ import axios from 'axios';
 
 
 function SetBranchModal({ show, branchOptions, onSetBranch }) {
-  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState(branchOptions[0] || ''); // Default to the first branch
+
+  useEffect(() => {
+    if (branchOptions.length > 0 && !selectedBranch) {
+      setSelectedBranch(branchOptions[0]); // Automatically select the first branch if none is selected
+    }
+  }, [branchOptions, selectedBranch]);
 
   const handleSetBranch = () => {
     if (selectedBranch) {
-      onSetBranch(selectedBranch);
+      onSetBranch(selectedBranch); // Save the selected branch
     } else {
       alert('Please select a branch location.');
     }
@@ -49,7 +55,6 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
               value={selectedBranch?.display || ''}
               onChange={(e) => setSelectedBranch(branchOptions.find(branch => branch.display === e.target.value))}
             >
-              <option value="">Select a branch</option>
               {branchOptions.map((branch, index) => (
                 <option key={index} value={branch.display}>{branch.display}</option>
               ))}
@@ -80,29 +85,34 @@ function MobileDashboard() {
   const [shiftId, setShiftId] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  // Example: update balance from data (replace with real data logic)
-  // useEffect(() => {
-  //   fetchBalance().then(val => setBalance(val));
-  // }, []);
-
-  console.log("balance:", balance);
-  console.log("totalExpense:", totalExpense);
-  console.log("totalPurchase:", totalPurchase);
-  console.log("totalSale:", totalSale);
 
   useEffect(() => {
-    if (!user?.branchId) {
-      fetchActiveShift().then((data) => {
-        if (data && data.length > 0) {
-          const activeShift = data[0];
-          updateBranchId(activeShift.BranchID);
-          console.log('Branch ID updated to:', activeShift.BranchID);
-        }
-      }).catch((error) => {
-        console.error('Failed to fetch active shift:', error);
-      });
+    if (!user) {
+      console.error('User object is not initialized');
+      return;
     }
-  }, [user, updateBranchId]);
+
+    fetchActiveShift().then((data) => {
+      if (data && data.length > 0) {
+        const activeShift = data[0];
+        setBranch({
+          display: `${activeShift.Name} - ${activeShift.Location}`,
+          id: activeShift.BranchID
+        });
+        setShowSetBranchModal(false);
+      } else if (user.branchName && user.branchLocation) {
+        const defaultBranch = `${user.branchName} - ${user.branchLocation}`;
+        console.log('Default branch from user data:', defaultBranch);
+        setBranch({
+          display: `${defaultBranch}`,
+          id: user.defaultBranchID
+        });
+        setShowSetBranchModal(false);
+      }
+    }).catch((error) => {
+      console.error('Failed to fetch active shift:', error);
+    });
+  }, [user]);
 
   const handleSwitchLocation = () => {
     if (shiftStarted) {
@@ -150,20 +160,41 @@ function MobileDashboard() {
   };
 
   useEffect(() => {
-    const initializeShift = async () => {
+    const initializeDashboard = async () => {
       setLoading(true); // Start loading
-      const response = await fetchActiveShift(); // Fetch active shift first
 
-      if (response && response.length > 0) {
-        setShowSetBranchModal(false);
-      } else {
+      try {
+        // Check for active shift
+        const activeShiftData = await fetchActiveShift();
+        if (activeShiftData && activeShiftData.length > 0) {
+          setShowSetBranchModal(false); // Active shift found, no need to show modal
+          setLoading(false);
+          return;
+        }
+
+        // Check for default branch from user
+        if (user.branchName && user.branchLocation) {
+          const defaultBranch = {
+            display: `${user.branchName} - ${user.branchLocation}`,
+            id: user.defaultBranchID,
+          };
+          setBranch(defaultBranch);
+          setShowSetBranchModal(false); // Default branch found, no need to show modal
+          setLoading(false);
+          return;
+        }
+
+        // No active shift or default branch, show branch modal
         setShowSetBranchModal(true);
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+      } finally {
+        setLoading(false); // Stop loading
       }
-      setLoading(false); // Stop loading
     };
 
-    initializeShift();
-  }, []);
+    initializeDashboard();
+  }, [user]);
 
   // fetch branches where owner has usertype 'owner'
   const fetchBranches = async () => {
@@ -192,7 +223,6 @@ function MobileDashboard() {
 
   const handleSetBranch = (branch) => {
     setBranch(branch); // Save the full branch object to state
-    // console.log('Branch location set to:', branch);
     setShowSetBranchModal(false);
   };
 

@@ -68,7 +68,19 @@ async function getByEmail(email) {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM user WHERE Email = ?', [email]);
+        const rows = await conn.query(`
+            SELECT 
+                u.*, 
+                b.Name AS BranchName,
+                b.Location AS BranchLocation
+            FROM 
+                user u
+            LEFT JOIN
+                branch b
+            ON
+                u.BranchID = b.BranchID
+            WHERE
+                u.Email = ?`, [email]);
         return rows[0]; // Return the first row if found
     } catch (error) {
         throw error;

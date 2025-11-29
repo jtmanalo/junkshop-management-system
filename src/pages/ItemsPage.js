@@ -2,9 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
+import { useMatch } from 'react-router-dom';
 
 function ItemsPage() {
     const { token, user } = useAuth();
+    const isEmployee = user?.userType === 'employee'; // Check if the user is an employee
+    const matchMobileRoute = useMatch('/mobileroute/*');
+    const matchEmployeeDashboard = useMatch('/employee-dashboard/*');
+    const isMobileRoute = matchMobileRoute || matchEmployeeDashboard;
     const [errors, setErrors] = useState({});
     const [branches, setBranches] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState('');
@@ -54,8 +59,8 @@ function ItemsPage() {
 
     const fetchBranches = useCallback(async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches/${user.username}`);
-            // console.log('API Response:', response.data); // Log the API response
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches`);
+            console.log('API Response:', response.data); // Log the API response
             const formattedBranches = response.data.map(branch => ({
                 id: branch.BranchID,
                 displayName: `${branch.Name} - ${branch.Location}`
@@ -417,7 +422,11 @@ function ItemsPage() {
                                             </Form.Select>
                                         </Form.Group>
                                     </Form>
-                                    <Button variant="outline-dark" onClick={() => setShowEditPricelistModal(true)}>Edit Branch Pricelist</Button>
+                                    {!isEmployee && (
+                                        <Button variant="outline-dark" onClick={() => setShowEditPricelistModal(true)}>
+                                            Edit Branch Pricelist
+                                        </Button>
+                                    )}
                                 </div>
 
                                 <Table striped bordered hover>
@@ -427,7 +436,7 @@ function ItemsPage() {
                                             <th>Unit of Measurement</th>
                                             <th>Price</th>
                                             <th>Branch</th>
-                                            <th>Actions</th>
+                                            {!isMobileRoute && <th>Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -442,11 +451,13 @@ function ItemsPage() {
                                                     <td>{item.UnitOfMeasurement}</td>
                                                     <td>{item.ItemPrice}</td>
                                                     <td>{item.BranchName} - {item.BranchLocation}</td>
-                                                    <td>
-                                                        <Button variant="outline-success" size="sm" onClick={() => openEditPriceModal(item)}>
-                                                            Edit
-                                                        </Button>
-                                                    </td>
+                                                    {!isMobileRoute && (
+                                                        <td>
+                                                            <Button variant="outline-success" size="sm" onClick={() => openEditPriceModal(item)}>
+                                                                Edit
+                                                            </Button>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))
                                         )}

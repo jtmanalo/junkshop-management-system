@@ -52,17 +52,9 @@ async function create(req, res) {
 }
 
 // BranchPage get branches by Username
-async function getByUsername(req, res) {
-    const { username } = req.params;
-    // console.log('Passing Username to getByUsername:', username);
-
+async function getBranchesofOwner(req, res) {
     try {
-        // console.log('Username:', username);
-        if (!username) {
-            return res.status(400).json({ error: 'Username is required' });
-        }
-
-        const branches = await branchService.getByUsername(username);
+        const branches = await branchService.getBranchesofOwner();
         if (!branches || branches.length === 0) {
             return res.status(404).send("Branch not found");
         }
@@ -134,7 +126,7 @@ async function getBrancheswithUserTypeOwner(req, res) {
 module.exports = {
     create,
     update,
-    getByUsername,
+    getBranchesofOwner,
     createOwner,
     getOwner,
     getBrancheswithUserTypeOwner

@@ -3,13 +3,12 @@ import { FaInfoCircle } from 'react-icons/fa';
 import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
-import { useMatch, useLocation } from 'react-router-dom';
+import { useMatch } from 'react-router-dom';
 
 // Page tab 1 to add/manage sellers, view their details, and keep track of their loans and payments
 // Page tab 2 to keep track of employee loans and payments
 function LoanPage() {
     const { token, user } = useAuth();
-    const location = useLocation();
     const matchMobileRoute = useMatch('/mobileroute/*');
     const matchEmployeeDashboard = useMatch('/employee-dashboard/*');
     const isMobileRoute = matchMobileRoute || matchEmployeeDashboard;

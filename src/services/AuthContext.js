@@ -29,10 +29,10 @@ const AuthProvider = ({ children }) => {
                 return;
             }
 
-            if (res.token && res.userType && res.username && res.userID) {
-                const { token, userType, username, userID } = res;
-                console.log("Login response data:", { token, userType, username, userID });
-                const userData = { username, userType, userID };
+            if (res.token && res.userType && res.username && res.userID && res.defaultBranchID) {
+                const { token, userType, username, userID, defaultBranchID, branchName, branchLocation } = res;
+                console.log("Login response data:", { token, userType, username, userID, defaultBranchID, branchName, branchLocation });
+                const userData = { username, userType, userID, defaultBranchID, branchName, branchLocation };
                 setUser(userData);
                 setToken(token);
                 localStorage.setItem("site", token);
@@ -43,7 +43,7 @@ const AuthProvider = ({ children }) => {
                     navigate(`/admin-dashboard/${username}`);
                     console.log("Navigation attempted to:", `/admin-dashboard/${username}`);
                 } else if (userType === 'employee') {
-                    navigate('/employee-dashboard');
+                    navigate(`/employee-dashboard/${username}`);
                 }
                 return;
             }
@@ -69,17 +69,10 @@ const AuthProvider = ({ children }) => {
         navigate("/");
     };
 
-    const updateBranchId = (newBranchId) => {
-        setUser((prevUser) => ({
-            ...prevUser,
-            branchId: newBranchId,
-        }));
-        const updatedUser = { ...user, branchId: newBranchId };
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-    };
-
     return (
-        <AuthContext.Provider value={{ token, user, loginAction, logOut, updateBranchId }}>
+        <AuthContext.Provider value={{
+            token, user, loginAction, logOut
+        }}>
             {children}
         </AuthContext.Provider>
     );

@@ -6,8 +6,8 @@ const router = express.Router();
 // if owner, branch+pricelist
 router.post('/branches', branchController.create);
 
-// Get all branches by username
-router.get('/branches/:username', branchController.getByUsername);
+// Get all branches of owner
+router.get('/branches', branchController.getBranchesofOwner);
 
 // Get all branches where owner has usertype 'owner'
 router.get('/branches-with-owner-usertype', branchController.getBrancheswithUserTypeOwner);

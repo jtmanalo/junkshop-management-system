@@ -10,6 +10,7 @@ export const DashboardProvider = ({ children, user }) => {
     const [totalExpense, setTotalExpense] = useState(0);
     const [totalPurchase, setTotalPurchase] = useState(0);
     const [totalSale, setTotalSale] = useState(0);
+    const [branch, setBranch] = useState(null); // Add branch state
 
     const refreshBalance = async () => {
         if (!user?.branchId || !user?.userID) return;
@@ -20,7 +21,6 @@ export const DashboardProvider = ({ children, user }) => {
                     params: { branchId: user.branchId, userId: user.userID }
                 }
             );
-            // console.log('Balance fetched:', response.data);
             setBalance(response.data);
         } catch (error) {
             console.error('Error refreshing balance:', error);
@@ -36,7 +36,6 @@ export const DashboardProvider = ({ children, user }) => {
                     params: { branchId: user.branchId, userId: user.userID }
                 }
             );
-            console.log('Expense Balance fetched:', response.data);
             setTotalExpense(response.data);
         } catch (error) {
             console.error('Error refreshing expense balance:', error);
@@ -52,7 +51,6 @@ export const DashboardProvider = ({ children, user }) => {
                     params: { branchId: user.branchId, userId: user.userID }
                 }
             );
-            console.log('Purchase Balance fetched:', response.data);
             setTotalPurchase(response.data);
         } catch (error) {
             console.error('Error refreshing purchase balance:', error);
@@ -68,7 +66,6 @@ export const DashboardProvider = ({ children, user }) => {
                     params: { branchId: user.branchId, userId: user.userID }
                 }
             );
-            console.log('Sale Balance fetched:', response.data);
             setTotalSale(response.data);
         } catch (error) {
             console.error('Error refreshing sale balance:', error);
@@ -76,7 +73,18 @@ export const DashboardProvider = ({ children, user }) => {
     };
 
     return (
-        <DashboardContext.Provider value={{ balance, refreshBalance, totalExpense, refreshTotalExpense, totalPurchase, refreshTotalPurchase, totalSale, refreshTotalSale }}>
+        <DashboardContext.Provider value={{
+            balance,
+            refreshBalance,
+            totalExpense,
+            refreshTotalExpense,
+            totalPurchase,
+            refreshTotalPurchase,
+            totalSale,
+            refreshTotalSale,
+            branch,
+            setBranch // Provide branch state and updater
+        }}>
             {children}
         </DashboardContext.Provider>
     );

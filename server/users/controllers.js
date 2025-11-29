@@ -166,7 +166,7 @@ async function login(req, res) {
         // Generate JWT token
         const token = jwt.sign({ id: user.UserID, email: user.Email }, JWT_SECRET, { expiresIn: '7d' });
 
-        res.json({ message: 'Login successful', token, userType: user.UserType, username: user.Username, userID: user.UserID });
+        res.json({ message: 'Login successful', token, userType: user.UserType, username: user.Username, defaultBranchID: user.BranchID, branchName: user.BranchName, branchLocation: user.BranchLocation, userID: user.UserID });
     } catch (error) {
         console.error('Error during login:', error);
         res.status(500).json({ error: error.message });

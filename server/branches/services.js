@@ -32,29 +32,18 @@ async function createBranch(data) {
     }
 }
 
-async function getByUsername(username) {
+async function getBranchesofOwner() {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        // Fetch UserID for the given username
-        const user = await conn.query('SELECT UserID FROM user WHERE Username = ?', [username]);
-        if (!user[0]) {
-            throw new Error('User not found');
-        }
-
-        const userId = user[0].UserID; // Assign the UserID to userId
-        console.log('Retrieved UserID for username', username, ':', userId);
-
-        // Fetch branches for the UserID
         const rows = await conn.query(
             `SELECT b.*
              FROM branch b
              JOIN owner o ON b.OwnerID = o.OwnerID
-             WHERE o.ReferenceID = ?`,
-            [userId]
+             WHERE o.OwnerType = 'User'`
         );
-        console.log('Branches fetched for UserID', userId, ':', rows);
+        console.log('Branches fetched for usertype owner:', rows);
         return rows; // Return all branches for the given username
     } catch (error) {
         throw error;
@@ -198,7 +187,7 @@ async function getBrancheswithUserTypeOwner() {
 module.exports = {
     createBranch,
     update,
-    getByUsername,
+    getBranchesofOwner,
     addOwner,
     getOwner,
     createPricelist,
