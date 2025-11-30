@@ -192,6 +192,73 @@ async function update(req, res) {
     }
 }
 
+// Update user controller
+async function updateUser(req, res) {
+    console.log('PUT Request URL:', req.url);
+    const userId = parseInt(req.params.id, 10);
+    const {
+        name,
+        username,
+        password,
+        email,
+        branchId,
+        firstName,
+        middleName,
+        lastName,
+        contactNumber,
+        address,
+        userType
+    } = req.body;
+
+    try {
+        // Validate email
+        if (email && !validator.isEmail(email)) {
+            return res.status(400).json({ error: 'Invalid email format.' });
+        }
+
+        // Hash password if provided
+        let passwordHash;
+        if (password) {
+            const saltRounds = 10;
+            passwordHash = await bcrypt.hash(password, saltRounds);
+        }
+
+        // Prepare data for update
+        const updateData = {
+            name: name,
+            username: username,
+            passwordHash,
+            email: email,
+            branchId: branchId,
+            firstName: firstName,
+            middleName: middleName,
+            lastName: lastName,
+            contactNumber: contactNumber,
+            address: address,
+            userType: userType // Include userType for employee updates
+        };
+
+        // Call the service to update the user
+        const updatedUser = await userService.update(userId, updateData);
+
+        res.json({ message: 'User updated successfully', user: updatedUser });
+    } catch (error) {
+        console.error('Error in updateUser:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getDetails(req, res) {
+    const { username } = req.query;
+    try {
+        const userDetails = await userService.getUserAndEmployeeDetailsByUsername(username);
+        res.json(userDetails);
+    } catch (error) {
+        console.error('Error in getDetails:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 // Delete a user
 async function remove(req, res) {
     try {
@@ -293,5 +360,7 @@ module.exports = {
     authenticateToken, // Middleware for protected routes
     validateToken, // Endpoint for token validation
     forgotPassword,
-    getUserDetails
+    getUserDetails,
+    getDetails,
+    updateUser
 };

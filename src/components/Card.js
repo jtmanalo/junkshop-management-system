@@ -122,33 +122,44 @@ export const ActiveTabCard = ({ title, value, branchDisplay, color = '#232323', 
     </Card>
 );
 
-export const ButtonsCard = ({ actions, endButton = null, header = 'Record' }) => (
-    <Card className="shadow-sm" style={{ borderRadius: '1rem', border: 'none', background: '#fff' }}>
-        <Card.Body>
-            <div className="mb-2 text-dark fw-semibold text-center" style={{ fontSize: '1rem', letterSpacing: 1 }}>{header}</div>
-            <div className="row row-cols-4 g-3 justify-content-center">
-                {actions.map(({ label, icon, onClick }, idx) => (
-                    <div key={label} className="col d-flex flex-column align-items-center">
-                        <Button
-                            variant="light"
-                            className="d-flex align-items-center justify-content-center mb-2 shadow-sm"
-                            style={{ width: 56, height: 56, padding: 0, background: '#fff', border: '1px solid #343a40', borderRadius: '8px' }}
-                            onClick={onClick}
-                        >
-                            {icon}
-                        </Button>
-                        <span className="small text-dark">{label}</span>
-                    </div>
-                ))}
-            </div>
-            {endButton && (
-                <div className="d-flex justify-content-center mt-3">
-                    {endButton}
+export const ButtonsCard = ({ actions, endButton = null, header = 'Record' }) => {
+    const gridTemplate = actions.length === 5 ? 'repeat(3, 1fr) repeat(2, 1fr)' : `repeat(${actions.length}, 1fr)`;
+
+    return (
+        <Card className="shadow-sm" style={{ borderRadius: '1rem', border: 'none', background: '#fff' }}>
+            <Card.Body>
+                <div className="mb-2 text-dark fw-semibold text-center" style={{ fontSize: '1rem', letterSpacing: 1 }}>{header}</div>
+                <div
+                    className="d-grid gap-3"
+                    style={{
+                        gridTemplateColumns: gridTemplate,
+                        display: 'grid',
+                        justifyContent: 'center',
+                    }}
+                >
+                    {actions.map(({ label, icon, onClick }, idx) => (
+                        <div key={label} className="d-flex flex-column align-items-center">
+                            <Button
+                                variant="light"
+                                className="d-flex align-items-center justify-content-center mb-2 shadow-sm"
+                                style={{ width: 56, height: 56, padding: 0, background: '#fff', border: '1px solid #343a40', borderRadius: '8px' }}
+                                onClick={onClick}
+                            >
+                                {icon}
+                            </Button>
+                            <span className="small text-dark">{label}</span>
+                        </div>
+                    ))}
                 </div>
-            )}
-        </Card.Body>
-    </Card>
-);
+                {endButton && (
+                    <div className="d-flex justify-content-center mt-3">
+                        {endButton}
+                    </div>
+                )}
+            </Card.Body>
+        </Card>
+    );
+};
 
 /**
  * MetricCard - Reusable dashboard metric card

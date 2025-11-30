@@ -1,7 +1,7 @@
-import { Container, Modal, Form, Card, Button } from 'react-bootstrap';
+import { Container, Modal, Form, Card, Button, Table } from 'react-bootstrap';
 import { useNavigate, useLocation, Route, Routes } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { FaShoppingCart, FaMoneyBillWave, FaChartLine, FaFileInvoiceDollar, FaHandHoldingUsd, FaUserTie, FaBoxOpen, FaUserFriends } from 'react-icons/fa';
+import { FaShoppingCart, FaMoneyBillWave, FaChartLine, FaFileInvoiceDollar, FaHandHoldingUsd, FaUserTie, FaBoxOpen, FaUserFriends, FaClock } from 'react-icons/fa';
 import { ActiveTabCard, ButtonsCard } from '../components/Card';
 import CustomButton from '../components/CustomButton';
 import { MobileHeader } from '../components/Header';
@@ -84,7 +84,41 @@ function MobileDashboard() {
   const [showSetBranchModal, setShowSetBranchModal] = useState(true);
   const [shiftId, setShiftId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [showShiftEmployeesModal, setShowShiftEmployeesModal] = useState(false);
   const navigate = useNavigate();
+  const [show, setShow] = useState(false);
+  const [shiftEmployees, setShiftEmployees] = useState([]);
+
+  const fetchShiftEmployees = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}/api/shift-employees/${shiftId}`
+      );
+      setShiftEmployees(response.data);
+    } catch (error) {
+      console.error('Error fetching shift employees:', error.response?.data || error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (show) {
+      fetchShiftEmployees();
+    }
+  }, [show, shiftId, token]);
+
+  const handleAddEmployee = async () => {
+    if (onAddEmployee) {
+      await onAddEmployee();
+      fetchShiftEmployees(); // Refresh the employee list after adding
+    }
+  };
+
+  const tableStyle = {
+    maxHeight: '70vh',
+    overflowY: 'auto',
+  };
 
   useEffect(() => {
     if (!user) {
@@ -277,6 +311,46 @@ function MobileDashboard() {
     }
   };
 
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/employees`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setEmployees(response.data);
+      } catch (error) {
+        console.error('Error fetching employees:', error.response?.data || error.message);
+      }
+    };
+
+    fetchEmployees();
+  }, [token]);
+
+  // Remove redundant declaration of setShiftEmployees
+  const onAddEmployee = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_BASE_URL}/api/shift-employees`,
+        {
+          shiftId,
+          firstName: 'John', // Example data, replace with actual logic
+          lastName: 'Doe',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log('Employee added successfully:', response.data);
+      setShiftEmployees((prevEmployees) => [...prevEmployees, response.data]);
+    } catch (error) {
+      console.error('Error adding employee:', error.response?.data || error.message);
+    }
+  };
+
   // useEffect(() => {
   //   // Fetch the initial balance when the dashboard loads
   //   refreshBalance();
@@ -399,6 +473,12 @@ function MobileDashboard() {
                 icon: <FaBoxOpen size={28} color="#232323" />, // Item icon
                 onClick: () => navigate(`/employee-dashboard/${user?.username}/items`),
               },
+              {
+                label: 'Shift',
+                icon: <FaClock size={28} color="#232323" />, // Item icon
+                onClick: () => setShowShiftEmployeesModal(true),
+                disabled: !shiftStarted // Disable if shift has not started
+              },
             ]}
           />
           <div style={{ height: 10 }} />
@@ -426,7 +506,7 @@ function MobileDashboard() {
                     label: 'Debt',
                     icon: <FaFileInvoiceDollar size={28} color="#232323" />,
                     onClick: () => navigate(`/employee-dashboard/${user?.username}/debts`),
-                  },
+                  }
                 ]}
               />
               <div style={{ height: 10 }} />
@@ -520,6 +600,22 @@ function MobileDashboard() {
           )}
         </div>
       </Container>
+
+      <AddEmployeeModal
+        show={showAddEmployeeModal}
+        onClose={() => setShowAddEmployeeModal(false)}
+        shiftId={shiftId}
+        token={token}
+        employees={employees}
+      />
+      <ShiftEmployeesModal
+        show={showShiftEmployeesModal} // Modal visibility controlled by state
+        onClose={() => setShowShiftEmployeesModal(false)} // Close modal handler
+        shiftId={shiftId} // Pass the current shift ID
+        token={token} // Pass the authentication token
+        onAddEmployee={() => setShowAddEmployeeModal(true)} // Callback for adding employees
+        shiftStarted={shiftStarted} // Pass shift status
+      />
     </>
   );
 }
@@ -631,3 +727,159 @@ export default function MobileRoutes() {
     </DashboardProvider>
   );
 }
+
+function AddEmployeeModal({ show, onClose, shiftId, employees }) {
+  const [selectedEmployee, setSelectedEmployee] = useState('');
+
+  const handleAddEmployee = async () => {
+    if (!selectedEmployee) {
+      alert('Please select an employee.');
+      return;
+    }
+
+    const [firstName, lastName] = selectedEmployee.split(' ');
+
+    try {
+      console.log('Adding employee to shift:', { shiftId, firstName, lastName });
+      const response = await axios.post(
+        `${process.env.REACT_APP_BASE_URL}/api/shift-employees`,
+        {
+          shiftId,
+          firstName,
+          lastName,
+        }
+      );
+
+      alert('Employee added successfully!');
+      onClose();
+    } catch (error) {
+      console.error('Error adding employee:', error.response?.data || error.message);
+      alert('Failed to add employee. Please try again.');
+    }
+  };
+
+  return (
+    <Modal show={show} onHide={onClose} backdrop="static" keyboard={false} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Add Employee to Shift</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form>
+          <Form.Group>
+            <Form.Label>Select Employee</Form.Label>
+            <Form.Control
+              as="select"
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+            >
+              <option value="">Select an Employee</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {`${employee.FirstName} ${employee.LastName}`}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="outline-primary" onClick={handleAddEmployee}>
+          Add Employee
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+function ShiftEmployeesModal({ show, onClose, shiftId, token, onAddEmployee, shiftStarted }) {
+  const [shiftEmployees, setShiftEmployees] = useState([]);
+
+  const fetchShiftEmployees = async () => {
+    if (!shiftId) {
+      console.error('Shift ID is null or undefined. Cannot fetch employees.');
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}/api/shift-employees/${shiftId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setShiftEmployees(response.data);
+    } catch (error) {
+      console.error('Error fetching shift employees:', error.response?.data || error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (show) {
+      fetchShiftEmployees();
+    }
+  }, [show, shiftId, token]);
+
+  const handleAddEmployee = async () => {
+    if (onAddEmployee) {
+      await onAddEmployee();
+      fetchShiftEmployees(); // Refresh the employee list after adding
+    }
+  };
+
+  const tableStyle = {
+    maxHeight: '70vh',
+    overflowY: 'auto',
+  };
+
+  return (
+    <Modal show={show} onHide={onClose} backdrop="static" keyboard={false} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Employees in Current Shift</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="mb-0">Employee List</h5>
+          <Button variant="outline-primary" onClick={handleAddEmployee} disabled={!shiftStarted}>
+            Add Employee
+          </Button>
+        </div>
+        <div style={tableStyle}>
+          {shiftEmployees.length > 0 ? (
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>Employee Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shiftEmployees.map((employee) => (
+                  <tr key={employee.EmployeeID}>
+                    <td>{`${employee.FirstName} ${employee.LastName}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <p>
+              {shiftStarted
+                ? 'No employees found in the current shift.'
+                : 'Start shift to start adding employees.'}
+            </p>
+          )}
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+

@@ -15,6 +15,7 @@ function ItemsPage() {
     const [selectedBranch, setSelectedBranch] = useState('');
     const [items, setItems] = useState([]);
     const [allItemsList, setAllItemsList] = useState([]);
+    const [allItemsPricelist, setAllItemsPricelist] = useState([]);
     const [allItems, setAllItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -39,6 +40,42 @@ function ItemsPage() {
         currentPrice: '',
         newPrice: ''
     });
+    const [shiftStarted, setShiftStarted] = useState(false);
+    const [shiftId, setShiftId] = useState(null);
+    const [branch, setBranch] = useState(null);
+
+    const fetchActiveShift = async () => {
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/shifts/active/${user.userID}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            });
+            const data = response.data;
+            // console.log('Fetched active shift data:', data);
+            if (data && data.length > 0) {
+                const activeShift = data[0];
+                // console.log('Active shift found:', activeShift);
+                setShiftId(activeShift.ShiftID); // Set the active shift ID
+                setBranch({
+                    display: `${activeShift.Name} - ${activeShift.Location}`,
+                    id: activeShift.BranchID
+                }); // Set the branch details
+                setShiftStarted(true); // Mark the shift as started
+            } else {
+                setShiftStarted(false); // No active shift
+            }
+            return data;
+        } catch (error) {
+            console.error('Error fetching active shift:', error.response?.data || error.message);
+            return null;
+        }
+    };
+
+    const currentBranch = useCallback(() => {
+    }, []);
+
+
 
     const fetchItemsforItemTable = useCallback(() => {
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items`)
@@ -69,12 +106,11 @@ function ItemsPage() {
         } catch (error) {
             console.error('Error fetching branches:', error);
         }
-    }, [user?.username]);
+    }, []);
 
     // gets all items of the branch using username
     const fetchItems = useCallback(() => {
-        if (!user?.username) return;
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/items?username=${user.username}`)
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/items`)
             .then(response => {
                 setItems(Array.isArray(response.data) ? response.data : []); // Ensure items is an array
             })
@@ -90,6 +126,8 @@ function ItemsPage() {
         fetchBranches();
     }, [fetchItems, fetchBranches, fetchItemsforItemTable]);
 
+    const matchPricelistRoute = useMatch('/employee-dashboard/:username/pricelist');
+
     // get all items from item table
     const fetchAllItems = useCallback((branchId) => {
         if (!branchId) return;
@@ -97,25 +135,56 @@ function ItemsPage() {
             .then(response => {
                 setAllItemsList(response.data);
                 console.log('All items with prices:', response.data); // Log the fetched items
+                const filteredItems = response.data.filter(item => item.Price !== '');
+                console.log('Filtered items with prices:', filteredItems);
+                setAllItemsPricelist(filteredItems);
             })
             .catch(error => {
                 console.error('Error fetching all items:', error);
             });
     }, []);
 
-    // useEffect(() => {
-    //     if (selectedBranchForPricelist) {
-    //         const branchItems = items.filter(item => {
-    //             const branchDetails = branches.find(branch => branch.id === Number(selectedBranchForPricelist));
-    //             if (!branchDetails) return false;
+    useEffect(() => {
+        const initializeShift = async () => {
+            const activeShiftData = await fetchActiveShift();
+            if (activeShiftData && activeShiftData.length > 0) {
+                const branchId = activeShiftData[0].BranchID;
+                fetchAllItems(branchId); // Fetch items for the branch
+            }
+        };
 
-    //             const branchNameLocation = `${branchDetails.displayName}`;
-    //             const itemBranchNameLocation = `${item.BranchName} - ${item.BranchLocation}`;
-    //             return itemBranchNameLocation === branchNameLocation;
-    //         });
-    //         setPricelistItems(branchItems);
-    //     }
-    // }, [selectedBranchForPricelist, items, branches]);
+        initializeShift();
+    }, [fetchActiveShift, fetchAllItems]);
+
+    const renderItemsTable = () => {
+        if (isMobileRoute && matchPricelistRoute) {
+            return (
+                <>
+                    <h3>{branch?.display} Pricelist</h3>
+                    <div style={{ marginBottom: '1rem' }}></div> {/* Add space between title and table */}
+                    <Table striped bordered hover>
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {allItemsList
+                                .filter(item => item.price !== null && item.price !== '') // Filter out items with null or empty price
+                                .map((item, index) => (
+                                    <tr key={item.id || `item-${index}`}>
+                                        <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
+                                        <td>{item.price}</td> {/* Make price view-only */}
+                                    </tr>
+                                ))}
+                        </tbody>
+                    </Table>
+                </>
+            );
+        }
+        return null;
+    };
 
     const handleEdit = async (itemId, branchId, price) => {
         const userID = user?.userID;
@@ -333,6 +402,14 @@ function ItemsPage() {
         }
     };
 
+    if (matchPricelistRoute) {
+        return (
+            <div>
+                {renderItemsTable()}
+            </div>
+        );
+    }
+
     return (
         <div>
             {showSuccessAlert && (
@@ -364,36 +441,38 @@ function ItemsPage() {
                                     <h2></h2>
                                     <Button variant="outline-dark" onClick={() => setShowAddItemModal(true)}>Add Item</Button>
                                 </div>
-                                <Table striped bordered hover>
-                                    <thead>
-                                        <tr>
-                                            <th onClick={() => requestSort('Name')} style={{ cursor: 'pointer' }}>
-                                                Name and Classification
-                                            </th>
-                                            <th onClick={() => requestSort('UnitOfMeasurement')} style={{ cursor: 'pointer' }}>
-                                                Unit of Measurement
-                                            </th>
-                                            <th onClick={() => requestSort('Description')} style={{ cursor: 'pointer' }}>
-                                                Description
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {sortedItems.length === 0 ? (
+                                <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                    <Table striped bordered hover>
+                                        <thead>
                                             <tr>
-                                                <td colSpan="4" className="text-center">No items found</td>
+                                                <th onClick={() => requestSort('Name')} style={{ cursor: 'pointer' }}>
+                                                    Name and Classification
+                                                </th>
+                                                <th onClick={() => requestSort('UnitOfMeasurement')} style={{ cursor: 'pointer' }}>
+                                                    Unit of Measurement
+                                                </th>
+                                                <th onClick={() => requestSort('Description')} style={{ cursor: 'pointer' }}>
+                                                    Description
+                                                </th>
                                             </tr>
-                                        ) : (
-                                            sortedItems.map(item => (
-                                                <tr key={item.ItemID}>
-                                                    <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
-                                                    <td>{item.UnitOfMeasurement}</td>
-                                                    <td>{item.Description || 'N/A'}</td>
+                                        </thead>
+                                        <tbody>
+                                            {sortedItems.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="4" className="text-center">No items found</td>
                                                 </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </Table>
+                                            ) : (
+                                                sortedItems.map(item => (
+                                                    <tr key={item.ItemID}>
+                                                        <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
+                                                        <td>{item.UnitOfMeasurement}</td>
+                                                        <td>{item.Description || 'N/A'}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </Table>
+                                </div>
                             </div>
                         </Tab>
                         <Tab eventKey="pricelist" title="Pricelist">
@@ -420,7 +499,9 @@ function ItemsPage() {
                                             >
                                                 <option value="">All Items</option>
                                                 {filteredItems.map(item => (
-                                                    <option key={item.ItemID} value={item.Name}>{item.Name}</option>
+                                                    <option key={item.ItemID} value={item.Name}>
+                                                        {item.Name}{item.Classification ? ` - ${item.Classification}` : ''}
+                                                    </option>
                                                 ))}
                                             </Form.Select>
                                         </Form.Group>
@@ -655,6 +736,8 @@ function ItemsPage() {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+            {renderItemsTable()}
         </div >
     );
 };

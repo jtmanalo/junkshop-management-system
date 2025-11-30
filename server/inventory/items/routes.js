@@ -10,6 +10,7 @@ router.get('/all-items', itemController.getAllItems);
 router.get('/all-items-with-prices', itemController.crossReferenceItemsWithPrices);
 
 router.put('/items/branch/update-price', itemController.updateItemPriceForBranch);
+router.put('/items/buyer/update-price', itemController.updateItemPriceForBuyer);
 
 // Create an item
 router.post('/items', itemController.create);

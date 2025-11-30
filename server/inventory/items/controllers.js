@@ -2,14 +2,8 @@ const itemService = require('./services');
 
 // Items Page get all items of a branch with pricing
 async function getAllItemsWithPricing(req, res) {
-    const { username } = req.query;
-
-    if (!username) {
-        return res.status(400).json({ error: 'Username is required' });
-    }
-
     try {
-        const items = await itemService.getAllItemsWithPricing(username);
+        const items = await itemService.getAllItemsWithPricing();
         if (items.length === 0) {
             return res.status(204).send("No items found");
         }
@@ -54,10 +48,10 @@ async function getItemsWithPricesForBranch(req, res) {
 }
 
 async function crossReferenceItemsWithPrices(req, res) {
-    const { branchId } = req.query;
+    const { branchId, buyerId } = req.query;
 
-    if (!branchId) {
-        return res.status(400).json({ error: 'BranchID is required' });
+    if (!branchId && !buyerId) {
+        return res.status(400).json({ error: 'Either BranchID or BuyerID is required' });
     }
 
     try {
@@ -66,7 +60,12 @@ async function crossReferenceItemsWithPrices(req, res) {
             return res.status(204).send("No items found");
         }
 
-        const itemsWithPrices = await itemService.getItemsWithPricesForBranch(branchId);
+        let itemsWithPrices;
+        if (branchId) {
+            itemsWithPrices = await itemService.getItemsWithPricesForBranch(branchId);
+        } else if (buyerId) {
+            itemsWithPrices = await itemService.getItemsWithPricesForBuyer(buyerId);
+        }
 
         // Create a map for quick lookup of prices by ItemID
         const priceMap = new Map();
@@ -82,6 +81,7 @@ async function crossReferenceItemsWithPrices(req, res) {
                 id: item.ItemID,
                 name: item.Name,
                 classification: item.Classification,
+                unitOfMeasurement: item.UnitOfMeasurement,
                 price: priceMap.get(key) || ""
             };
         });
@@ -163,6 +163,22 @@ async function updateItemPriceForBranch(req, res) {
     }
 }
 
+async function updateItemPriceForBuyer(req, res) {
+    const { buyerId, itemId, itemPrice, userId } = req.body;
+
+    if (!buyerId || !itemId || !userId || itemPrice === undefined) {
+        return res.status(400).json({ error: 'BuyerID, ItemID, UserID and ItemPrice are required.' });
+    }
+
+    try {
+        const result = await itemService.updateItemPriceForBuyer(buyerId, itemId, itemPrice, userId);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error in updateItemPriceForBuyer:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAllItemsWithPricing,
     getAllItems,
@@ -171,6 +187,7 @@ module.exports = {
     create,
     getById,
     update,
-    updateItemPriceForBranch
+    updateItemPriceForBranch,
+    updateItemPriceForBuyer,
     // remove
 };

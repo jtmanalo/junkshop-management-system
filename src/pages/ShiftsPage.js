@@ -84,42 +84,44 @@ function ShiftsPage() {
                         </Form.Group>
                     </Form>
                 </div>
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th>
-                                {/* <th onClick={() => requestSort('Name')} style={{ cursor: 'pointer' }}> */}
-                                Name
-                            </th>
-                            <th>
-                                {/* <th onClick={() => requestSort('UnitOfMeasurement')} style={{ cursor: 'pointer' }}> */}
-                                Loan Amount
-                            </th>
-                            <th>
-                                {/* <th onClick={() => requestSort('Description')} style={{ cursor: 'pointer' }}> */}
-                                Repayment Amount
-                            </th>
-                            <th>Outstanding Balance</th>
-                            <th>Last Transaction Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {/* {sortedItems.length === 0 ? (
-                                                                            <tr>
-                                                                                <td colSpan="4" className="text-center">No items found</td>
-                                                                            </tr>
-                                                                        ) : (
-                                                                            sortedItems.map(item => (
-                                                                                <tr key={item.ItemID}>
-                                                                                    <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
-                                                                                    <td>{item.UnitOfMeasurement}</td>
-                                                                                    <td>{item.Description || 'N/A'}</td>
-                                                                                </tr>
-                                                                            ))
-                                                                        )} */}
-                    </tbody>
-                </Table>
+                <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                    <Table striped bordered hover>
+                        <thead>
+                            <tr>
+                                <th>
+                                    {/* <th onClick={() => requestSort('Name')} style={{ cursor: 'pointer' }}> */}
+                                    Name
+                                </th>
+                                <th>
+                                    {/* <th onClick={() => requestSort('UnitOfMeasurement')} style={{ cursor: 'pointer' }}> */}
+                                    Loan Amount
+                                </th>
+                                <th>
+                                    {/* <th onClick={() => requestSort('Description')} style={{ cursor: 'pointer' }}> */}
+                                    Repayment Amount
+                                </th>
+                                <th>Outstanding Balance</th>
+                                <th>Last Transaction Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {/* {sortedItems.length === 0 ? (
+                <tr>
+                    <td colSpan="4" className="text-center">No items found</td>
+                </tr>
+            ) : (
+                sortedItems.map(item => (
+                    <tr key={item.ItemID}>
+                        <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
+                        <td>{item.UnitOfMeasurement}</td>
+                        <td>{item.Description || 'N/A'}</td>
+                    </tr>
+                ))
+            )} */}
+                        </tbody>
+                    </Table>
+                </div>
             </div>
         </div >
     )

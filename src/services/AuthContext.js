@@ -50,7 +50,7 @@ const AuthProvider = ({ children }) => {
             throw new Error(res.message);
         } catch (err) {
             if (err.response) {
-                if (err.response.status === 403 || err.response.status === 404) {
+                if (err.response.status === 403 || err.response.status === 404 || err.response.status === 401) {
                     alert(err.response.data.error); // Handle 'not approved' or 'user does not exist' errors
                 } else {
                     console.error(err);

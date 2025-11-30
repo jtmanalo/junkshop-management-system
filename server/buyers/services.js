@@ -7,7 +7,31 @@ async function getAll() {
         conn = await pool.getConnection();
 
         // Perform the SELECT query
-        const rows = await conn.query('SELECT * FROM buyer');
+        const rows = await conn.query(`
+            SELECT 
+                b.BuyerID, 
+                b.CompanyName, 
+                b.ContactPerson, 
+                b.Notes, 
+                b.Status,
+                p.PriceListID, 
+                p.DateEffective,
+                i.ItemID, 
+                i.Name, 
+                i.UnitOfMeasurement, 
+                i.Classification, 
+                i.Description,
+                pi.PriceListItemID,
+                pi.Price
+            FROM 
+                buyer b
+            LEFT JOIN 
+                pricelist p ON b.BuyerID = p.BuyerID
+            LEFT JOIN 
+                pricelist_item pi ON p.PriceListID = pi.PriceListID
+            LEFT JOIN 
+                item i ON pi.ItemID = i.ItemID;
+        `);
 
         // Ensures timestamps are in UTC+8
         rows.forEach(row => {
@@ -30,10 +54,13 @@ async function create(data) {
     try {
         conn = await pool.getConnection();
 
+        // Start a transaction
+        await conn.beginTransaction();
+
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
-        // Perform the INSERT query
+        // Perform the INSERT query for the buyer
         const result = await conn.query(
             'INSERT INTO buyer (CompanyName, ContactPerson, Notes, Status, CreatedAt) VALUES (?, ?, ?, ?, ?)',
             [
@@ -45,9 +72,27 @@ async function create(data) {
             ]
         );
 
+        // Insert into buyer_contact if contact details are provided
+        if (data.contactMethod || data.contactDetail) {
+            await conn.query(
+                'INSERT INTO buyer_contact (BuyerID, ContactMethod, ContactDetail, IsPrimary, CreatedAt) VALUES (?, ?, ?, ?, ?)',
+                [
+                    result.insertId, // Use the BuyerID from the first insert
+                    data.contactMethod || null,
+                    data.contactDetail || null,
+                    1, // Set isPrimary to true (1 in MariaDB)
+                    createdAt
+                ]
+            );
+        }
+
+        // Commit the transaction
+        await conn.commit();
+
         // Return the inserted buyer data
         return { id: result.insertId.toString(), ...data, createdAt };
     } catch (error) {
+        if (conn) await conn.rollback(); // Rollback the transaction on error
         throw error;
     } finally {
         if (conn) conn.release();

@@ -37,9 +37,10 @@ async function createUser(data) {
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO user (Username, PasswordHash, UserType, Status' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?, ?' + (data.email ? ', ?' : '') + ', ?)',
+            'INSERT INTO user (Name, Username, PasswordHash, UserType, Status' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?, ?' + (data.email ? ', ?' : '') + ', ?)',
             data.email ?
                 [
+                    data.name,
                     data.username,
                     data.passwordHash,
                     data.userType,
@@ -47,6 +48,7 @@ async function createUser(data) {
                     data.email,
                     createdAt
                 ] : [
+                    data.name,
                     data.username,
                     data.passwordHash,
                     data.userType,
@@ -127,41 +129,101 @@ async function getUserDetailsByUsername(username) {
     }
 }
 
+async function getDetails(username) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query
+        const rows = await conn.query('SELECT * FROM user WHERE Username = ?', [username]);
+
+        // Ensures timestamps are in UTC+8
+        rows.forEach(row => {
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
+
+        // Return all rows
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function update(userId, data) {
     let conn;
     try {
         conn = await pool.getConnection();
 
         // Dynamically build the query
-        const fields = [];
-        const values = [];
+        const userFields = [];
+        const userValues = [];
+        const employeeFields = [];
+        const employeeValues = [];
 
+        if (data.name) {
+            userFields.push('Name = ?');
+            userValues.push(data.name);
+        }
         if (data.username) {
-            fields.push('Username = ?');
-            values.push(data.username);
+            userFields.push('Username = ?');
+            userValues.push(data.username);
         }
         if (data.passwordHash) {
-            fields.push('PasswordHash = ?');
-            values.push(data.passwordHash);
+            userFields.push('PasswordHash = ?');
+            userValues.push(data.passwordHash);
         }
-        if (data.userType) {
-            fields.push('UserType = ?');
-            values.push(data.userType);
+        if (data.email) {
+            userFields.push('Email = ?');
+            userValues.push(data.email);
         }
-        if (data.status) {
-            fields.push('Status = ?');
-            values.push(data.status);
+        if (data.branchId) {
+            userFields.push('BranchID = ?');
+            userValues.push(data.branchId);
+        }
+
+        if (data.userType === 'employee') {
+            if (data.firstName) {
+                employeeFields.push('FirstName = ?');
+                employeeValues.push(data.firstName);
+            }
+            if (data.middleName) {
+                employeeFields.push('MiddleName = ?');
+                employeeValues.push(data.middleName);
+            }
+            if (data.lastName) {
+                employeeFields.push('LastName = ?');
+                employeeValues.push(data.lastName);
+            }
+            if (data.contactNumber) {
+                employeeFields.push('ContactNumber = ?');
+                employeeValues.push(data.contactNumber);
+            }
+            if (data.address) {
+                employeeFields.push('Address = ?');
+                employeeValues.push(data.address);
+            }
         }
 
         // If no fields are provided, throw an error
-        if (fields.length === 0) {
+        if (userFields.length === 0 && employeeFields.length === 0) {
             throw new Error('No fields provided for update');
         }
 
-        const query = `UPDATE user SET ${fields.join(', ')} WHERE UserID = ?`;
-        values.push(userId);
+        // Update user table
+        const query = `UPDATE user SET ${userFields.join(', ')} WHERE UserID = ?`;
+        userValues.push(userId);
+        const result = await conn.query(query, userValues);
 
-        const result = await conn.query(query, values);
+        // Update employee table if userType is employee
+        if (data.userType === 'employee' && employeeFields.length > 0) {
+            const employeeQuery = `UPDATE employee SET ${employeeFields.join(', ')} WHERE UserID = ?`;
+            employeeValues.push(userId);
+            await conn.query(employeeQuery, employeeValues);
+        }
 
         // Check if any rows were updated
         if (result.affectedRows === 0) {
@@ -223,6 +285,7 @@ async function createEmployee(data) {
 
 async function createOwner(data) {
     let conn;
+
     try {
         conn = await pool.getConnection();
 
@@ -263,6 +326,42 @@ async function updateEmployeeStatus(userId, status) {
     }
 }
 
+async function getUserAndEmployeeDetailsByUsername(username) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Query to get user details and join with employee table
+        const rows = await conn.query(`
+            SELECT 
+                u.*, 
+                e.PositionTitle, 
+                e.FirstName, 
+                e.MiddleName, 
+                e.LastName, 
+                e.Nickname, 
+                e.DisplayPictureURL, 
+                e.ContactNumber, 
+                e.Address, 
+                e.HireDate, 
+                e.Status AS EmployeeStatus
+            FROM 
+                user u
+            LEFT JOIN 
+                employee e
+            ON 
+                u.UserID = e.UserID
+            WHERE 
+                u.Username = ?`, [username]);
+
+        return rows[0]; // Return the first row if found
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     createUser,
@@ -273,5 +372,7 @@ module.exports = {
     getUserDetailsByUsername,
     createEmployee,
     createOwner,
-    updateEmployeeStatus
+    updateEmployeeStatus,
+    getDetails,
+    getUserAndEmployeeDetailsByUsername
 };

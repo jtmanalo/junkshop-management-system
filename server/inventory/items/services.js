@@ -103,6 +103,38 @@ async function getItemsWithPricesForBranch(branchId) {
     }
 }
 
+async function getItemsWithPricesForBuyer(buyerId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const query = `
+            SELECT 
+                i.ItemID,
+                i.Name,
+                i.Classification,
+                pi.Price AS ItemPrice
+            FROM 
+                item i
+            LEFT JOIN 
+                pricelist_item pi 
+            ON 
+                i.ItemID = pi.ItemID
+            LEFT JOIN 
+                pricelist p 
+            ON 
+                pi.PriceListID = p.PriceListID
+            WHERE 
+                p.BuyerID = ? 
+    `;
+        return await conn.query(query, [buyerId]);
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function create(data) {
     let conn;
     try {
@@ -298,6 +330,62 @@ async function updateItemPriceForBranch(branchId, itemId, itemPrice, userId) {
     }
 }
 
+async function updateItemPriceForBuyer(buyerId, itemId, itemPrice, userId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // First, get the PriceListID for the branch where BuyerID is NULL
+        const pricelistRows = await conn.query(
+            'SELECT PriceListID FROM pricelist WHERE BuyerID = ? AND BranchID IS NULL',
+            [buyerId]
+        );
+
+        if (pricelistRows.length === 0) {
+            throw new Error('Pricelist not found for the specified buyer');
+        }
+
+        const priceListId = pricelistRows[0].PriceListID;
+
+        // Next, check if a pricelist_item already exists for the given ItemID and PriceListID
+        const pricelistItemRows = await conn.query(
+            'SELECT PriceListItemID, Price FROM pricelist_item WHERE PriceListID = ? AND ItemID = ?',
+            [priceListId, itemId]
+        );
+
+        if (pricelistItemRows.length > 0) {
+            // If it exists, update the price
+            const oldPrice = pricelistItemRows[0].Price;
+            const priceListItemId = pricelistItemRows[0].PriceListItemID;
+
+            await conn.query(
+                'UPDATE pricelist_item SET Price = ? WHERE PriceListItemID = ?',
+                [itemPrice, priceListItemId]
+            );
+
+            // Insert a new record into pricelist_activity
+            const updatedAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+            await conn.query(
+                'INSERT INTO pricelist_activity (PriceListItemID, OldPrice, NewPrice, UpdatedAt, UserID) VALUES (?, ?, ?, ?, ?)',
+                [priceListItemId, oldPrice, itemPrice, updatedAt, userId]
+            );
+        } else {
+            // If it doesn't exist, insert a new record
+            const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+            await conn.query(
+                'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt) VALUES (?, ?, ?, ?)',
+                [priceListId, itemId, itemPrice, createdAt]
+            );
+        }
+
+        return { buyerId, itemId, itemPrice };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAllItemsWithPricing,
     getAllItems,
@@ -307,5 +395,7 @@ module.exports = {
     update,
     createPricelistItem,
     getAllBranches,
-    updateItemPriceForBranch
+    updateItemPriceForBranch,
+    getItemsWithPricesForBuyer,
+    updateItemPriceForBuyer
 };

@@ -21,6 +21,8 @@ router.post('/pricelist-items', pricelistitemController.create);
 router.get('/pricelist-items/branch', pricelistitemController.getItemsWithPricesForBranch);
 
 // Update or create a pricelist item
-router.post('/pricelist-items/update', pricelistitemController.updateOrCreatePricelistItem);
+router.post('/pricelist-items/update', pricelistitemController.updateOrCreatePricelistItemForBranch);
+
+router.post('/buyer-pricelist-items/update', pricelistitemController.updateOrCreatePricelistItemForBuyer);
 
 module.exports = router;

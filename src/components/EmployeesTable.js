@@ -374,79 +374,81 @@ function EmployeesTable() {
                 </Form.Group>
             </Form>
 
-            <Table striped bordered hover>
-                <thead>
-                    <tr>
-                        <th style={{ cursor: 'default' }}>#</th>
-                        <th onClick={() => handleSort('Name')} style={{ cursor: 'pointer' }}>Name</th>
-                        <th onClick={() => handleSort('Email')} style={{ cursor: 'pointer' }}>Email</th>
-                        <th onClick={() => handleSort('AccountStatus')} style={{ cursor: 'pointer' }}>Account Status</th>
-                        <th onClick={() => handleSort('EmployeeStatus')} style={{ cursor: 'pointer' }}>Employee Status</th>
-                        <th style={{ cursor: 'default' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {sortedUsers.length === 0 ? (
+            <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                <Table striped bordered hover>
+                    <thead>
                         <tr>
-                            <td colSpan="6">No users found</td>
+                            <th style={{ cursor: 'default' }}>#</th>
+                            <th onClick={() => handleSort('Name')} style={{ cursor: 'pointer' }}>Name</th>
+                            <th onClick={() => handleSort('Email')} style={{ cursor: 'pointer' }}>Email</th>
+                            <th onClick={() => handleSort('AccountStatus')} style={{ cursor: 'pointer' }}>Account Status</th>
+                            <th onClick={() => handleSort('EmployeeStatus')} style={{ cursor: 'pointer' }}>Employee Status</th>
+                            <th style={{ cursor: 'default' }}>Actions</th>
                         </tr>
-                    ) : (
-                        sortedUsers.map((user, index) => (
-                            <tr key={user.UserID || `employee-${index}`}>
-                                <td>{index + 1}</td>
-                                <td>{
-                                    `${user.FirstName || ''} ${user.MiddleName ? user.MiddleName + ' ' : ''}${user.LastName || ''}`.trim() || 'N/A'
-                                }</td>
-                                <td>{user.Email || 'Not Registered'}</td>
-                                <td>{user.AccountStatus?.toString().charAt(0).toUpperCase() + user.AccountStatus?.toString().slice(1) || 'No Account'}</td>
-                                <td>{user.EmployeeStatus?.toString().charAt(0).toUpperCase() + user.EmployeeStatus?.toString().slice(1) || 'N/A'}</td>
-                                <td>
-                                    <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        className="me-2"
-                                        onClick={() => handleInfoClick(user)}
-                                    >
-                                        <FaInfoCircle /> Info
-                                    </Button>
-                                    {(user.AccountStatus === 'approved' || user.AccountStatus === null) ? (
+                    </thead>
+                    <tbody>
+                        {sortedUsers.length === 0 ? (
+                            <tr>
+                                <td colSpan="6">No users found</td>
+                            </tr>
+                        ) : (
+                            sortedUsers.map((user, index) => (
+                                <tr key={user.UserID || `employee-${index}`}>
+                                    <td>{index + 1}</td>
+                                    <td>{
+                                        `${user.FirstName || ''} ${user.MiddleName ? user.MiddleName + ' ' : ''}${user.LastName || ''}`.trim() || 'N/A'
+                                    }</td>
+                                    <td>{user.Email || 'Not Registered'}</td>
+                                    <td>{user.AccountStatus?.toString().charAt(0).toUpperCase() + user.AccountStatus?.toString().slice(1) || 'No Account'}</td>
+                                    <td>{user.EmployeeStatus?.toString().charAt(0).toUpperCase() + user.EmployeeStatus?.toString().slice(1) || 'N/A'}</td>
+                                    <td>
                                         <Button
-                                            variant="outline-success"
+                                            variant="outline-secondary"
                                             size="sm"
                                             className="me-2"
-                                            onClick={() => handleUpdateClick(user)}
+                                            onClick={() => handleInfoClick(user)}
                                         >
-                                            Update
+                                            <FaInfoCircle /> Info
                                         </Button>
-                                    ) : user.AccountStatus === 'rejected' ? (
-                                        null
-                                    ) : (
-                                        <>
+                                        {(user.AccountStatus === 'approved' || user.AccountStatus === null) ? (
                                             <Button
-                                                variant="outline-primary"
+                                                variant="outline-success"
                                                 size="sm"
                                                 className="me-2"
-                                                disabled={user.AccountStatus !== 'pending'}
-                                                onClick={() => handleActionClick('approve', user)}
+                                                onClick={() => handleUpdateClick(user)}
                                             >
-                                                Approve
+                                                Update
                                             </Button>
-                                            <Button
-                                                variant="outline-danger"
-                                                size="sm"
-                                                disabled={user.AccountStatus !== 'pending'}
-                                                onClick={() => handleActionClick('reject', user)}
-                                            >
-                                                Reject
-                                            </Button>
-                                        </>
-                                    )}
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </Table>
+                                        ) : user.AccountStatus === 'rejected' ? (
+                                            null
+                                        ) : (
+                                            <>
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    className="me-2"
+                                                    disabled={user.AccountStatus !== 'pending'}
+                                                    onClick={() => handleActionClick('approve', user)}
+                                                >
+                                                    Approve
+                                                </Button>
+                                                <Button
+                                                    variant="outline-danger"
+                                                    size="sm"
+                                                    disabled={user.AccountStatus !== 'pending'}
+                                                    onClick={() => handleActionClick('reject', user)}
+                                                >
+                                                    Reject
+                                                </Button>
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </Table>
+            </div>
 
             {/* Info Modal */}
             {modalAction === 'info' && selectedUser && (

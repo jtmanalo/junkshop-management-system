@@ -1,97 +1,145 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootstrap';
-import axios from 'axios';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Table, Form, Button, Alert, Modal } from 'react-bootstrap';
+import { FaInfoCircle } from 'react-icons/fa';
 import { useAuth } from '../services/AuthContext';
+import { useMatch } from 'react-router-dom';
+import axios from 'axios';
 
 function BuyersPage() {
-    const { token, user } = useAuth();
-    const isEmployee = user?.userType === 'employee';
-    const [errors, setErrors] = useState({});
-    const [branches, setBranches] = useState([]);
-    const [selectedBranch, setSelectedBranch] = useState('');
-    const [items, setItems] = useState([]);
-    const [allItemsList, setAllItemsList] = useState([]);
-    const [allItems, setAllItems] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [showAddItemModal, setShowAddItemModal] = useState(false);
+    const { user, token } = useAuth();
+    const [buyers, setBuyers] = useState([]);
+    const [buyerPricelist, setBuyerPricelist] = useState([]);
     const [showSuccessAlert, setShowSuccessAlert] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    const [newItem, setNewItem] = useState({
-        name: '',
-        unitOfMeasurement: 'per piece',
-        classification: '',
-        description: ''
-    });
-    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+    const [selectedBuyer, setSelectedBuyer] = useState('');
+    const [items, setItems] = useState([]);
+    const [selectedItem, setSelectedItem] = useState('');
+    const [rows, setRows] = useState([]);
+    const [filteredRows, setFilteredRows] = useState([]); // State for filtered rows
+    const [buyerContacts, setBuyerContacts] = useState([]);
+    const [showContactsModal, setShowContactsModal] = useState(false);
+    const [currentBuyerId, setCurrentBuyerId] = useState(null);
+    const isEmployee = user?.userType === 'employee';
+    const matchMobileRoute = useMatch('/mobileroute/*');
+    const matchEmployeeDashboard = useMatch('/employee-dashboard/*');
+    const isMobileRoute = matchMobileRoute || matchEmployeeDashboard;
     const [showEditPricelistModal, setShowEditPricelistModal] = useState(false);
-    const [selectedBranchForPricelist, setSelectedBranchForPricelist] = useState('');
+    const [allItemsList, setAllItemsList] = useState([]);
     const [pricelistItems, setPricelistItems] = useState([]);
+    const [selectedBuyerForPricelist, setSelectedBuyerForPricelist] = useState('');
+    const [showViewPricelistModal, setShowViewPricelistModal] = useState(false);
+    const [viewPricelistItems, setViewPricelistItems] = useState([]);
+    const [viewPricelistName, setViewPricelistName] = useState('');
     const [showEditPriceModal, setShowEditPriceModal] = useState(false);
-    const [editItemDetails, setEditItemDetails] = useState({
-        itemId: null,
-        branchId: null,
-        name: '',
-        classification: '',
-        currentPrice: '',
-        newPrice: ''
-    });
 
-    const fetchItemsforItemTable = useCallback(() => {
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items`)
-            .then(response => {
-                if (Array.isArray(response.data)) {
-                    setAllItems(response.data);
-                    console.log('Fetched all items for item table:', response.data);
-                } else {
-                    console.error('Unexpected response format for all items:', response.data);
-                    setAllItems([]);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching items for item table:', error);
-                setAllItems([]);
-            });
-    }, []);
+    // Add state for managing the "Add Buyer" modal visibility
+    const [showAddBuyerModal, setShowAddBuyerModal] = useState(false);
+    const [newBuyerName, setNewBuyerName] = useState('');
+    const [newBuyerCompany, setNewBuyerCompany] = useState('');
 
-    const fetchBranches = useCallback(async () => {
+    // Add state for new fields in the "Add Buyer" modal
+    const [newBuyerNotes, setNewBuyerNotes] = useState('');
+    const [newBuyerContactMethod, setNewBuyerContactMethod] = useState('');
+    const [newBuyerContactDetail, setNewBuyerContactDetail] = useState('');
+
+    // Add state for managing the "Edit Buyer" modal visibility and form fields
+    const [showEditBuyerModal, setShowEditBuyerModal] = useState(false);
+    const [editBuyerId, setEditBuyerId] = useState(null);
+    const [editBuyerCompany, setEditBuyerCompany] = useState('');
+    const [editBuyerName, setEditBuyerName] = useState('');
+    // const [editBuyerContactMethod, setEditBuyerContactMethod] = useState('');
+    // const [editBuyerContactDetail, setEditBuyerContactDetail] = useState('');
+    const [editBuyerNotes, setEditBuyerNotes] = useState('');
+    const [editBuyerStatus, setEditBuyerStatus] = useState('active');
+
+    // Move `fetchBuyers` outside of the `useEffect` to make it reusable.
+    const fetchBuyers = async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches/${user.username}`);
-            // console.log('API Response:', response.data); // Log the API response
-            const formattedBranches = response.data.map(branch => ({
-                id: branch.BranchID,
-                displayName: `${branch.Name} - ${branch.Location}`
-            }));
-            setBranches([{ id: '', displayName: 'All Branches' }, ...formattedBranches]); // Add "All Branches" option
-        } catch (error) {
-            console.error('Error fetching branches:', error);
-        }
-    }, [user?.username]);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers`);
+            console.log('Buyers:', response.data);
+            const formattedBuyers = [...new Set(response.data.map(buyer => buyer.CompanyName))];
+            const buyerPricelist = Array.from(
+                response.data.reduce((map, buyer) => {
+                    if (buyer.BuyerID && buyer.CompanyName && !map.has(buyer.BuyerID)) {
+                        console.log('Adding BuyerID:', buyer.BuyerID); // Log BuyerID for debugging
+                        map.set(buyer.BuyerID, { id: buyer.BuyerID, companyName: buyer.CompanyName });
+                    }
+                    return map;
+                }, new Map()).values()
+            );
+            // Ensure the `items` state only contains unique entries by filtering duplicates.
+            const formattedItems = Array.from(
+                new Map(
+                    response.data.map(buyer => {
+                        if (buyer.Name && buyer.Classification) {
+                            return [
+                                `${buyer.Name} - ${buyer.Classification}`,
+                                {
+                                    id: buyer.BuyerID,
+                                    name: `${buyer.Name} - ${buyer.Classification}`,
+                                },
+                            ];
+                        } else if (buyer.Name) {
+                            return [
+                                buyer.Name,
+                                {
+                                    id: buyer.BuyerID,
+                                    name: buyer.Name,
+                                },
+                            ];
+                        }
+                        return null;
+                    }).filter(item => item) // Ensure unique and non-null items
+                ).values()
+            );
 
-    // gets all items of the branch using username
-    const fetchItems = useCallback(() => {
-        if (!user?.username) return;
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/items?username=${user.username}`)
-            .then(response => {
-                setItems(Array.isArray(response.data) ? response.data : []); // Ensure items is an array
-            })
-            .catch(error => {
-                console.error('Error fetching items:', error);
-                setItems([]); // Set to an empty array on error
-            });
-    }, [selectedBranch]);
+            const formattedRows = response.data.map(buyer => {
+                if (buyer.Name && buyer.CompanyName && buyer.Price) {
+                    return {
+                        buyerId: buyer.BuyerID,
+                        itemName: buyer.Name && buyer.Classification && buyer.UnitOfMeasurement
+                            ? `${buyer.Name} - ${buyer.Classification} (${buyer.UnitOfMeasurement})`
+                            : buyer.Name
+                                ? `${buyer.Name} (${buyer.UnitOfMeasurement})`
+                                : '',
+                        price: buyer.Price,
+                        companyName: buyer.CompanyName,
+                    };
+                }
+                return null;
+            }).filter(row => row !== null); // Filter out null rows
+
+            setBuyers(formattedBuyers);
+            setBuyerPricelist(buyerPricelist);
+            setItems([...formattedItems]); // Ensure unique items
+            setRows(formattedRows);
+            setFilteredRows(formattedRows); // Initialize filtered rows
+            console.log('Rows:', formattedRows);
+            console.log('Buyers:', formattedBuyers);
+        } catch (error) {
+            console.error('Error fetching buyers:', error);
+        }
+    };
 
     useEffect(() => {
-        fetchItemsforItemTable();
-        fetchItems();
-        fetchBranches();
-    }, [fetchItems, fetchBranches, fetchItemsforItemTable]);
+        fetchBuyers();
+    }, []);
 
-    // get all items from item table
-    const fetchAllItems = useCallback((branchId) => {
-        if (!branchId) return;
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?branchId=${branchId}`)
+    useEffect(() => {
+        // Filter rows based on selected buyer and item
+        const filtered = rows.filter(row => {
+            const matchesBuyer = selectedBuyer ? row.companyName === selectedBuyer : true;
+            const matchesItem = selectedItem ? row.itemName.includes(selectedItem) : true;
+            return matchesBuyer && matchesItem;
+        });
+        setFilteredRows(filtered);
+    }, [selectedBuyer, selectedItem, rows]);
+
+    const fetchAllItems = useCallback((buyerId) => {
+        if (!buyerId) return;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?buyerId=${buyerId}`)
             .then(response => {
-                setAllItemsList(response.data);
+                setPricelistItems(response.data);
                 console.log('All items with prices:', response.data); // Log the fetched items
             })
             .catch(error => {
@@ -99,215 +147,157 @@ function BuyersPage() {
             });
     }, []);
 
-    // useEffect(() => {
-    //     if (selectedBranchForPricelist) {
-    //         const branchItems = items.filter(item => {
-    //             const branchDetails = branches.find(branch => branch.id === Number(selectedBranchForPricelist));
-    //             if (!branchDetails) return false;
-
-    //             const branchNameLocation = `${branchDetails.displayName}`;
-    //             const itemBranchNameLocation = `${item.BranchName} - ${item.BranchLocation}`;
-    //             return itemBranchNameLocation === branchNameLocation;
-    //         });
-    //         setPricelistItems(branchItems);
-    //     }
-    // }, [selectedBranchForPricelist, items, branches]);
-
-    const handleEdit = async (itemId, branchId, price) => {
-        const userID = user?.userID;
-
-        if (!userID) {
-            console.error('User ID is missing');
-            return;
-        }
-
-        try {
-            const response = await axios.put(
-                `${process.env.REACT_APP_BASE_URL}/api/items/branch/update-price`,
-                {
-                    branchId,
-                    itemId,
-                    itemPrice: price,
-                    userId: userID
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
-            fetchItems();
-            console.log('Price updated successfully:', response.data);
-        } catch (error) {
-            console.error('Error updating price:', error);
-        }
-    };
-
-    const handleAddItemChange = (e) => {
-        const { name, value } = e.target;
-        setNewItem(prevState => ({ ...prevState, [name]: value }));
-    };
-
-    const validateNewItem = () => {
-        const newErrors = {};
-        if (!newItem.name.trim()) newErrors.name = 'Name is required';
-        if (!newItem.unitOfMeasurement) newErrors.unitOfMeasurement = 'Unit of Measurement is required';
-        return newErrors;
-    };
-
-    const handleAddItemSubmit = () => {
-        const validationErrors = validateNewItem();
-        if (Object.keys(validationErrors).length > 0) {
-            setErrors(validationErrors);
-            return;
-        }
-
-        axios.post(`${process.env.REACT_APP_BASE_URL}/api/items`, newItem, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-            .then(response => {
-                console.log('Item added successfully:', response.data);
-                // Show success alert
-                setSuccessMessage("Item added successfully!");
-                setShowSuccessAlert(true);
-                setTimeout(() => setShowSuccessAlert(false), 5000); // Auto-hide after 3 seconds
-
-                // Reset form and close modal
-                setNewItem({ name: '', unitOfMeasurement: 'per piece', classification: '', description: '' });
-                setErrors({});
-                setShowAddItemModal(false);
-            })
-            .catch(error => {
-                console.error('Error adding item:', error);
-                // Handle error (e.g., show error message to user)
-            });
-    };
-
-    const requestSort = (key) => {
-        let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
-        }
-        setSortConfig({ key, direction });
-    };
-
-    const filteredItems = items.filter(item => {
-        // Log the selected branch details
-        // console.log('Selected Branch ID:', selectedBranch);
-
-        // If no branch is selected ("All Branches"), include all items
-        if (!selectedBranch) {
-            // console.log('No branch selected, showing all items.');
-            return true;
-        }
-
-        // Find the selected branch details
-        const selectedBranchDetails = branches.find(branch => branch.id === Number(selectedBranch)); // Convert selectedBranch to number
-        // console.log('Selected Branch Details:', selectedBranchDetails);
-
-        if (!selectedBranchDetails) {
-            // console.log('Selected branch not found in branches list.');
-            return false;
-        }
-
-        // Compare branch name and location
-        const selectedBranchNameLocation = selectedBranchDetails.displayName;
-        const itemBranchNameLocation = `${item.BranchName} - ${item.BranchLocation}`;
-
-        // console.log('Comparing item branch:', itemBranchNameLocation, 'with selected branch:', selectedBranchNameLocation);
-
-        return itemBranchNameLocation === selectedBranchNameLocation;
-    });
-
-    const filteredItemsByNameClassification = filteredItems.filter(item => {
-        // If no search term is provided, include all items
-        if (!searchTerm) return true;
-
-        // Combine item name and classification for filtering
-        const itemNameClassification = `${item.Name}${item.Classification ? ` - ${item.Classification}` : ''}`;
-
-        // Check if the search term matches the item name and classification
-        return itemNameClassification.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-
     const handlePricelistChange = (index, value) => {
-        setAllItemsList(prevItems => {
+        console.log(`Updating price for index ${index}:`, value);
+        setPricelistItems(prevItems => {
             const updatedItems = [...prevItems];
             updatedItems[index] = {
                 ...updatedItems[index],
                 price: value, // Update the price
             };
-            console.log('Updated Items:', updatedItems);
+            console.log('Updated Pricelist Items:', updatedItems);
             return updatedItems;
         });
     };
 
+    // Modify the "Update" button functionality to call `fetchBuyers` instead of `fetchAllItems` after a successful update.
     const handleUpdatePricelistItem = (index) => {
-        const item = allItemsList[index]; // Use allItemsList instead of pricelistItems
-        axios.post(`${process.env.REACT_APP_BASE_URL}/api/pricelist-items/update`, {
-            branchId: selectedBranchForPricelist,
+        const item = pricelistItems[index]; // Use pricelistItems instead of allItemsList
+        axios.post(`${process.env.REACT_APP_BASE_URL}/api/buyer-pricelist-items/update`, {
+            buyerId: selectedBuyerForPricelist,
             itemId: item.id, // Ensure itemID is used
             price: item.price // Send the updated price
         })
             .then(response => {
                 console.log('Pricelist item updated successfully:', response.data);
-                setAllItemsList(prevItems => {
+                setPricelistItems(prevItems => {
                     const updatedItems = [...prevItems];
                     updatedItems[index].isUpdated = true;
                     return updatedItems;
                 });
+
+                // Refresh the table by calling fetchBuyers
+                fetchBuyers();
             })
             .catch(error => {
                 console.error('Error updating pricelist item:', error);
             });
     };
 
-    const openEditPriceModal = (item) => {
-        setEditItemDetails({
-            itemId: item.ItemID,
-            branchId: item.BranchID,
-            name: item.Name,
-            classification: item.Classification,
-            currentPrice: item.ItemPrice,
-            newPrice: item.ItemPrice
-        });
-        setShowEditPriceModal(true);
+    async function fetchBuyerContacts(buyerId) {
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/contacts/${buyerId}`);
+            const data = response.data[0];
+            console.log('Raw Buyer Contacts Data:', data);
+
+            const formattedContacts = {
+                buyerId: data.BuyerID,
+                companyName: data.CompanyName,
+                contactPerson: data.ContactPerson,
+                notes: data.Notes,
+                status: data.Status,
+                createdAt: data.CreatedAt,
+                primaryContact: data.PrimaryContact,
+                otherContacts: data.OtherContacts ? data.OtherContacts.split('; ') : [] // Split other contacts into an array
+            };
+            console.log('Fetched Buyer Contacts:', formattedContacts);
+            return formattedContacts;
+        } catch (error) {
+            console.error('Error fetching buyer contacts:', error);
+            return null;
+        }
+    }
+
+    const toPascalCase = (str) => {
+        return str
+            .toLowerCase()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
     };
 
-    const handleEditPriceSubmit = async () => {
-        const { itemId, branchId, newPrice } = editItemDetails;
-
-        if (!itemId || !branchId || !newPrice) {
-            console.error('Missing required fields for editing price');
-            return;
+    const handleShowContacts = async (buyerId) => {
+        const contacts = await fetchBuyerContacts(buyerId); // Fetch formatted contacts
+        if (contacts) {
+            setBuyerContacts([contacts]); // Set the contacts in state
+            setShowContactsModal(true);
+        } else {
+            console.error('No contacts found for BuyerID:', buyerId);
         }
+    };
 
+    const handleViewPricelist = async (buyerId, companyName) => {
         try {
-            await handleEdit(itemId, branchId, newPrice);
-
-            // Show success alert
-            setSuccessMessage("Price updated successfully!");
-            setShowSuccessAlert(true);
-            setTimeout(() => setShowSuccessAlert(false), 5000); // Auto-hide after 3 seconds
-
-            // Reset form and close modal
-            setEditItemDetails({
-                itemId: null,
-                branchId: null,
-                name: '',
-                classification: '',
-                currentPrice: '',
-                newPrice: ''
-            });
-            setShowEditPriceModal(false);
-
-            // Re-fetch the pricelist table
-            fetchAllItems(branchId);
+            console.log('Fetching pricelist for BuyerID:', buyerId);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?buyerId=${buyerId}`);
+            const filteredItems = response.data.filter(item => item.price !== ''); // Filter out items with empty price
+            setViewPricelistName(companyName);
+            setViewPricelistItems(filteredItems);
+            console.log('Pricelist for view-only modal:', filteredItems);
+            setShowViewPricelistModal(true);
         } catch (error) {
-            console.error('Error submitting edited price:', error);
+            console.error('Error fetching pricelist for view-only modal:', error);
         }
+    };
+
+    // Function to handle adding a new buyer
+    const handleAddBuyer = (buyerData) => {
+        axios.post(`${process.env.REACT_APP_BASE_URL}/api/buyers`, buyerData)
+            .then(response => {
+                console.log('Buyer added successfully:', response.data);
+                setShowAddBuyerModal(false);
+                setNewBuyerName('');
+                setNewBuyerCompany('');
+                setNewBuyerNotes('');
+                setNewBuyerContactMethod('');
+                setNewBuyerContactDetail('');
+                fetchBuyers(); // Refresh the buyers list
+
+                // Show success alert
+                setSuccessMessage('Buyer added successfully!');
+                setShowSuccessAlert(true);
+                setTimeout(() => setShowSuccessAlert(false), 3000); // Auto-hide after 3 seconds
+            })
+            .catch(error => {
+                console.error('Error adding buyer:', error);
+            });
+    };
+
+    // Function to handle opening the "Edit Buyer" modal
+    const handleEditBuyer = (buyer) => {
+        setEditBuyerId(buyer.buyerId);
+        setEditBuyerCompany(buyer.companyName);
+        setEditBuyerName(buyer.contactPerson || '');
+        // setEditBuyerContactMethod(buyer.contactMethod || '');
+        // setEditBuyerContactDetail(buyer.contactDetail || '');
+        setEditBuyerNotes(buyer.notes || '');
+        setEditBuyerStatus(buyer.status || 'active');
+        setShowEditBuyerModal(true);
+    };
+
+    // Function to handle saving the edited buyer details
+    const handleSaveBuyer = () => {
+        axios.put(`${process.env.REACT_APP_BASE_URL}/api/buyers/${editBuyerId}`, {
+            companyName: editBuyerCompany,
+            contactPerson: editBuyerName,
+            // contactMethod: editBuyerContactMethod,
+            // contactDetail: editBuyerContactDetail,
+            notes: editBuyerNotes,
+            status: editBuyerStatus,
+        })
+            .then(response => {
+                console.log('Buyer updated successfully:', response.data);
+                setShowEditBuyerModal(false);
+                fetchBuyers(); // Refresh the buyers list
+
+                // Show success alert
+                setSuccessMessage('Buyer updated successfully!');
+                setShowSuccessAlert(true);
+                setTimeout(() => setShowSuccessAlert(false), 3000); // Auto-hide after 3 seconds
+            })
+            .catch(error => {
+                console.error('Error updating buyer:', error);
+            });
     };
 
     return (
@@ -331,63 +321,95 @@ function BuyersPage() {
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h1>Buyers and Pricing</h1>
             </div>
-            <div className="mt-3">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <Form className="mb-3">
-                        <Form.Group controlId="branchSelect" className="d-inline-block me-3">
-                            <Form.Label>Buyer</Form.Label>
-                            <Form.Select
-                                value={selectedBranch}
-                                onChange={e => setSelectedBranch(e.target.value)}
-                            >
-                                {branches.map(branch => (
-                                    <option key={branch.id} value={branch.id}>{branch.displayName}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <Form className="d-flex align-items-center">
+                    <Form.Group controlId="buyerSelect" className="me-3">
+                        <Form.Label>Buyer</Form.Label>
+                        <Form.Select
+                            value={selectedBuyer}
+                            onChange={e => setSelectedBuyer(e.target.value)}
+                        >
+                            <option value="">All Buyers</option>
+                            {buyers.map((buyer, index) => (
+                                <option key={index} value={buyer}>{buyer}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
 
-                        <Form.Group controlId="itemSelect" className="d-inline-block me-3">
-                            <Form.Label>Item</Form.Label>
-                            <Form.Select
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                            >
-                                <option value="">All Items</option>
-                                {filteredItems.map(item => (
-                                    <option key={item.ItemID} value={item.Name}>{item.Name}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Form>
-                    <Button variant="outline-dark" onClick={() => setShowEditPricelistModal(true)}>Edit Buyer Pricelist</Button>
+                    <Form.Group controlId="itemSelect" className="me-3">
+                        <Form.Label>Item</Form.Label>
+                        <Form.Select
+                            value={selectedItem}
+                            onChange={e => setSelectedItem(e.target.value)}
+                        >
+                            <option value="">All Items</option>
+                            {items.map((item, index) => (
+                                <option key={index} value={item.name}>{item.name}</option> // Use item.name as value
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
+                </Form>
+                <div>
+                    {!isEmployee && (
+                        <>
+                            <Button variant="outline-dark" className="me-2" onClick={() => setShowEditPricelistModal(true)}>
+                                Edit Buyer Pricelist
+                            </Button>
+                            <Button variant="outline-success" onClick={() => setShowAddBuyerModal(true)}>
+                                Add Buyer
+                            </Button>
+                        </>
+                    )}
                 </div>
+            </div>
 
+            <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Unit of Measurement</th>
+                            <th>Item Name</th>
                             <th>Price</th>
-                            <th>Branch</th>
+                            <th>Company Name</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredItems.length === 0 ? (
+                        {filteredRows.length === 0 ? ( // Use filteredRows for display
                             <tr>
-                                <td colSpan="5" className="text-center">No items found</td>
+                                <td colSpan="4" className="text-center">No items available</td>
                             </tr>
                         ) : (
-                            filteredItemsByNameClassification.map(item => (
-                                <tr key={item.ItemID}>
-                                    <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
-                                    <td>{item.UnitOfMeasurement}</td>
-                                    <td>{item.ItemPrice}</td>
-                                    <td>{item.BranchName} - {item.BranchLocation}</td>
+                            filteredRows.map((row, index) => (
+                                <tr key={index}>
+                                    <td>{row.itemName}</td>
+                                    <td>{row.price}</td>
+                                    <td>{row.companyName}</td>
                                     <td>
-                                        <Button variant="outline-success" size="sm" onClick={() => openEditPriceModal(item)}>
-                                            Edit
+                                        <Button
+                                            variant="outline-secondary"
+                                            size="sm"
+                                            className="me-2"
+                                            onClick={() => handleShowContacts(row.buyerId)}
+                                        >
+                                            <FaInfoCircle /> Contacts
                                         </Button>
+                                        <Button
+                                            variant="outline-primary"
+                                            size="sm"
+                                            className="me-2"
+                                            onClick={() => handleViewPricelist(row.buyerId, row.companyName)}
+                                        >
+                                            View Pricelist
+                                        </Button>
+                                        {!isEmployee && (
+                                            <Button
+                                                variant="outline-warning"
+                                                size="sm"
+                                                onClick={() => handleEditBuyer(row)}
+                                            >
+                                                Edit
+                                            </Button>
+                                        )}
                                     </td>
                                 </tr>
                             ))
@@ -396,191 +418,337 @@ function BuyersPage() {
                 </Table>
             </div>
 
-            <Modal show={showAddItemModal} onHide={() => setShowAddItemModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Add New Item</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>
-                                Name <span style={{ color: 'red' }}>*</span>
-                            </Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="name"
-                                placeholder="Item name"
-                                value={newItem.name}
-                                onChange={handleAddItemChange}
-                                isInvalid={!!errors.name}
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>
-                                Unit of Measurement <span style={{ color: 'red' }}>*</span>
-                            </Form.Label>
-                            <Form.Select
-                                name="unitOfMeasurement"
-                                value={newItem.unitOfMeasurement}
-                                onChange={handleAddItemChange}
-                                isInvalid={!!errors.unitOfMeasurement}
-                            >
-                                <option value="per piece">Per Piece</option>
-                                <option value="per kg">Per Kg</option>
-                                <option value="others">Others</option>
-                            </Form.Select>
-                            <Form.Control.Feedback type="invalid">
-                                {errors.unitOfMeasurement}
-                            </Form.Control.Feedback>
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>Classification</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="classification"
-                                value={newItem.classification}
-                                onChange={handleAddItemChange}
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>Description</Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                rows={3}
-                                name="description"
-                                value={newItem.description}
-                                onChange={handleAddItemChange}
-                            />
-                        </Form.Group>
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddItemModal(false)}>
-                        Cancel
-                    </Button>
-                    <Button variant="primary" onClick={handleAddItemSubmit}>
-                        Add Item
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
             <Modal show={showEditPricelistModal} onHide={() => setShowEditPricelistModal(false)}>
                 <Modal.Header closeButton>
-                    <Modal.Title>Edit Branch Pricelist</Modal.Title>
+                    <Modal.Title>Edit Buyer Pricelist</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <Form.Group controlId="branchSelectForPricelist" className="mb-3">
-                        <Form.Label>Branch</Form.Label>
+                    <Form.Group controlId="buyerSelectForPricelist" className="mb-3">
+                        <Form.Label>Buyer</Form.Label>
                         <Form.Select
-                            value={selectedBranchForPricelist}
+                            value={selectedBuyerForPricelist}
                             onChange={e => {
-                                const branchId = e.target.value;
-                                setSelectedBranchForPricelist(branchId);
-                                fetchAllItems(branchId);
+                                const buyerId = e.target.value;
+                                console.log("Selected buyer:", buyerId);
+                                setSelectedBuyerForPricelist(buyerId);
+                                fetchAllItems(buyerId); // Fetch items for the selected buyer
                             }}
                         >
-                            <option value="">Select a branch</option>
-                            {branches.filter(branch => branch.id !== '').map(branch => (
-                                <option key={branch.id} value={branch.id}>{branch.displayName}</option>
+                            <option value="">Select a buyer</option>
+                            {buyerPricelist.map(({ id, companyName }) => (
+                                <option key={id} value={id}>{companyName}</option>
                             ))}
                         </Form.Select>
                     </Form.Group>
 
-                    <Table striped bordered hover>
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Price</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {allItemsList.map((item, index) => (
-                                <tr key={item.id || `item-${index}`}>
-                                    {console.log('Rendering item:', item, "itemID:", item.id)}
-                                    <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
-                                    <td>
-                                        <Form.Control
-                                            type="number"
-                                            value={item.price || ''} // Ensure it doesn't break if price is undefined
-                                            onChange={e => handlePricelistChange(index, e.target.value)}
-                                        />
-                                    </td>
-                                    <td>
-                                        <Button
-                                            variant={item.isUpdated ? "success" : "outline-primary"}
-                                            size="sm"
-                                            onClick={() => {
-                                                handleUpdatePricelistItem(index);
-                                                if (!item.isUpdated) {
-                                                    setTimeout(() => {
-                                                        setAllItemsList(prevItems => {
-                                                            const updatedItems = [...prevItems];
-                                                            updatedItems[index].isUpdated = false;
-                                                            return updatedItems;
-                                                        });
-                                                    }, 3000);
-                                                }
-                                            }}
-                                        >
-                                            {item.isUpdated ? "Updated" : "Update"}
-                                        </Button>
-                                    </td>
+                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                        <Table striped bordered hover>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </Table>
+                            </thead>
+                            <tbody>
+                                {pricelistItems.map((item, index) => (
+                                    <tr key={item.id || `item-${index}`}>
+                                        <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
+                                        <td>
+                                            <Form.Control
+                                                type="number"
+                                                value={item.price || ''} // Ensure it doesn't break if price is undefined
+                                                onChange={e => handlePricelistChange(index, e.target.value)}
+                                            />
+                                        </td>
+                                        <td>
+                                            <Button
+                                                variant={item.isUpdated ? "success" : "outline-primary"}
+                                                size="sm"
+                                                onClick={() => {
+                                                    handleUpdatePricelistItem(index);
+                                                    if (!item.isUpdated) {
+                                                        setTimeout(() => {
+                                                            setPricelistItems(prevItems => {
+                                                                const updatedItems = [...prevItems];
+                                                                updatedItems[index].isUpdated = false;
+                                                                return updatedItems;
+                                                            });
+                                                        }, 3000);
+                                                    }
+                                                }}
+                                            >
+                                                {item.isUpdated ? "Updated" : "Update"}
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
+                    </div>
                 </Modal.Body>
             </Modal>
 
-            <Modal show={showEditPriceModal} onHide={() => setShowEditPriceModal(false)}>
+            <Modal
+                show={showContactsModal}
+                onHide={() => setShowContactsModal(false)}
+                size="lg"
+            >
                 <Modal.Header closeButton>
-                    <Modal.Title>Edit Item Price</Modal.Title>
+                    <Modal.Title>Buyer Details</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                        <Table striped bordered hover>
+                            <tbody>
+                                {buyerContacts.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="2" className="text-center">No contacts available</td>
+                                    </tr>
+                                ) : (
+                                    buyerContacts.map((contact, index) => (
+                                        <React.Fragment key={index}>
+                                            <tr>
+                                                <th>Company Name</th>
+                                                <td>{toPascalCase(contact.companyName || "No Record")}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Contact Person</th>
+                                                <td>{toPascalCase(contact.contactPerson || "No Record")}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Primary Contact</th>
+                                                <td>{toPascalCase(contact.primaryContact || "No Record")}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Status</th>
+                                                <td>{toPascalCase(contact.status || "No Record")}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Notes</th>
+                                                <td>{toPascalCase(contact.notes || "No Record")}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Other Contacts</th>
+                                                <td>
+                                                    {contact.otherContacts.length > 0 ? (
+                                                        <ul>
+                                                            {contact.otherContacts.map((otherContact, idx) => (
+                                                                <li key={idx}>{toPascalCase(otherContact)}</li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        "No other contacts"
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        </React.Fragment>
+                                    ))
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowContactsModal(false)}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            <Modal
+                show={showViewPricelistModal}
+                onHide={() => setShowViewPricelistModal(false)}
+                size="lg"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>{viewPricelistName} Pricelist</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                        <Table striped bordered hover>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {viewPricelistItems.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="2" className="text-center">No items available</td>
+                                    </tr>
+                                ) : (
+                                    viewPricelistItems.map((item, index) => (
+                                        <tr key={index}>
+                                            <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}{item.unitOfMeasurement ? ` (${item.unitOfMeasurement})` : ''}</td>
+                                            <td>{item.price}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowViewPricelistModal(false)}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Add Buyer Modal */}
+            <Modal show={showAddBuyerModal} onHide={() => setShowAddBuyerModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Add Buyer</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Item</Form.Label>
+                        <Form.Group controlId="newBuyerCompany" className="mb-3">
+                            <Form.Label>
+                                Company Name <span style={{ color: 'red' }}>*</span>
+                            </Form.Label>
                             <Form.Control
                                 type="text"
-                                value={`${editItemDetails.name}${editItemDetails.classification ? ` - ${editItemDetails.classification}` : ''}`}
-                                readOnly
+                                placeholder="Enter company name"
+                                value={newBuyerCompany}
+                                onChange={e => setNewBuyerCompany(e.target.value)}
+                            />
+                        </Form.Group>
+                        <Form.Group controlId="newBuyerName" className="mb-3">
+                            <Form.Label>
+                                Contact Person <span style={{ color: 'red' }}>*</span>
+                            </Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="Enter contact person"
+                                value={newBuyerName}
+                                onChange={e => setNewBuyerName(e.target.value)}
                             />
                         </Form.Group>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Current Price</Form.Label>
+                        <Form.Group controlId="newBuyerContactMethod" className="mb-3">
+                            <Form.Label>Contact Method</Form.Label>
                             <Form.Control
                                 type="text"
-                                value={editItemDetails.currentPrice}
-                                readOnly
+                                placeholder="Enter contact method (e.g., Phone, Email)"
+                                value={newBuyerContactMethod}
+                                onChange={e => setNewBuyerContactMethod(e.target.value)}
                             />
                         </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>New Price</Form.Label>
+                        <Form.Group controlId="newBuyerContactDetail" className="mb-3">
+                            <Form.Label>Contact Detail</Form.Label>
                             <Form.Control
-                                type="number"
-                                value={editItemDetails.newPrice}
-                                onChange={(e) => setEditItemDetails({ ...editItemDetails, newPrice: e.target.value })}
+                                type="text"
+                                placeholder="Enter contact detail (e.g., phone number, email address)"
+                                value={newBuyerContactDetail}
+                                onChange={e => setNewBuyerContactDetail(e.target.value)}
+                            />
+                        </Form.Group>
+                        <Form.Group controlId="newBuyerNotes" className="mb-3">
+                            <Form.Label>Notes</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                placeholder="Enter notes (optional)"
+                                value={newBuyerNotes}
+                                onChange={e => setNewBuyerNotes(e.target.value)}
                             />
                         </Form.Group>
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowEditPriceModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowAddBuyerModal(false)}>
                         Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleEditPriceSubmit}>
-                        Update Price
+                    <Button
+                        variant="primary"
+                        onClick={() => {
+                            handleAddBuyer({
+                                companyName: newBuyerCompany,
+                                contactPerson: newBuyerName,
+                                notes: newBuyerNotes,
+                                contactMethod: newBuyerContactMethod,
+                                contactDetail: newBuyerContactDetail,
+                            });
+                        }}
+                    >
+                        Add Buyer
                     </Button>
                 </Modal.Footer>
             </Modal>
-        </div >
+
+            {/* Edit Buyer Modal */}
+            <Modal show={showEditBuyerModal} onHide={() => setShowEditBuyerModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Buyer</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group controlId="editBuyerCompany" className="mb-3">
+                            <Form.Label>Company Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editBuyerCompany}
+                                onChange={e => setEditBuyerCompany(e.target.value)}
+                            />
+                        </Form.Group>
+                        <Form.Group controlId="editBuyerName" className="mb-3">
+                            <Form.Label>Contact Person</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editBuyerName}
+                                onChange={e => setEditBuyerName(e.target.value)}
+                            />
+                        </Form.Group>
+                        {/* <Form.Group controlId="editBuyerContactMethod" className="mb-3">
+                            <Form.Label>Contact Method</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editBuyerContactMethod}
+                                onChange={e => setEditBuyerContactMethod(e.target.value)}
+                            />
+                        </Form.Group> */}
+                        {/* <Form.Group controlId="editBuyerContactDetail" className="mb-3">
+                            <Form.Label>Contact Detail</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editBuyerContactDetail}
+                                onChange={e => setEditBuyerContactDetail(e.target.value)}
+                            />
+                        </Form.Group> */}
+                        <Form.Group controlId="editBuyerNotes" className="mb-3">
+                            <Form.Label>Notes</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                value={editBuyerNotes}
+                                onChange={e => setEditBuyerNotes(e.target.value)}
+                            />
+                        </Form.Group>
+                        <Form.Group controlId="editBuyerStatus" className="mb-3">
+                            <Form.Label>Status</Form.Label>
+                            <Form.Select
+                                value={editBuyerStatus}
+                                onChange={e => setEditBuyerStatus(e.target.value)}
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowEditBuyerModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleSaveBuyer}>
+                        Save Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </div>
     );
-};
+}
 
 export default BuyersPage;

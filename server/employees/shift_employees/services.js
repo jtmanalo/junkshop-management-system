@@ -30,15 +30,18 @@ async function create(data) {
 
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
+        // Fetch EmployeeID using firstName and lastName
+        const employeeId = await getEmployeeIdByName(data.firstName, data.lastName);
+
         const result = await conn.query(
             'INSERT INTO shift_employee (ShiftID, EmployeeID, CreatedAt) VALUES (?, ?, ?)',
             [
                 data.shiftId,
-                data.employeeId,
+                employeeId,
                 createdAt
             ]
         );
-        return { id: result.insertId.toString(), ...data, createdAt };
+        return { id: result.insertId.toString(), ...data, employeeId, createdAt };
     } catch (error) {
         throw error;
     } finally {
@@ -46,17 +49,23 @@ async function create(data) {
     }
 }
 
-async function getById(shiftemployeeId) {
+async function getById(shiftId) {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        const rows = await conn.query('SELECT * FROM shift_employee WHERE ShiftEmployeeID = ?', [shiftemployeeId]);
+        const rows = await conn.query(
+            `SELECT se.ShiftID, se.EmployeeID, e.FirstName, e.LastName 
+             FROM shift_employee se
+             JOIN employee e ON se.EmployeeID = e.EmployeeID
+             WHERE se.ShiftID = ?`,
+            [shiftId]
+        );
 
         if (rows.length === 0) {
             return null;
         }
-        return rows[0];
+        return rows;
     } catch (error) {
         throw error;
     } finally {
@@ -100,9 +109,32 @@ async function update(shiftemployeeId, data) {
     }
 }
 
+async function getEmployeeIdByName(firstName, lastName) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const rows = await conn.query(
+            'SELECT EmployeeID FROM employee WHERE FirstName = ? AND LastName = ?',
+            [firstName, lastName]
+        );
+
+        if (rows.length === 0) {
+            throw new Error('Employee not found');
+        }
+
+        return rows[0].EmployeeID;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
     getById,
-    update
+    update,
+    getEmployeeIdByName
 };

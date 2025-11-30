@@ -18,9 +18,7 @@ function BranchPage() {
     // console.log('User ID:', user?.userID);
 
     const fetchBranches = useCallback(() => {
-        if (!user?.username) return; // Ensure user is defined before making the API call
-        // console.log('Fetching branches for username:', user.username);
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches/${user.username}`)
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches`)
             .then(response => {
                 // console.log('API Response:', response.data);
                 setBranches(response.data);
@@ -195,44 +193,46 @@ function BranchPage() {
                     Add Branch
                 </Button>
             </div>
-            <Table striped bordered hover>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th onClick={() => handleSort('Name')} style={{ cursor: 'pointer' }}>Name</th>
-                        <th onClick={() => handleSort('OpeningDate')} style={{ cursor: 'pointer' }}>Opening Date</th>
-                        <th onClick={() => handleSort('Status')} style={{ cursor: 'pointer' }}>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {sortedBranches.length === 0 ? (
+            <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                <Table striped bordered hover>
+                    <thead>
                         <tr>
-                            <td colSpan="5">No branches found</td>
+                            <th>#</th>
+                            <th onClick={() => handleSort('Name')} style={{ cursor: 'pointer' }}>Name</th>
+                            <th onClick={() => handleSort('OpeningDate')} style={{ cursor: 'pointer' }}>Opening Date</th>
+                            <th onClick={() => handleSort('Status')} style={{ cursor: 'pointer' }}>Status</th>
+                            <th>Actions</th>
                         </tr>
-                    ) : (
-                        sortedBranches.map((branch, index) => (
-                            <tr key={branch.BranchID}>
-                                <td>{index + 1}</td>
-                                <td>{`${branch.Name} - ${branch.Location}`}</td>
-                                <td>{branch.OpeningDate ? new Date(branch.OpeningDate).toLocaleDateString() : 'N/A'}</td>
-                                <td>{branch.Status}</td>
-                                <td>
-                                    <Button
-                                        onClick={() => handleEditBranch(branch.BranchID)}
-                                        variant="outline-success"
-                                        size="sm"
-                                        className="me-2"
-                                    >
-                                        Edit
-                                    </Button>
-
-                                </td>
+                    </thead>
+                    <tbody>
+                        {sortedBranches.length === 0 ? (
+                            <tr>
+                                <td colSpan="5">No branches found</td>
                             </tr>
-                        ))
-                    )}
-                </tbody>
-            </Table>
+                        ) : (
+                            sortedBranches.map((branch, index) => (
+                                <tr key={branch.BranchID}>
+                                    <td>{index + 1}</td>
+                                    <td>{`${branch.Name} - ${branch.Location}`}</td>
+                                    <td>{branch.OpeningDate ? new Date(branch.OpeningDate).toLocaleDateString() : 'N/A'}</td>
+                                    <td>{branch.Status}</td>
+                                    <td>
+                                        <Button
+                                            onClick={() => handleEditBranch(branch.BranchID)}
+                                            variant="outline-success"
+                                            size="sm"
+                                            className="me-2"
+                                        >
+                                            Edit
+                                        </Button>
+
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </Table>
+            </div>
 
             <Modal show={showAdd} onHide={handleCloseAdd}>
                 <Modal.Header closeButton>

@@ -18,13 +18,19 @@ async function getAll(req, res) {
 async function create(req, res) {
     const {
         companyName,
-        contactPerson
+        contactPerson,
+        notes,
+        contactMethod,
+        contactDetail
     } = req.body;
 
     try {
         const newBuyer = await buyerService.create({
             companyName,
-            contactPerson
+            contactPerson,
+            notes,
+            contactMethod,
+            contactDetail
         });
         res.status(201).json(newBuyer);
     } catch (error) {

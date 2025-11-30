@@ -85,7 +85,7 @@ async function getItemsWithPricesForBranch(req, res) {
 }
 
 // Update or create a pricelist item
-async function updateOrCreatePricelistItem(req, res) {
+async function updateOrCreatePricelistItemForBranch(req, res) {
     const { branchId, itemId, price } = req.body;
 
     if (!branchId || !itemId || price === undefined) {
@@ -93,7 +93,23 @@ async function updateOrCreatePricelistItem(req, res) {
     }
 
     try {
-        const result = await pricelistitemService.updateOrCreatePricelistItem(branchId, itemId, price);
+        const result = await pricelistitemService.updateOrCreatePricelistItemForBranch(branchId, itemId, price);
+        res.json(result);
+    } catch (error) {
+        console.error('Error in updateOrCreatePricelistItem:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function updateOrCreatePricelistItemForBuyer(req, res) {
+    const { buyerId, itemId, price } = req.body;
+
+    if (!buyerId || !itemId || price === undefined) {
+        return res.status(400).json({ error: 'BuyerID, ItemID, and Price are required.' });
+    }
+
+    try {
+        const result = await pricelistitemService.updateOrCreatePricelistItemForBuyer(buyerId, itemId, price);
         res.json(result);
     } catch (error) {
         console.error('Error in updateOrCreatePricelistItem:', error);
@@ -107,5 +123,6 @@ module.exports = {
     // getById,
     // update,
     getItemsWithPricesForBranch,
-    updateOrCreatePricelistItem
+    updateOrCreatePricelistItemForBranch,
+    updateOrCreatePricelistItemForBuyer
 };

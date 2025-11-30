@@ -18,17 +18,19 @@ async function getAll(req, res) {
 async function create(req, res) {
     const {
         shiftId,
-        employeeId
+        firstName,
+        lastName
     } = req.body;
 
-    if (!shiftId || !employeeId) {
-        return res.status(400).json({ error: 'ShiftId and EmployeeId are required.' });
+    if (!shiftId || !firstName || !lastName) {
+        return res.status(400).json({ error: 'ShiftId, FirstName, and LastName are required.' });
     }
 
     try {
         const shiftEmployee = await shiftemployeeService.create({
             shiftId,
-            employeeId
+            firstName,
+            lastName
         });
         res.status(201).json(shiftEmployee);
     } catch (error) {

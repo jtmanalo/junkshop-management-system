@@ -236,63 +236,65 @@ function LoanPage() {
                                     <Button variant="outline-dark" onClick={() => setShowAddSellerModal(true)}>Add Seller</Button>
                                     {/* <Button variant="outline-dark" onClick={() => setShowAddItemModal(true)}>Add Item</Button> */}
                                 </div>
-                                <Table striped bordered hover>
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Loan Amount</th>
-                                            <th>Repayment Amount</th>
-                                            <th>Outstanding Balance</th>
-                                            <th>Last Transaction Date</th>
-                                            {!isMobileRoute && <th>Actions</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {sellers.length === 0 ? (
+                                <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                    <Table striped bordered hover>
+                                        <thead>
                                             <tr>
-                                                <td colSpan={isMobileRoute ? 5 : 6} className="text-center">No sellers found</td>
+                                                <th>Name</th>
+                                                <th>Loan Amount</th>
+                                                <th>Repayment Amount</th>
+                                                <th>Outstanding Balance</th>
+                                                <th>Last Transaction Date</th>
+                                                {!isMobileRoute && <th>Actions</th>}
                                             </tr>
-                                        ) : (
-                                            sellers
-                                                .filter(seller => selectedSeller === 'all' || seller.id === parseInt(selectedSeller))
-                                                .map((seller) => (
-                                                    <tr key={seller.id} onClick={() => handleRowClick(seller, true)} style={isMobileRoute ? { cursor: 'pointer' } : {}}>
-                                                        <td>{seller.displayName}</td>
-                                                        <td>{seller.loanAmount}</td>
-                                                        <td>{seller.repaymentAmount}</td>
-                                                        <td>{seller.outstandingBalance}</td>
-                                                        <td>{seller.lastTransactionDate}</td>
-                                                        {!isMobileRoute && (
-                                                            <td>
-                                                                <Button
-                                                                    variant="outline-secondary"
-                                                                    size="sm"
-                                                                    className="me-2"
-                                                                    onClick={() => handleInfoClick(seller)}
-                                                                >
-                                                                    <FaInfoCircle /> Info
-                                                                </Button>
-                                                                <Button
-                                                                    variant="outline-primary"
-                                                                    size="sm"
-                                                                    onClick={() => handleTransactionClick(seller, 'seller', 'loan')}
-                                                                >
-                                                                    Add Loan
-                                                                </Button>{' '}
-                                                                <Button
-                                                                    variant="outline-success"
-                                                                    size="sm"
-                                                                    onClick={() => handleTransactionClick(seller, 'seller', 'repayment')}
-                                                                >
-                                                                    Add Payment
-                                                                </Button>
-                                                            </td>
-                                                        )}
-                                                    </tr>
-                                                ))
-                                        )}
-                                    </tbody>
-                                </Table>
+                                        </thead>
+                                        <tbody>
+                                            {sellers.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={isMobileRoute ? 5 : 6} className="text-center">No sellers found</td>
+                                                </tr>
+                                            ) : (
+                                                sellers
+                                                    .filter(seller => selectedSeller === 'all' || seller.id === parseInt(selectedSeller))
+                                                    .map((seller) => (
+                                                        <tr key={seller.id} onClick={() => handleRowClick(seller, true)} style={isMobileRoute ? { cursor: 'pointer' } : {}}>
+                                                            <td>{seller.displayName}</td>
+                                                            <td>{seller.loanAmount}</td>
+                                                            <td>{seller.repaymentAmount}</td>
+                                                            <td>{seller.outstandingBalance}</td>
+                                                            <td>{seller.lastTransactionDate}</td>
+                                                            {!isMobileRoute && (
+                                                                <td>
+                                                                    <Button
+                                                                        variant="outline-secondary"
+                                                                        size="sm"
+                                                                        className="me-2"
+                                                                        onClick={() => handleInfoClick(seller)}
+                                                                    >
+                                                                        <FaInfoCircle /> Info
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="outline-primary"
+                                                                        size="sm"
+                                                                        onClick={() => handleTransactionClick(seller, 'seller', 'loan')}
+                                                                    >
+                                                                        Add Loan
+                                                                    </Button>{' '}
+                                                                    <Button
+                                                                        variant="outline-success"
+                                                                        size="sm"
+                                                                        onClick={() => handleTransactionClick(seller, 'seller', 'repayment')}
+                                                                    >
+                                                                        Add Payment
+                                                                    </Button>
+                                                                </td>
+                                                            )}
+                                                        </tr>
+                                                    ))
+                                            )}
+                                        </tbody>
+                                    </Table>
+                                </div>
                             </div>
                         </Tab>
                         <Tab eventKey="employees" title="Employees">

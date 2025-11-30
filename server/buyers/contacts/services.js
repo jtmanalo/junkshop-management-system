@@ -82,7 +82,27 @@ async function getByBuyerId(buyerId) {
     try {
         conn = await pool.getConnection();
 
-        const queryResult = await conn.query('SELECT * FROM buyer_contact WHERE BuyerID = ?', [buyerId]);
+        const queryResult = await conn.query(`
+                SELECT 
+                    b.BuyerID,
+                    b.CompanyName,
+                    b.ContactPerson,
+                    b.Notes,
+                    b.Status,
+                    b.CreatedAt,
+                    MAX(CASE WHEN bc.IsPrimary = 1 THEN CONCAT(bc.ContactMethod, ': ', bc.ContactDetail, ' (Created At: ', DATE_FORMAT(bc.CreatedAt, '%Y-%m-%d %H:%i'), ')') END) AS PrimaryContact,
+                    GROUP_CONCAT(CASE WHEN bc.IsPrimary = 0 THEN CONCAT(bc.ContactMethod, ': ', bc.ContactDetail, ' (Created At: ', DATE_FORMAT(bc.CreatedAt, '%Y-%m-%d %H:%i'), ')') END SEPARATOR '; ') AS OtherContacts
+                FROM 
+                    buyer b
+                LEFT JOIN 
+                    buyer_contact bc
+                ON 
+                    b.BuyerID = bc.BuyerID
+                WHERE 
+                    b.BuyerID = ?
+                GROUP BY 
+                    b.BuyerID, b.CompanyName, b.ContactPerson, b.Notes, b.Status, b.CreatedAt;`
+            , [buyerId]);
 
         console.log('Query result for getByBuyerId:', queryResult);
 

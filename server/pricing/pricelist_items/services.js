@@ -143,7 +143,7 @@ async function getItemsWithPricesForBranch(branchId) {
     }
 }
 
-async function updateOrCreatePricelistItem(branchId, itemId, price) {
+async function updateOrCreatePricelistItemForBranch(branchId, itemId, price) {
     let conn;
     try {
         conn = await pool.getConnection();
@@ -198,11 +198,67 @@ async function updateOrCreatePricelistItem(branchId, itemId, price) {
     }
 }
 
+async function updateOrCreatePricelistItemForBuyer(buyerId, itemId, price) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Convert timestamps to MariaDB-compatible format
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+
+        // Check if a pricelist exists for the branch
+        const [pricelist] = await conn.query(
+            'SELECT PriceListID FROM pricelist WHERE BuyerID = ? ORDER BY DateEffective DESC LIMIT 1',
+            [buyerId]
+        );
+        console.log('Pricelist found:', pricelist);
+
+        let priceListId;
+        if (pricelist) {
+            priceListId = pricelist.PriceListID;
+        } else {
+            // Create a new pricelist if it doesn't exist
+            const result = await conn.query(
+                'INSERT INTO pricelist (BuyerID, DateEffective) VALUES (?, ?)',
+                [buyerId, createdAt]
+            );
+            priceListId = result.insertId;
+        }
+
+        // Check if a pricelist_item exists for the item
+        const [pricelistItem] = await conn.query(
+            'SELECT PriceListItemID FROM pricelist_item WHERE PriceListID = ? AND ItemID = ?',
+            [priceListId, itemId]
+        );
+
+        if (pricelistItem) {
+            // Update the existing pricelist_item
+            await conn.query(
+                'UPDATE pricelist_item SET Price = ? WHERE PriceListID = ? AND ItemID = ?',
+                [price, priceListId, itemId]
+            );
+        } else {
+            // Create a new pricelist_item
+            await conn.query(
+                'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt) VALUES (?, ?, ?, ?)',
+                [priceListId, itemId, price, createdAt]
+            );
+        }
+
+        return { priceListId, itemId, price };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
     // getById,
     // update,
     getItemsWithPricesForBranch,
-    updateOrCreatePricelistItem
+    updateOrCreatePricelistItemForBranch,
+    updateOrCreatePricelistItemForBuyer
 };

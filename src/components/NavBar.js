@@ -34,6 +34,7 @@ function UserProfileDropdown() {
   const dropdownRef = useRef(null);
   const auth = useAuth();
   const { user } = auth;
+  const navigate = useNavigate();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -52,12 +53,7 @@ function UserProfileDropdown() {
     {
       label: 'Manage Account',
       icon: FaUserCog,
-      onClick: () => { },
-    },
-    {
-      label: 'Change Password',
-      icon: FaKey,
-      onClick: () => { },
+      onClick: () => navigate(`/admin-dashboard/${user?.username}/settings`), // Navigate to SettingsPage
     },
     {
       label: 'Activity Log',
