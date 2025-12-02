@@ -51,6 +51,14 @@ function DebtPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('Submitting transaction:', {
+            amount,
+            notes,
+            paymentMethod,
+            transactionType,
+            role,
+            selectedPerson
+        });
         try {
             if (transactionType === 'repayment') {
                 const response = await axios.post(
@@ -58,6 +66,8 @@ function DebtPage() {
                     {
                         branchId: actualBranchId,
                         userId: user?.userID,
+                        name: selectedPerson,
+                        partyType: role,
                         totalAmount: Number(amount),
                         notes: notes,
                         paymentMethod: paymentMethod
@@ -70,6 +80,8 @@ function DebtPage() {
                     {
                         branchId: actualBranchId,
                         userId: user?.userID,
+                        name: selectedPerson,
+                        partyType: role,
                         totalAmount: Number(amount),
                         notes: notes,
                         paymentMethod: paymentMethod
@@ -79,17 +91,14 @@ function DebtPage() {
             }
             alert('Transaction successful!'); // Alert the user
 
-            // Refresh the balance in the dashboard
-            refreshBalance();
-            refreshTotalExpense();
-            navigate(-1);
-            // Optionally reset the form fields here
             setAmount('');
             setNotes('');
             setPaymentMethod('cash');
             setTransactionType('loan');
             setRole('seller');
             setSelectedPerson('');
+            navigate(-1);
+
         } catch (error) {
             console.error('Error recording expense:', error);
         }

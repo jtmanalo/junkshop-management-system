@@ -4,19 +4,21 @@ import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootst
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import { useMatch } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Page tab 1 to add/manage sellers, view their details, and keep track of their loans and payments
 // Page tab 2 to keep track of employee loans and payments
 function LoanPage() {
     const { token, user } = useAuth();
+    const navigate = useNavigate();
     const matchMobileRoute = useMatch('/mobileroute/*');
     const matchEmployeeDashboard = useMatch('/employee-dashboard/*');
     const isMobileRoute = matchMobileRoute || matchEmployeeDashboard;
-    const [errors, setErrors] = useState({});
+    // const [errors, setErrors] = useState({});
     const [sellers, setSellers] = useState([]);
     const [employees, setEmployees] = useState([]);
-    const [selectedEmployee, setSelectedEmployee] = useState('all');
-    const [selectedSeller, setSelectedSeller] = useState('all');
+    // const [selectedEmployee, setSelectedEmployee] = useState('all');
+    // const [selectedSeller, setSelectedSeller] = useState('all');
     const [showSellerModal, setShowSellerModal] = useState(false);
     const [selectedSellerDetails, setSelectedSellerDetails] = useState(null);
     const [showTransactionModal, setShowTransactionModal] = useState(false);
@@ -34,6 +36,26 @@ function LoanPage() {
     const [successMessage, setSuccessMessage] = useState('');
     const [sellerSearch, setSellerSearch] = useState('');
     const [employeeSearch, setEmployeeSearch] = useState('');
+    // const [actualBranchId, setActualBranchId] = useState(null);
+
+    // useEffect(() => {
+    //     const fetchActiveShift = async () => {
+    //         if (!user?.userID) return;
+    //         try {
+    //             const response = await axios.get(
+    //                 `${process.env.REACT_APP_BASE_URL}/api/shifts/active/${user.userID}`
+    //             );
+    //             const { BranchID } = response.data[0];
+    //             setActualBranchId(BranchID);
+    //         } catch (error) {
+    //             console.error('Error fetching active shift:', error);
+    //         }
+    //     };
+
+    //     fetchActiveShift();
+    // }, [user]);
+
+    // console.log('Branch ID in LoanPage:', actualBranchId);
 
     // fetch sellers from table ( name, contact number, createdat )
     // joined with transaction table details ( loan amount, payment amount, 
@@ -107,54 +129,53 @@ function LoanPage() {
         setSelectedSellerDetails(null);
     };
 
-    const handleTransactionClick = (person, personType, type) => {
-        setSelectedPerson({ ...person, isSeller: personType === 'seller' });
-        setTransactionType(type);
-        setShowTransactionModal(true);
-    };
+    // const handleTransactionClick = (person, personType, type) => {
+    //     setSelectedPerson({ ...person, isSeller: personType === 'seller' });
+    //     setTransactionType(type);
+    //     setShowTransactionModal(true);
+    // };
 
-    const handleTransactionSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const endpoint = transactionType === 'repayment' ? '/api/repayments' : '/api/loans';
-            console.log('Selected person:', selectedPerson);
-            console.log("isseller:", selectedPerson.isSeller);
-            const idKey = selectedPerson.isSeller ? 'sellerId' : 'employeeId';
-            console.log('Submitting transaction:', {
-                endpoint,
-                idKey,
-                personId: selectedPerson.id,
-                amount: Number(amount),
-                notes,
-                paymentMethod
-            });
-            const fetchFunction = selectedPerson.isSeller ? fetchSellers : fetchEmployees;
+    // const handleTransactionSubmit = async (e) => {
+    //     e.preventDefault();
+    //     try {
+    //         const endpoint = transactionType === 'repayment' ? '/api/repayments' : '/api/loans';
+    //         console.log('Selected person:', selectedPerson);
+    //         console.log("isseller:", selectedPerson.isSeller);
+    //         console.log('Submitting transaction:', {
+    //             endpoint,
+    //             name: selectedPerson.displayName,
+    //             amount: Number(amount),
+    //             notes,
+    //             paymentMethod,
+    //             partyType: selectedPerson.isSeller ? 'seller' : 'employee'
+    //         });
+    //         const fetchFunction = selectedPerson.isSeller ? fetchSellers : fetchEmployees;
 
-            const response = await axios.post(
-                `${process.env.REACT_APP_BASE_URL}${endpoint}`,
-                {
-                    branchId: user?.branchId,
-                    userId: user?.userID,
-                    [idKey]: selectedPerson.id,
-                    totalAmount: Number(amount),
-                    notes: notes,
-                    paymentMethod: paymentMethod,
-                    userType: user?.userType
-                }
-            );
-            console.log(`${transactionType === 'repayment' ? 'Repayment' : 'Loan'} Recorded:`, response.data);
-            setSuccessMessage('Transaction successful!');
-            setShowSuccessAlert(true);
-            setShowTransactionModal(false);
-            setAmount('');
-            setNotes('');
-            setPaymentMethod('cash');
-            await fetchFunction(); // Use appropriate fetch function to refresh data
-        } catch (error) {
-            console.error('Error recording transaction:', error);
-            alert('An error occurred while processing the transaction. Please try again.');
-        }
-    };
+    //         const response = await axios.post(
+    //             `${process.env.REACT_APP_BASE_URL}${endpoint}`,
+    //             {
+    //                 branchId: actualBranchId,
+    //                 userId: user?.userID,
+    //                 name: selectedPerson.displayName,
+    //                 totalAmount: Number(amount),
+    //                 notes: notes,
+    //                 paymentMethod: paymentMethod,
+    //                 partyType: selectedPerson.isSeller ? 'seller' : 'employee'
+    //             }
+    //         );
+    //         console.log(`${transactionType === 'repayment' ? 'Repayment' : 'Loan'} Recorded:`, response.data);
+    //         setSuccessMessage('Transaction successful!');
+    //         setShowSuccessAlert(true);
+    //         setShowTransactionModal(false);
+    //         setAmount('');
+    //         setNotes('');
+    //         setPaymentMethod('cash');
+    //         await fetchFunction(); // Use appropriate fetch function to refresh data
+    //     } catch (error) {
+    //         console.error('Error recording transaction:', error);
+    //         alert('An error occurred while processing the transaction. Please try again.');
+    //     }
+    // };
 
     const handleAmountChange = (e) => {
         const value = e.target.value;
@@ -262,7 +283,7 @@ function LoanPage() {
                                         </Form>
                                         <Button variant="outline-dark" onClick={() => setShowAddSellerModal(true)}>Add Seller</Button>
                                     </div>
-                                    <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
                                         <Table striped bordered hover responsive>
                                             <thead>
                                                 <tr>
@@ -297,7 +318,7 @@ function LoanPage() {
                                                                     >
                                                                         <FaInfoCircle /> Info
                                                                     </Button>
-                                                                    <Button
+                                                                    {/* <Button
                                                                         variant="outline-primary"
                                                                         size="sm"
                                                                         onClick={() => handleTransactionClick(seller, 'seller', 'loan')}
@@ -310,7 +331,7 @@ function LoanPage() {
                                                                         onClick={() => handleTransactionClick(seller, 'seller', 'repayment')}
                                                                     >
                                                                         Add Payment
-                                                                    </Button>
+                                                                    </Button> */}
                                                                 </td>
                                                             )}
                                                         </tr>
@@ -334,41 +355,42 @@ function LoanPage() {
                                             />
                                         </Form>
                                     </div>
-                                    <Table striped bordered hover responsive>
-                                        <thead>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Loan Amount</th>
-                                                <th>Repayment Amount</th>
-                                                <th>Outstanding Balance</th>
-                                                <th>Last Transaction Date</th>
-                                                {!isMobileRoute && <th>Actions</th>}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredEmployees.length === 0 ? (
+                                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                                        <Table striped bordered hover responsive>
+                                            <thead>
                                                 <tr>
-                                                    <td colSpan={isMobileRoute ? 5 : 6} className="text-center">No employees found</td>
+                                                    <th>Name</th>
+                                                    <th>Loan Amount</th>
+                                                    <th>Repayment Amount</th>
+                                                    <th>Outstanding Balance</th>
+                                                    <th>Last Transaction Date</th>
+                                                    {!isMobileRoute && <th>Actions</th>}
                                                 </tr>
-                                            ) : (
-                                                filteredEmployees.map((employee) => (
-                                                    <tr key={employee.id} onClick={() => handleRowClick(employee, false)} style={isMobileRoute ? { cursor: 'pointer' } : {}}>
-                                                        <td>{employee.displayName}</td>
-                                                        <td>{employee.loanAmount}</td>
-                                                        <td>{employee.repaymentAmount}</td>
-                                                        <td>{employee.outstandingBalance}</td>
-                                                        <td>{employee.lastTransactionDate}</td>
-                                                        {!isMobileRoute && (
-                                                            <td>
-                                                                <Button
-                                                                    variant="outline-secondary"
-                                                                    size="sm"
-                                                                    className="me-2"
-                                                                    onClick={() => handleEmployeeInfoClick(employee)}
-                                                                >
-                                                                    <FaInfoCircle /> Info
-                                                                </Button>
-                                                                <Button
+                                            </thead>
+                                            <tbody>
+                                                {filteredEmployees.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={isMobileRoute ? 5 : 6} className="text-center">No employees found</td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredEmployees.map((employee) => (
+                                                        <tr key={employee.id} onClick={() => handleRowClick(employee, false)} style={isMobileRoute ? { cursor: 'pointer' } : {}}>
+                                                            <td>{employee.displayName}</td>
+                                                            <td>{employee.loanAmount}</td>
+                                                            <td>{employee.repaymentAmount}</td>
+                                                            <td>{employee.outstandingBalance}</td>
+                                                            <td>{employee.lastTransactionDate}</td>
+                                                            {!isMobileRoute && (
+                                                                <td>
+                                                                    <Button
+                                                                        variant="outline-secondary"
+                                                                        size="sm"
+                                                                        className="me-2"
+                                                                        onClick={() => handleEmployeeInfoClick(employee)}
+                                                                    >
+                                                                        <FaInfoCircle /> Info
+                                                                    </Button>
+                                                                    {/* <Button
                                                                     variant="outline-primary"
                                                                     size="sm"
                                                                     onClick={() => handleTransactionClick(employee, 'employee', 'loan')}
@@ -381,14 +403,15 @@ function LoanPage() {
                                                                     onClick={() => handleTransactionClick(employee, 'employee', 'repayment')}
                                                                 >
                                                                     Add Payment
-                                                                </Button>
-                                                            </td>
-                                                        )}
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </Table>
+                                                                </Button> */}
+                                                                </td>
+                                                            )}
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                    </div>
                                 </div>
                             </Tab>
                         </Tabs>
@@ -480,7 +503,7 @@ function LoanPage() {
                 </Modal>
 
                 {/* Modal for adding loan or repayment */}
-                <Modal show={showTransactionModal} onHide={() => setShowTransactionModal(false)} centered>
+                {/* <Modal show={showTransactionModal} onHide={() => setShowTransactionModal(false)} centered>
                     <Modal.Header closeButton>
                         <Modal.Title>{transactionType === 'repayment' ? 'Add Repayment' : 'Add Loan'}</Modal.Title>
                     </Modal.Header>
@@ -531,7 +554,7 @@ function LoanPage() {
                             Submit
                         </Button>
                     </Modal.Footer>
-                </Modal>
+                </Modal> */}
 
                 {/* Modal for adding a new seller */}
                 <Modal show={showAddSellerModal} onHide={() => setShowAddSellerModal(false)} centered>

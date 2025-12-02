@@ -223,11 +223,21 @@ function SalePage() {
 
             const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/sales`, transactionData);
 
+            const transactionDate = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            }).format(new Date());
+
             // Prepare receipt data
             const receipt = {
                 branchName: branchName,
                 branchLocation: branchLocation,
-                transactionDate: new Date().toLocaleString(),
+                transactionDate: transactionDate,
                 buyerName: buyer,
                 paymentMethod: selectedPaymentMethod,
                 employeeName: user?.username,

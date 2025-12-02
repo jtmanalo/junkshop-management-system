@@ -173,6 +173,36 @@ async function createRepayment(data) {
     try {
         conn = await pool.getConnection();
 
+        let sellerId = null;
+        let employeeId = null;
+
+        // Fetch the SellerID or EmployeeID based on the role
+        if (data.partyType === 'employee') {
+            const employeeResult = await conn.query(
+                `SELECT EmployeeID FROM employee WHERE CONCAT(FirstName, ' ', LastName) = ?`,
+                [data.name]
+            );
+            if (employeeResult.length > 0) {
+                employeeId = employeeResult[0].EmployeeID;
+            } else {
+                throw new Error(`Employee not found with name: ${data.name}`);
+            }
+        } else if (data.partyType === 'seller') {
+            const sellerResult = await conn.query(
+                `SELECT SellerID FROM seller WHERE Name = ?`,
+                [data.name]
+            );
+            if (sellerResult.length > 0) {
+                sellerId = sellerResult[0].SellerID;
+            } else {
+                throw new Error(`Seller not found with name: ${data.name}`);
+            }
+        } else {
+            throw new Error('Invalid role specified. Role must be either "employee" or "seller".');
+        }
+
+        console.log('Fetched party data:', { sellerId, employeeId });
+
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
         const transactionDate = createdAt;
@@ -201,8 +231,8 @@ async function createRepayment(data) {
             PaymentMethod, Status, Notes, CreatedAt, ShiftID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.branchId,
-                data.sellerId || null,
-                data.employeeId || null,
+                sellerId,
+                employeeId,
                 data.userId,
                 'repayment',
                 transactionDate,
@@ -236,6 +266,37 @@ async function createLoan(data) {
     let conn;
     try {
         conn = await pool.getConnection();
+        console.log('Creating loan with data:', data);
+
+        let sellerId = null;
+        let employeeId = null;
+
+        // Fetch the SellerID or EmployeeID based on the role
+        if (data.partyType === 'employee') {
+            const employeeResult = await conn.query(
+                `SELECT EmployeeID FROM employee WHERE CONCAT(FirstName, ' ', LastName) = ?`,
+                [data.name]
+            );
+            if (employeeResult.length > 0) {
+                employeeId = employeeResult[0].EmployeeID;
+            } else {
+                throw new Error(`Employee not found with name: ${data.name}`);
+            }
+        } else if (data.partyType === 'seller') {
+            const sellerResult = await conn.query(
+                `SELECT SellerID FROM seller WHERE Name = ?`,
+                [data.name]
+            );
+            if (sellerResult.length > 0) {
+                sellerId = sellerResult[0].SellerID;
+            } else {
+                throw new Error(`Seller not found with name: ${data.name}`);
+            }
+        } else {
+            throw new Error('Invalid role specified. Role must be either "employee" or "seller".');
+        }
+
+        console.log('Fetched party data:', { sellerId, employeeId });
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
@@ -267,8 +328,8 @@ async function createLoan(data) {
             PaymentMethod, Status, Notes, CreatedAt, ShiftID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.branchId,
-                data.sellerId || null,
-                data.employeeId || null,
+                sellerId,
+                employeeId,
                 data.userId,
                 'loan',
                 transactionDate,
@@ -642,6 +703,13 @@ async function createPurchase(data) {
             );
         }
 
+        await conn.query(
+            `UPDATE shift 
+            SET RunningTotal = RunningTotal + ? 
+            WHERE ShiftID = ?`,
+            [data.totalAmount, shift[0]?.ShiftID]
+        );
+
         await conn.commit();
         return { id: transactionResult.insertId, ...data };
     } catch (error) {
@@ -724,6 +792,13 @@ async function createSale(data) {
             );
         }
 
+        await conn.query(
+            `UPDATE shift 
+            SET RunningTotal = RunningTotal - ? 
+            WHERE ShiftID = ?`,
+            [data.totalAmount, shift[0]?.ShiftID]
+        );
+
         await conn.commit();
         return { id: transactionResult.insertId, ...data };
     } catch (error) {
@@ -740,7 +815,7 @@ async function getDailyLogs(shiftId) {
         conn = await pool.getConnection();
 
         // Perform the SELECT query
-        const rows = await conn.query('SELECT * FROM transaction WHERE ShiftID = ? AND Status = "completed"', [shiftId]);
+        const rows = await conn.query(`SELECT * FROM transaction WHERE ShiftID = ? AND Status = "completed"`, [shiftId]);
 
         // Ensures timestamps are in UTC+8
         rows.forEach(row => {

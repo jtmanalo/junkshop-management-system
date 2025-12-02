@@ -222,7 +222,8 @@ async function createSale(req, res) {
 }
 
 async function getDailyLogs(req, res) {
-    const shiftId = req.query.shiftId;
+    const shiftId = parseInt(req.params.shiftId, 10);
+
     try {
         const logs = await transactionService.getDailyLogs(shiftId);
         if (logs.length === 0) {

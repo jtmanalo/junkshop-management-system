@@ -130,27 +130,44 @@ async function getBalance(branchId, userId) {
     try {
         conn = await pool.getConnection();
 
-        const sale = await conn.query(
-            `SELECT IFNULL(SUM(TotalAmount), 0) AS TotalSales
-             FROM transaction
-             WHERE BranchID = ? AND UserID = ? AND TransactionType = 'sale' 
-             AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
-            [branchId, userId]
+        console.log('Calculating balance for BranchID:', branchId, 'UserID:', userId);
+
+        // const sale = await conn.query(
+        //     `SELECT IFNULL(SUM(TotalAmount), 0) AS TotalSales
+        //      FROM transaction
+        //      WHERE BranchID = ? AND UserID = ? AND TransactionType = 'sale' 
+        //      AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
+        //     [branchId, userId]
+        // );
+
+        // console.log('Total sales fetched:', sale[0].TotalSales);
+
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [userId, branchId]
         );
 
-        const rows = await conn.query(
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
+
+        const balance = await conn.query(
             `SELECT InitialCash - RunningTotal AS Balance
              FROM shift
-             WHERE BranchID = ? AND UserID = ? AND EndDatetime IS NULL`,
-            [branchId, userId]
+             WHERE ShiftID = ?`,
+            [shift[0]?.ShiftID]
         );
 
-        if (rows.length === 0) {
+        console.log('Shift balance fetched:', balance[0].Balance);
+
+        if (balance.length === 0) {
             return 0;
         }
 
-        const balance = Number(sale[0].TotalSales) + Number(rows[0].Balance);
-        return balance || 0;
+        return balance[0]?.Balance || 0;
     } catch (error) {
         throw error;
     } finally {

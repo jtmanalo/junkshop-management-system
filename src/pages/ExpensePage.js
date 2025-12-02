@@ -14,7 +14,7 @@ import { useDashboard } from '../services/DashboardContext';
 import { useNavigate } from 'react-router-dom';
 
 function DebtPage() {
-    const { refreshBalance, refreshTotalExpense, actualBranchId } = useDashboard();
+    const { actualBranchId } = useDashboard();
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -45,15 +45,10 @@ function DebtPage() {
             );
             console.log('Expense Recorded:', response.data);
             alert('Transaction successful!'); // Alert the user
-
-            // Refresh the balance in the dashboard
-            refreshBalance();
-            refreshTotalExpense();
-            navigate(-1);
-            // Optionally reset the form fields here
             setAmount('');
             setNotes('');
             setPaymentMethod('cash');
+            navigate(-1);
         } catch (error) {
             console.error('Error recording expense:', error);
         }

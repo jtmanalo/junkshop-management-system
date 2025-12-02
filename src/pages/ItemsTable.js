@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Table } from 'react-bootstrap';
 import axios from 'axios';
 import { useDashboard } from '../services/DashboardContext';
@@ -46,25 +46,28 @@ function PricelistPage() {
                 </div>
             ) : (
                 <div>
-                    <h3>{branchName} - {branchLocation} Pricelist</h3>
-                    <Table striped bordered hover>
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>Price</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {allItemsList
-                                .filter(item => item.price !== null && item.price !== '')
-                                .map((item, index) => (
-                                    <tr key={item.id || `item-${index}`}>
-                                        <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
-                                        <td>{item.price}</td>
-                                    </tr>
-                                ))}
-                        </tbody>
-                    </Table>
+                    <h3 style={{ textAlign: 'center' }}>{branchName}</h3>
+                    <h3 style={{ textAlign: 'center' }}>{branchLocation} Pricelist</h3>
+                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                        <Table striped bordered hover>
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {allItemsList
+                                    .filter(item => item.price !== null && item.price !== '')
+                                    .map((item, index) => (
+                                        <tr key={item.id || `item-${index}`}>
+                                            <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
+                                            <td>{item.price}</td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </Table>
+                    </div>
                 </div>
             )}
         </>

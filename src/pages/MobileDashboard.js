@@ -141,7 +141,7 @@ function MobileDashboard() {
         setShowSetBranchModal(false);
       } else if (user.branchName && user.branchLocation) {
         const defaultBranch = `${user.branchName} - ${user.branchLocation}`;
-        console.log('Default branch from user data:', defaultBranch);
+        // console.log('Default branch from user data:', defaultBranch);
         setBranch({
           display: `${defaultBranch}`,
           id: user.defaultBranchID
@@ -342,7 +342,7 @@ function MobileDashboard() {
     } catch (error) {
       alert('Error starting shift. Please try again.');
     }
-    console.log('Shift started with initial balance:', startingCash);
+    // console.log('Shift started with initial balance:', startingCash);
   };
 
   // Remove redundant declaration of setShiftEmployees
@@ -361,7 +361,7 @@ function MobileDashboard() {
           },
         }
       );
-      console.log('Employee added successfully:', response.data);
+      // console.log('Employee added successfully:', response.data);
       setShiftEmployees((prevEmployees) => [...prevEmployees, response.data]);
     } catch (error) {
       console.error('Error adding employee:', error.response?.data || error.message);
@@ -371,10 +371,10 @@ function MobileDashboard() {
   // Add refresh functions to MobileDashboard
   const refreshBalance = async (branchId, userId) => {
     if (!branchId || !userId) return;
-    console.log('Refreshing balance:', branchId, userId);
+    // console.log('Refreshing balance:', branchId, userId);
     try {
       const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/balance?branchId=${branchId}&userId=${userId}`);
-      console.log('Balance response:', response.data);
+      // console.log('Balance response:', response.data);
       setBalance(response.data);
     } catch (error) {
       console.error('Error refreshing balance:', error);
@@ -383,10 +383,10 @@ function MobileDashboard() {
 
   const refreshTotalExpense = async (branchId, userId) => {
     if (!branchId || !userId) return;
-    console.log('Refreshing total expense:', branchId, userId);
+    // console.log('Refreshing total expense:', branchId, userId);
     try {
       const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/expense-balance?branchId=${branchId}&userId=${userId}`);
-      console.log('Expense response:', response.data);
+      // console.log('Expense response:', response.data);
       setTotalExpense(response.data);
     } catch (error) {
       console.error('Error refreshing expense balance:', error);
@@ -395,10 +395,10 @@ function MobileDashboard() {
 
   const refreshTotalPurchase = async (branchId, userId) => {
     if (!branchId || !userId) return;
-    console.log('Refreshing total purchase:', branchId, userId);
+    // console.log('Refreshing total purchase:', branchId, userId);
     try {
       const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/purchase-balance?branchId=${branchId}&userId=${userId}`);
-      console.log('Purchase response:', response.data);
+      // console.log('Purchase response:', response.data);
       setTotalPurchase(response.data);
     } catch (error) {
       console.error('Error refreshing purchase balance:', error);
@@ -407,10 +407,10 @@ function MobileDashboard() {
 
   const refreshTotalSale = async (branchId, userId) => {
     if (!branchId || !userId) return;
-    console.log('Refreshing total sale:', branchId, userId);
+    // console.log('Refreshing total sale:', branchId, userId);
     try {
       const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sale-balance?branchId=${branchId}&userId=${userId}`);
-      console.log('Sale response:', response.data);
+      // console.log('Sale response:', response.data);
       setTotalSale(response.data);
     } catch (error) {
       console.error('Error refreshing sale balance:', error);
@@ -426,12 +426,6 @@ function MobileDashboard() {
       refreshTotalSale(actualBranchId, user.userID);
     }
   }, [user, actualBranchId]);
-
-  console.log('Active tab:', activeTab);
-  console.log('Balance:', balance);
-  console.log('Total Expense:', totalExpense);
-  console.log('Total Purchase:', totalPurchase);
-  console.log('Total Sale:', totalSale);
 
   if (loading) {
     return <LoadingScreen />;
@@ -799,7 +793,7 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
     const [firstName, lastName] = selectedEmployee.split(' ');
 
     try {
-      console.log('Adding employee to shift:', { shiftId, firstName, lastName });
+      // console.log('Adding employee to shift:', { shiftId, firstName, lastName });
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}/api/shift-employees`,
         {
