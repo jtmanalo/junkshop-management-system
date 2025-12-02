@@ -1,7 +1,7 @@
 import { Container, Modal, Form, Card, Button, Table } from 'react-bootstrap';
 import { useNavigate, useLocation, Route, Routes } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { FaShoppingCart, FaMoneyBillWave, FaChartLine, FaFileInvoiceDollar, FaHandHoldingUsd, FaUserTie, FaBoxOpen, FaUserFriends, FaClock } from 'react-icons/fa';
+import { FaShoppingCart, FaMoneyBillWave, FaChartLine, FaFileInvoiceDollar, FaHandHoldingUsd, FaUserTie, FaBoxOpen, FaClock } from 'react-icons/fa';
 import { ActiveTabCard, ButtonsCard } from '../components/Card';
 import CustomButton from '../components/CustomButton';
 import { MobileHeader } from '../components/Header';
@@ -23,6 +23,7 @@ import SalePage from './SalePage';
 import DebtPage from './DebtPage';
 import axios from 'axios';
 import ReceiptPage from './ReceiptPage';
+import PricelistPage from './ItemsTable';
 
 
 function SetBranchModal({ show, branchOptions, onSetBranch }) {
@@ -167,6 +168,7 @@ function MobileDashboard() {
   }, [shiftStarted, refreshBalance, refreshTotalExpense, refreshTotalPurchase, refreshTotalSale]);
 
   const fetchActiveShift = async () => {
+    setLoading(true); // Start loading before fetching
     try {
       const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/shifts/active/${user.userID}`, {
         headers: {
@@ -174,10 +176,8 @@ function MobileDashboard() {
         },
       });
       const data = response.data;
-      // console.log('Fetched active shift data:', data);
       if (data && data.length > 0) {
         const activeShift = data[0];
-        // console.log('Active shift found:', activeShift);
         setShiftId(activeShift.ShiftID); // Set the active shift ID
         setBranch({
           display: `${activeShift.Name} - ${activeShift.Location}`,
@@ -191,6 +191,8 @@ function MobileDashboard() {
     } catch (error) {
       console.error('Error fetching active shift:', error.response?.data || error.message);
       return null;
+    } finally {
+      setLoading(false); // Stop loading after fetching
     }
   };
 
@@ -199,15 +201,12 @@ function MobileDashboard() {
       setLoading(true); // Start loading
 
       try {
-        // Check for active shift
         const activeShiftData = await fetchActiveShift();
         if (activeShiftData && activeShiftData.length > 0) {
           setShowSetBranchModal(false); // Active shift found, no need to show modal
-          setLoading(false);
           return;
         }
 
-        // Check for default branch from user
         if (user.branchName && user.branchLocation) {
           const defaultBranch = {
             display: `${user.branchName} - ${user.branchLocation}`,
@@ -215,12 +214,10 @@ function MobileDashboard() {
           };
           setBranch(defaultBranch);
           setShowSetBranchModal(false); // Default branch found, no need to show modal
-          setLoading(false);
           return;
         }
 
-        // No active shift or default branch, show branch modal
-        setShowSetBranchModal(true);
+        setShowSetBranchModal(true); // No active shift or default branch, show branch modal
       } catch (error) {
         console.error('Error initializing dashboard:', error);
       } finally {
@@ -700,7 +697,7 @@ export default function MobileRoutes() {
       <MobileLayout activePage={activePage} setActivePage={setActivePage} username={user?.username} userType={user?.userType}>
         <Routes>
           {/* BottomNav */}
-          <Route path=":username/pricelist" element={<ItemsPage />} />
+          <Route path=":username/pricelist" element={<PricelistPage />} />
           <Route path=":username/logs" element={<LogsPage />} />
           <Route path=":username/ongoing" element={<OngoingPage />} />
           <Route path=":username/profile" element={<SettingsPage />} />

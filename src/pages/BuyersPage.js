@@ -456,7 +456,17 @@ function BuyersPage() {
                                             <Form.Control
                                                 type="number"
                                                 value={item.price || ''} // Ensure it doesn't break if price is undefined
-                                                onChange={e => handlePricelistChange(index, e.target.value)}
+                                                onChange={(e) => {
+                                                    const value = parseFloat(e.target.value);
+                                                    if (value > 0) {
+                                                        handlePricelistChange(index, value);
+                                                    }
+                                                }}
+                                                onKeyPress={(e) => {
+                                                    if (!/^[0-9.]$/.test(e.key)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
                                             />
                                         </td>
                                         <td>

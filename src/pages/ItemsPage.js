@@ -72,17 +72,12 @@ function ItemsPage() {
         }
     };
 
-    const currentBranch = useCallback(() => {
-    }, []);
-
-
-
     const fetchItemsforItemTable = useCallback(() => {
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items`)
             .then(response => {
                 if (Array.isArray(response.data)) {
                     setAllItems(response.data);
-                    console.log('Fetched all items for item table:', response.data);
+                    // console.log('Fetched all items for item table:', response.data);
                 } else {
                     console.error('Unexpected response format for all items:', response.data);
                     setAllItems([]);
@@ -97,7 +92,7 @@ function ItemsPage() {
     const fetchBranches = useCallback(async () => {
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches`);
-            console.log('API Response:', response.data); // Log the API response
+            // console.log('API Response:', response.data); // Log the API response
             const formattedBranches = response.data.map(branch => ({
                 id: branch.BranchID,
                 displayName: `${branch.Name} - ${branch.Location}`
@@ -124,7 +119,7 @@ function ItemsPage() {
         fetchItemsforItemTable();
         fetchItems();
         fetchBranches();
-    }, [fetchItems, fetchBranches, fetchItemsforItemTable]);
+    }, []);
 
     const matchPricelistRoute = useMatch('/employee-dashboard/:username/pricelist');
 
@@ -134,9 +129,9 @@ function ItemsPage() {
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?branchId=${branchId}`)
             .then(response => {
                 setAllItemsList(response.data);
-                console.log('All items with prices:', response.data); // Log the fetched items
+                // console.log('All items with prices:', response.data); // Log the fetched items
                 const filteredItems = response.data.filter(item => item.Price !== '');
-                console.log('Filtered items with prices:', filteredItems);
+                // console.log('Filtered items with prices:', filteredItems);
                 setAllItemsPricelist(filteredItems);
             })
             .catch(error => {
@@ -156,35 +151,7 @@ function ItemsPage() {
         initializeShift();
     }, [fetchActiveShift, fetchAllItems]);
 
-    const renderItemsTable = () => {
-        if (isMobileRoute && matchPricelistRoute) {
-            return (
-                <>
-                    <h3>{branch?.display} Pricelist</h3>
-                    <div style={{ marginBottom: '1rem' }}></div> {/* Add space between title and table */}
-                    <Table striped bordered hover>
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>Price</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {allItemsList
-                                .filter(item => item.price !== null && item.price !== '') // Filter out items with null or empty price
-                                .map((item, index) => (
-                                    <tr key={item.id || `item-${index}`}>
-                                        <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
-                                        <td>{item.price}</td> {/* Make price view-only */}
-                                    </tr>
-                                ))}
-                        </tbody>
-                    </Table>
-                </>
-            );
-        }
-        return null;
-    };
+
 
     const handleEdit = async (itemId, branchId, price) => {
         const userID = user?.userID;
@@ -210,7 +177,7 @@ function ItemsPage() {
                 }
             );
             fetchItems();
-            console.log('Price updated successfully:', response.data);
+            // console.log('Price updated successfully:', response.data);
         } catch (error) {
             console.error('Error updating price:', error);
         }
@@ -241,7 +208,7 @@ function ItemsPage() {
             }
         })
             .then(response => {
-                console.log('Item added successfully:', response.data);
+                // console.log('Item added successfully:', response.data);
                 // Show success alert
                 setSuccessMessage("Item added successfully!");
                 setShowSuccessAlert(true);
@@ -315,7 +282,7 @@ function ItemsPage() {
                 ...updatedItems[index],
                 price: value, // Update the price
             };
-            console.log('Updated Items:', updatedItems);
+            // console.log('Updated Items:', updatedItems);
             return updatedItems;
         });
     };
@@ -328,7 +295,7 @@ function ItemsPage() {
             price: item.price // Send the updated price
         })
             .then(response => {
-                console.log('Pricelist item updated successfully:', response.data);
+                // console.log('Pricelist item updated successfully:', response.data);
                 setAllItemsList(prevItems => {
                     const updatedItems = [...prevItems];
                     updatedItems[index].isUpdated = true;
@@ -401,14 +368,6 @@ function ItemsPage() {
             console.error('Error submitting edited price:', error);
         }
     };
-
-    if (matchPricelistRoute) {
-        return (
-            <div>
-                {renderItemsTable()}
-            </div>
-        );
-    }
 
     return (
         <div>
@@ -507,7 +466,7 @@ function ItemsPage() {
                                         </Form.Group>
                                     </Form>
                                     {!isEmployee && (
-                                        <Button variant="outline-dark" onClick={() => setShowEditPricelistModal(true)}>
+                                        <Button variant="outline-dark" className="me-2" onClick={() => setShowEditPricelistModal(true)}>
                                             Edit Branch Pricelist
                                         </Button>
                                     )}
@@ -635,6 +594,7 @@ function ItemsPage() {
                             value={selectedBranchForPricelist}
                             onChange={e => {
                                 const branchId = e.target.value;
+                                // console.log('Selected branch for pricelist:', branchId);
                                 setSelectedBranchForPricelist(branchId);
                                 fetchAllItems(branchId);
                             }}
@@ -645,51 +605,51 @@ function ItemsPage() {
                             ))}
                         </Form.Select>
                     </Form.Group>
-
-                    <Table striped bordered hover>
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Price</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {allItemsList.map((item, index) => (
-                                <tr key={item.id || `item-${index}`}>
-                                    {console.log('Rendering item:', item, "itemID:", item.id)}
-                                    <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
-                                    <td>
-                                        <Form.Control
-                                            type="number"
-                                            value={item.price || ''} // Ensure it doesn't break if price is undefined
-                                            onChange={e => handlePricelistChange(index, e.target.value)}
-                                        />
-                                    </td>
-                                    <td>
-                                        <Button
-                                            variant={item.isUpdated ? "success" : "outline-primary"}
-                                            size="sm"
-                                            onClick={() => {
-                                                handleUpdatePricelistItem(index);
-                                                if (!item.isUpdated) {
-                                                    setTimeout(() => {
-                                                        setAllItemsList(prevItems => {
-                                                            const updatedItems = [...prevItems];
-                                                            updatedItems[index].isUpdated = false;
-                                                            return updatedItems;
-                                                        });
-                                                    }, 3000);
-                                                }
-                                            }}
-                                        >
-                                            {item.isUpdated ? "Updated" : "Update"}
-                                        </Button>
-                                    </td>
+                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                        <Table striped bordered hover>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </Table>
+                            </thead>
+                            <tbody>
+                                {allItemsPricelist.map((item, index) => (
+                                    <tr key={item.id || `item-${index}`}>
+                                        <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
+                                        <td>
+                                            <Form.Control
+                                                type="number"
+                                                value={item.price || ''} // Ensure it doesn't break if price is undefined
+                                                onChange={e => handlePricelistChange(index, e.target.value)}
+                                            />
+                                        </td>
+                                        <td>
+                                            <Button
+                                                variant={item.isUpdated ? "success" : "outline-primary"}
+                                                size="sm"
+                                                onClick={() => {
+                                                    handleUpdatePricelistItem(index);
+                                                    if (!item.isUpdated) {
+                                                        setTimeout(() => {
+                                                            setAllItemsList(prevItems => {
+                                                                const updatedItems = [...prevItems];
+                                                                updatedItems[index].isUpdated = false;
+                                                                return updatedItems;
+                                                            });
+                                                        }, 3000);
+                                                    }
+                                                }}
+                                            >
+                                                {item.isUpdated ? "Updated" : "Update"}
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
+                    </div>
                 </Modal.Body>
             </Modal>
 
@@ -736,8 +696,6 @@ function ItemsPage() {
                     </Button>
                 </Modal.Footer>
             </Modal>
-
-            {renderItemsTable()}
         </div >
     );
 };
