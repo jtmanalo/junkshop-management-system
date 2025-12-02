@@ -221,6 +221,19 @@ async function createSale(req, res) {
     }
 }
 
+async function getDailyLogs(req, res) {
+    const shiftId = req.query.shiftId;
+    try {
+        const logs = await transactionService.getDailyLogs(shiftId);
+        if (logs.length === 0) {
+            return res.status(204).send("No logs found");
+        }
+        res.status(200).json(logs);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -234,5 +247,6 @@ module.exports = {
     getSellerLoans,
     getEmployeeLoans,
     createPurchase,
-    createSale
+    createSale,
+    getDailyLogs
 };

@@ -14,20 +14,29 @@ import { useDashboard } from '../services/DashboardContext';
 import { useNavigate } from 'react-router-dom';
 
 function DebtPage() {
-    const { refreshBalance, refreshExpenses } = useDashboard();
+    const { refreshBalance, refreshTotalExpense, actualBranchId } = useDashboard();
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const { user } = useAuth();
     const navigate = useNavigate();
 
+    console.log('ExpensePage user and branch:', user, actualBranchId);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('Submitting expense:', {
+            branchId: actualBranchId,
+            userId: user?.userID,
+            totalAmount: Number(amount),
+            notes,
+            paymentMethod
+        });
         try {
             const response = await axios.post(
                 `${process.env.REACT_APP_BASE_URL}/api/expenses`,
                 {
-                    branchId: user?.branchId,
+                    branchId: actualBranchId,
                     userId: user?.userID,
                     totalAmount: Number(amount),
                     notes: notes,
@@ -39,7 +48,7 @@ function DebtPage() {
 
             // Refresh the balance in the dashboard
             refreshBalance();
-            refreshExpenses();
+            refreshTotalExpense();
             navigate(-1);
             // Optionally reset the form fields here
             setAmount('');
@@ -91,6 +100,11 @@ function DebtPage() {
                                         placeholder="Enter amount"
                                         value={amount}
                                         onChange={handleAmountChange}
+                                        onKeyPress={(e) => {
+                                            if (!/^[0-9.]$/.test(e.key)) {
+                                                e.preventDefault();
+                                            }
+                                        }}
                                         onWheel={(e) => e.target.blur()} // Disable up/down buttons
                                         required
                                     />

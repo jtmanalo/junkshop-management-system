@@ -15,11 +15,11 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 
 function DebtPage() {
-    const { refreshBalance, refreshExpenses } = useDashboard();
+    const { refreshBalance, refreshTotalExpense, actualBranchId } = useDashboard();
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
-    const [transactionType, setTransactionType] = useState('repayment');
+    const [transactionType, setTransactionType] = useState('loan');
     const [role, setRole] = useState('seller');
     const [people, setPeople] = useState([]);
     const [selectedPerson, setSelectedPerson] = useState('');
@@ -56,7 +56,7 @@ function DebtPage() {
                 const response = await axios.post(
                     `${process.env.REACT_APP_BASE_URL}/api/repayments`,
                     {
-                        branchId: user?.branchId,
+                        branchId: actualBranchId,
                         userId: user?.userID,
                         totalAmount: Number(amount),
                         notes: notes,
@@ -68,7 +68,7 @@ function DebtPage() {
                 const response = await axios.post(
                     `${process.env.REACT_APP_BASE_URL}/api/loans`,
                     {
-                        branchId: user?.branchId,
+                        branchId: actualBranchId,
                         userId: user?.userID,
                         totalAmount: Number(amount),
                         notes: notes,
@@ -81,13 +81,13 @@ function DebtPage() {
 
             // Refresh the balance in the dashboard
             refreshBalance();
-            refreshExpenses();
+            refreshTotalExpense();
             navigate(-1);
             // Optionally reset the form fields here
             setAmount('');
             setNotes('');
             setPaymentMethod('cash');
-            setTransactionType('repayment');
+            setTransactionType('loan');
             setRole('seller');
             setSelectedPerson('');
         } catch (error) {
@@ -167,8 +167,8 @@ function DebtPage() {
                                         onChange={(e) => setTransactionType(e.target.value)}
                                         required
                                     >
-                                        <option value="repayment">Repayment</option>
                                         <option value="loan">Loan</option>
+                                        <option value="repayment">Repayment</option>
                                     </Form.Control>
                                 </Col>
                             </Row>
@@ -199,6 +199,11 @@ function DebtPage() {
                                         placeholder="Enter amount"
                                         value={amount}
                                         onChange={handleAmountChange}
+                                        onKeyPress={(e) => {
+                                            if (!/^[0-9.]$/.test(e.key)) {
+                                                e.preventDefault();
+                                            }
+                                        }}
                                         onWheel={(e) => e.target.blur()} // Disable up/down buttons
                                         required
                                     />

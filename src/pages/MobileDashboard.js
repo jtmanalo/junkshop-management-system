@@ -1,6 +1,6 @@
 import { Container, Modal, Form, Card, Button, Table } from 'react-bootstrap';
 import { useNavigate, useLocation, Route, Routes } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, act } from 'react';
 import { FaShoppingCart, FaMoneyBillWave, FaChartLine, FaFileInvoiceDollar, FaHandHoldingUsd, FaUserTie, FaBoxOpen, FaClock } from 'react-icons/fa';
 import { ActiveTabCard, ButtonsCard } from '../components/Card';
 import CustomButton from '../components/CustomButton';
@@ -24,7 +24,6 @@ import DebtPage from './DebtPage';
 import axios from 'axios';
 import ReceiptPage from './ReceiptPage';
 import PricelistPage from './ItemsTable';
-
 
 function SetBranchModal({ show, branchOptions, onSetBranch }) {
   const [selectedBranch, setSelectedBranch] = useState(branchOptions[0] || ''); // Default to the first branch
@@ -74,7 +73,7 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
 }
 
 function MobileDashboard() {
-  const { balance, refreshBalance, totalExpense, refreshTotalExpense, totalPurchase, refreshTotalPurchase, totalSale, refreshTotalSale } = useDashboard();
+  const { actualBranchId } = useDashboard();
   const { user, token } = useAuth();
   const [showEndShiftModal, setShowEndShiftModal] = useState(false);
   const [activeTab, setActiveTab] = useState('Balance');
@@ -89,6 +88,10 @@ function MobileDashboard() {
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [showShiftEmployeesModal, setShowShiftEmployeesModal] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [totalPurchase, setTotalPurchase] = useState(0);
+  const [totalSale, setTotalSale] = useState(0);
+  const [totalExpense, setTotalExpense] = useState(0);
   const navigate = useNavigate();
   const [show, setShow] = useState(false);
   const [shiftEmployees, setShiftEmployees] = useState([]);
@@ -159,13 +162,11 @@ function MobileDashboard() {
   };
 
   useEffect(() => {
-    if (shiftStarted) {
-      refreshBalance(); // Refresh balance when shift starts
-      refreshTotalExpense(); // Refresh expense balance when shift starts
-      refreshTotalPurchase(); // Refresh purchase balance when shift starts
-      refreshTotalSale(); // Refresh sale balance when shift starts
-    }
-  }, [shiftStarted, refreshBalance, refreshTotalExpense, refreshTotalPurchase, refreshTotalSale]);
+    refreshBalance(); // Refresh balance when shift starts
+    refreshTotalExpense(); // Refresh expense balance when shift starts
+    refreshTotalPurchase(); // Refresh purchase balance when shift starts
+    refreshTotalSale(); // Refresh sale balance when shift starts
+  }, [shiftStarted, user, actualBranchId]);
 
   const fetchActiveShift = async () => {
     setLoading(true); // Start loading before fetching
@@ -326,6 +327,24 @@ function MobileDashboard() {
     fetchEmployees();
   }, [token]);
 
+  const onSubmit = async () => {
+    try {
+      const branchId = branch.id;
+      const userId = user?.userID;
+      const initialCash = Number(startingCash);
+
+      const shiftData = await createShift(branchId, userId, initialCash, token);
+      setShiftId(shiftData.id);
+
+      refreshBalance(); // Refresh balance after starting shift
+      setShiftStarted(true); // Ensure this is called
+      setShowModal(false);
+    } catch (error) {
+      alert('Error starting shift. Please try again.');
+    }
+    console.log('Shift started with initial balance:', startingCash);
+  };
+
   // Remove redundant declaration of setShiftEmployees
   const onAddEmployee = async () => {
     try {
@@ -349,13 +368,70 @@ function MobileDashboard() {
     }
   };
 
-  // useEffect(() => {
-  //   // Fetch the initial balance when the dashboard loads
-  //   refreshBalance();
-  //   refreshTotalExpense();
-  //   refreshTotalPurchase();
-  //   refreshTotalSale();
-  // }, [refreshBalance, refreshTotalExpense, refreshTotalPurchase, refreshTotalSale]);
+  // Add refresh functions to MobileDashboard
+  const refreshBalance = async (branchId, userId) => {
+    if (!branchId || !userId) return;
+    console.log('Refreshing balance:', branchId, userId);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/balance?branchId=${branchId}&userId=${userId}`);
+      console.log('Balance response:', response.data);
+      setBalance(response.data);
+    } catch (error) {
+      console.error('Error refreshing balance:', error);
+    }
+  };
+
+  const refreshTotalExpense = async (branchId, userId) => {
+    if (!branchId || !userId) return;
+    console.log('Refreshing total expense:', branchId, userId);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/expense-balance?branchId=${branchId}&userId=${userId}`);
+      console.log('Expense response:', response.data);
+      setTotalExpense(response.data);
+    } catch (error) {
+      console.error('Error refreshing expense balance:', error);
+    }
+  };
+
+  const refreshTotalPurchase = async (branchId, userId) => {
+    if (!branchId || !userId) return;
+    console.log('Refreshing total purchase:', branchId, userId);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/purchase-balance?branchId=${branchId}&userId=${userId}`);
+      console.log('Purchase response:', response.data);
+      setTotalPurchase(response.data);
+    } catch (error) {
+      console.error('Error refreshing purchase balance:', error);
+    }
+  };
+
+  const refreshTotalSale = async (branchId, userId) => {
+    if (!branchId || !userId) return;
+    console.log('Refreshing total sale:', branchId, userId);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sale-balance?branchId=${branchId}&userId=${userId}`);
+      console.log('Sale response:', response.data);
+      setTotalSale(response.data);
+    } catch (error) {
+      console.error('Error refreshing sale balance:', error);
+    }
+  };
+
+  // Trigger refreshes in useEffect
+  useEffect(() => {
+    if (user && actualBranchId) {
+      refreshBalance(actualBranchId, user.userID);
+      refreshTotalExpense(actualBranchId, user.userID);
+      refreshTotalPurchase(actualBranchId, user.userID);
+      refreshTotalSale(actualBranchId, user.userID);
+    }
+  }, [user, actualBranchId]);
+
+  console.log('Active tab:', activeTab);
+  console.log('Balance:', balance);
+  console.log('Total Expense:', totalExpense);
+  console.log('Total Purchase:', totalPurchase);
+  console.log('Total Sale:', totalSale);
 
   if (loading) {
     return <LoadingScreen />;
@@ -576,23 +652,7 @@ function MobileDashboard() {
                 branch={branch}
                 setBranch={setBranch}
                 branchOptions={branchOptions}
-                onSubmit={async () => {
-                  try {
-                    // Create shift via API
-                    const branchId = branch.id;
-                    const userId = user?.userID;
-                    const initialCash = Number(startingCash);
-
-                    const shiftData = await createShift(branchId, userId, initialCash, token);
-                    setShiftId(shiftData.id);
-
-                    refreshBalance(); // Refresh balance after starting shift
-                    setShiftStarted(true);
-                    setShowModal(false);
-                  } catch (error) {
-                    alert('Error starting shift. Please try again.');
-                  }
-                }}
+                onSubmit={onSubmit}
               />
             </>
           )}

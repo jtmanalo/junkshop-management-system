@@ -177,30 +177,6 @@ async function createRepayment(data) {
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
         const transactionDate = createdAt;
 
-        if (data.totalAmount <= 0) {
-            throw new Error('Total amount must be greater than zero for a loan.');
-        }
-        // Perform the INSERT query
-        const result = await conn.query(
-            `INSERT INTO transaction 
-            (BranchID, SellerID, EmployeeID, UserID, TransactionType, 
-            TransactionDate, TotalAmount, 
-            PaymentMethod, Status, Notes, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                data.branchId,
-                data.sellerId || null,
-                data.employeeId || null,
-                data.userId,
-                'repayment',
-                transactionDate,
-                data.totalAmount,
-                data.paymentMethod || 'cash',
-                data.status || 'completed',
-                data.notes || null,
-                createdAt
-            ]
-        );
-
         // Get ShiftID
         const shift = await conn.query(
             `SELECT ShiftID 
@@ -212,6 +188,32 @@ async function createRepayment(data) {
         if (!shift[0]?.ShiftID && data.userType !== 'owner') {
             throw new Error('No active shift found for the user to record the expense.');
         }
+
+        if (data.totalAmount <= 0) {
+            throw new Error('Total amount must be greater than zero for a loan.');
+        }
+
+        // Perform the INSERT query
+        const result = await conn.query(
+            `INSERT INTO transaction 
+            (BranchID, SellerID, EmployeeID, UserID, TransactionType, 
+            TransactionDate, TotalAmount, 
+            PaymentMethod, Status, Notes, CreatedAt, ShiftID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.branchId,
+                data.sellerId || null,
+                data.employeeId || null,
+                data.userId,
+                'repayment',
+                transactionDate,
+                data.totalAmount,
+                data.paymentMethod || 'cash',
+                data.status || 'completed',
+                data.notes || null,
+                createdAt,
+                shift[0]?.ShiftID
+            ]
+        );
 
         // Update the RunningTotal for the active shift
         await conn.query(
@@ -239,6 +241,21 @@ async function createLoan(data) {
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
         const transactionDate = createdAt;
 
+        console.log('UserID:', data.userId, 'BranchID:', data.branchId);
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [data.userId, data.branchId]
+        );
+        console.log('Active shift query result:', shift[0]?.ShiftID);
+
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
+
+
         if (data.totalAmount <= 0) {
             throw new Error('Total amount must be greater than zero for a loan.');
         }
@@ -247,7 +264,7 @@ async function createLoan(data) {
             `INSERT INTO transaction 
             (BranchID, SellerID, EmployeeID, UserID, TransactionType, 
             TransactionDate, TotalAmount, 
-            PaymentMethod, Status, Notes, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            PaymentMethod, Status, Notes, CreatedAt, ShiftID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.branchId,
                 data.sellerId || null,
@@ -259,21 +276,10 @@ async function createLoan(data) {
                 data.paymentMethod || 'cash',
                 data.status || 'completed',
                 data.notes || null,
-                createdAt
+                createdAt,
+                shift[0]?.ShiftID
             ]
         );
-
-        // Get ShiftID
-        const shift = await conn.query(
-            `SELECT ShiftID 
-             FROM shift 
-             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
-            [data.userId, data.branchId]
-        );
-
-        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
-            throw new Error('No active shift found for the user to record the expense.');
-        }
 
         // Update the RunningTotal for the active shift
         await conn.query(
@@ -305,12 +311,28 @@ async function createExpense(data) {
             throw new Error('Total amount must be greater than zero for an expense.');
         }
 
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [data.userId, data.branchId]
+        );
+
+        console.log('UserID:', data.userId, 'BranchID:', data.branchId);
+
+        console.log('Active shift query result:', shift[0]?.ShiftID);
+
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
+
         // Perform the INSERT query
         const result = await conn.query(
             `INSERT INTO transaction 
             (BranchID, UserID, TransactionType, 
             TransactionDate, TotalAmount, 
-            PaymentMethod, Status, Notes, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            PaymentMethod, Status, Notes, CreatedAt, ShiftID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.branchId,
                 data.userId,
@@ -320,21 +342,10 @@ async function createExpense(data) {
                 data.paymentMethod || 'cash',
                 data.status || 'completed',
                 data.notes || null,
-                createdAt
+                createdAt,
+                shift[0]?.ShiftID
             ]
         );
-
-        // Get ShiftID
-        const shift = await conn.query(
-            `SELECT ShiftID 
-             FROM shift 
-             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
-            [data.userId, data.branchId]
-        );
-
-        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
-            throw new Error('No active shift found for the user to record the expense.');
-        }
 
         // Update the RunningTotal for the active shift
         await conn.query(
@@ -353,10 +364,23 @@ async function createExpense(data) {
     }
 }
 
-async function getExpenseBalance(branchId, userID) {
+async function getExpenseBalance(branchId, userID,) {
     let conn;
     try {
         conn = await pool.getConnection();
+
+        // Get ShiftID
+        console.log('UserID:', userID, 'BranchID:', branchId);
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [userID, branchId]
+        );
+
+        console.log('UserID:', userID, 'BranchID:', branchId);
+
+        console.log('Active shift query result:', shift[0]?.ShiftID);
 
         const [balance] = await conn.query(
             `SELECT SUM(TotalAmount) AS TotalExpenses
@@ -364,11 +388,46 @@ async function getExpenseBalance(branchId, userID) {
                 WHERE TransactionType = 'expense'
                 AND BranchID = ?
                 AND UserID = ?
-                AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
-            [branchId, userID]
+                AND ShiftID = ?`,
+            [branchId, userID, shift[0]?.ShiftID]
+        );
+        //AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));
+        return balance ? balance.TotalExpenses || 0 : 0;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getBalance(branchId, userID) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [data.userId, data.branchId]
         );
 
-        return balance ? balance.TotalExpenses || 0 : 0;
+        console.log('UserID:', data.userId, 'BranchID:', data.branchId);
+
+        console.log('Active shift query result:', shift[0]?.ShiftID);
+
+        const [balance] = await conn.query(
+            `SELECT (InitialCash - RunningTotal) AS Balance
+                FROM shift
+                WHERE
+                BranchID = ?
+                AND UserID = ?
+                AND ShiftID = ?`,
+            [branchId, userID, shift[0]?.ShiftID]
+        );
+
+        return balance ? balance.TotalSales || 0 : 0;
     } catch (error) {
         throw error;
     } finally {
@@ -381,14 +440,26 @@ async function getSaleBalance(branchId, userID) {
     try {
         conn = await pool.getConnection();
 
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [userID, branchId]
+        );
+
+        console.log('UserID:', userID, 'BranchID:', branchId);
+
+        console.log('Active shift query result:', shift[0]?.ShiftID);
+
         const [balance] = await conn.query(
             `SELECT SUM(TotalAmount) AS TotalSales
                 FROM transaction
                 WHERE TransactionType = 'sale'
                 AND BranchID = ?
                 AND UserID = ?
-                AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
-            [branchId, userID]
+                AND ShiftID = ?`,
+            [branchId, userID, shift[0]?.ShiftID]
         );
 
         return balance ? balance.TotalSales || 0 : 0;
@@ -404,14 +475,26 @@ async function getPurchaseBalance(branchId, userID) {
     try {
         conn = await pool.getConnection();
 
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [userID, branchId]
+        );
+
+        console.log('UserID:', userID, 'BranchID:', branchId);
+
+        console.log('Active shift query result:', shift[0]?.ShiftID);
+
         const [balance] = await conn.query(
             `SELECT SUM(TotalAmount) AS TotalPurchases
                 FROM transaction
                 WHERE TransactionType = 'purchase'
                 AND BranchID = ?
                 AND UserID = ?
-                AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
-            [branchId, userID]
+                AND ShiftID = ?`,
+            [branchId, userID, shift[0]?.ShiftID]
         );
 
         return balance ? balance.TotalPurchases || 0 : 0;
@@ -497,6 +580,18 @@ async function createPurchase(data) {
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
         const transactionDate = createdAt;
 
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [data.userId, data.branchId]
+        );
+
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
+
         // Insert into transaction table
         const transactionResult = await conn.query(
             `INSERT INTO transaction 
@@ -506,7 +601,7 @@ async function createPurchase(data) {
             PartyType, 
             TransactionType, 
             TransactionDate, 
-            PaymentMethod, Status, Notes, TotalAmount, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            PaymentMethod, Status, Notes, TotalAmount, CreatedAt, ShiftID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.branchId,
                 data.sellerId,
@@ -518,7 +613,8 @@ async function createPurchase(data) {
                 data.status,
                 data.notes,
                 data.totalAmount,
-                createdAt
+                createdAt,
+                shift[0]?.ShiftID
             ]
         );
         const transactionId = transactionResult.insertId;
@@ -566,6 +662,18 @@ async function createSale(data) {
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
         const transactionDate = createdAt;
 
+        // Get ShiftID
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM shift 
+             WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [data.userId, data.branchId]
+        );
+
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
+
         // Insert into transaction table
         const transactionResult = await conn.query(
             `INSERT INTO transaction 
@@ -575,7 +683,7 @@ async function createSale(data) {
             PartyType, 
             TransactionType, 
             TransactionDate, 
-            PaymentMethod, Status, Notes, TotalAmount, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            PaymentMethod, Status, Notes, TotalAmount, CreatedAt, ShiftID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.branchId,
                 data.buyerId,
@@ -587,7 +695,8 @@ async function createSale(data) {
                 data.status,
                 data.notes,
                 data.totalAmount,
-                createdAt
+                createdAt,
+                shift[0]?.ShiftID
             ]
         );
         const transactionId = transactionResult.insertId;
@@ -625,6 +734,30 @@ async function createSale(data) {
     }
 }
 
+async function getDailyLogs(shiftId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query
+        const rows = await conn.query('SELECT * FROM transaction WHERE ShiftID = ? AND Status = "completed"', [shiftId]);
+
+        // Ensures timestamps are in UTC+8
+        rows.forEach(row => {
+            if (row.Time) {
+                row.Time = moment(row.Time).tz('Asia/Manila').format();
+            }
+        });
+
+        // Return all rows
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -638,5 +771,7 @@ module.exports = {
     getEmployeeLoans,
     getSellerLoans,
     createPurchase,
-    createSale
+    createSale,
+    getDailyLogs,
+    getBalance
 };

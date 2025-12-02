@@ -133,7 +133,7 @@ async function getBalance(branchId, userId) {
         const sale = await conn.query(
             `SELECT IFNULL(SUM(TotalAmount), 0) AS TotalSales
              FROM transaction
-             WHERE BranchID = 19 AND UserID = 22 AND TransactionType = 'sale' 
+             WHERE BranchID = ? AND UserID = ? AND TransactionType = 'sale' 
              AND DATE(TransactionDate) = DATE(CONVERT_TZ(NOW(), '+00:00', 'Asia/Manila'));`,
             [branchId, userId]
         );

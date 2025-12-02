@@ -20,6 +20,8 @@ router.post('/repayments', transactionController.createRepayment);
 router.post('/purchases', transactionController.createPurchase);
 router.post('/sales', transactionController.createSale);
 
+router.get('/daily-logs/:shiftId', transactionController.getDailyLogs);
+
 // Get seller loans
 router.get('/seller-loans', transactionController.getSellerLoans);
 router.get('/employee-loans', transactionController.getEmployeeLoans); // reuse same controller

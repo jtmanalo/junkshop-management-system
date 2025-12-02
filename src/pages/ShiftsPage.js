@@ -4,12 +4,9 @@ import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import moment from 'moment-timezone';
 
-// Page tab 1 to add/manage sellers, view their details, and keep track of their loans and payments
-// Page tab 2 to keep track of employee loans and payments
+// View logs should show LogsPage or a modal version
 function ShiftsPage() {
-    const { token, user } = useAuth();
-    const [errors, setErrors] = useState({});
-    const [sellers, setSellers] = useState([]);
+    const { token } = useAuth();
     const [selectedSeller, setSelectedSeller] = useState('all');
     const [employees, setEmployees] = useState([]);
     const [branches, setBranches] = useState([]);
@@ -18,7 +15,6 @@ function ShiftsPage() {
     const [selectedMonth, setSelectedMonth] = useState('all');
     const [selectedYear, setSelectedYear] = useState('all');
     const [shiftEmployees, setShiftEmployees] = useState([]);
-    const [shiftId, setShiftId] = useState(null);
     const [showEmployeeModal, setShowEmployeeModal] = useState(false);
     const [isLoadingShifts, setIsLoadingShifts] = useState(false);
     const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
@@ -38,26 +34,6 @@ function ShiftsPage() {
             setIsLoadingShiftEmployees(false);
         }
     };
-
-    // fetch seller details from table ( id, Name, ContactNumber, CreatedAt )
-    const fetchSellers = useCallback(async () => {
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sellers`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-            });
-            const formattedSellers = response.data.map(seller => ({
-                id: seller.id,
-                displayName: `${seller.Name}`,
-                contactNumber: seller.ContactNumber,
-                createdAt: seller.CreatedAt
-            }));
-            setSellers(formattedSellers);
-        } catch (error) {
-            console.error('Error fetching sellers:', error);
-        }
-    }, [token]);
 
     // fetch employee details from table ( id, FirstName, LastName, Email, Phone, Position, BranchID, isActive )
     const fetchEmployees = useCallback(async () => {
@@ -109,10 +85,6 @@ function ShiftsPage() {
             setIsLoadingShifts(false);
         }
     }, [token]);
-
-    useEffect(() => {
-        fetchSellers();
-    }, [fetchSellers]);
 
     useEffect(() => {
         fetchEmployees();
