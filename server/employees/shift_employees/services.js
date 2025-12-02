@@ -55,7 +55,7 @@ async function getById(shiftId) {
         conn = await pool.getConnection();
 
         const rows = await conn.query(
-            `SELECT se.ShiftID, se.EmployeeID, e.FirstName, e.LastName 
+            `SELECT se.ShiftID, se.EmployeeID, e.FirstName, e.LastName, e.PositionTitle, e.ContactNumber
              FROM shift_employee se
              JOIN employee e ON se.EmployeeID = e.EmployeeID
              WHERE se.ShiftID = ?`,

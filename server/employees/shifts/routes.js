@@ -5,6 +5,9 @@ const router = express.Router();
 // Get all shifts
 router.get('/shifts', shiftController.getAll);
 
+// Get shift details
+router.get('/shift-details', shiftController.getShiftDetails);
+
 // Get active shift of userID
 router.get('/shifts/active/:userId', shiftController.getActivebyUserID);
 

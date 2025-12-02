@@ -14,6 +14,19 @@ async function getAll(req, res) {
     }
 }
 
+async function getShiftDetails(req, res) {
+    try {
+        const shiftDetails = await shiftService.getShiftDetails();
+        if (shiftDetails.length === 0) {
+            return res.status(204).send("No shifts found");
+        }
+        res.json(shiftDetails);
+    } catch (error) {
+        console.error('Error in getShiftDetails:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 async function getActivebyUserID(req, res) {
     try {
         const shifts = await shiftService.getActivebyUserID(parseInt(req.params.userId, 10));
@@ -80,5 +93,6 @@ module.exports = {
     create,
     update,
     getActivebyUserID,
-    getBalance
+    getBalance,
+    getShiftDetails
 };

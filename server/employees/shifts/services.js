@@ -158,10 +158,61 @@ async function getBalance(branchId, userId) {
     }
 }
 
+async function getShiftDetails() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const query = `
+            SELECT 
+                s.*, 
+                CONCAT(b.Name, ' - ', b.Location) AS Branch, 
+                COALESCE(CONCAT(e.FirstName, ' ', e.LastName), u.Name) AS Name
+            FROM 
+                shift s
+            JOIN 
+                branch b 
+            ON 
+                s.BranchID = b.BranchID
+            LEFT JOIN 
+                employee e 
+            ON 
+                s.UserID = e.UserID
+            JOIN 
+                user u 
+            ON 
+                s.UserID = u.UserID
+            WHERE 
+                u.UserType = 'owner' OR e.UserID IS NOT NULL
+        `;
+
+        const rows = await conn.query(query);
+
+        rows.forEach(row => {
+            if (row.StartDatetime) {
+                row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format();
+            }
+            if (row.EndDatetime) {
+                row.EndDatetime = moment(row.EndDatetime).tz('Asia/Manila').format();
+            }
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
+
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
     endShift,
     getActivebyUserID,
-    getBalance
+    getBalance,
+    getShiftDetails
 };
