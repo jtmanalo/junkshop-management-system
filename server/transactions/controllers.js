@@ -182,6 +182,45 @@ async function createPurchase(req, res) {
     }
 }
 
+async function createSale(req, res) {
+    const {
+        branchId,
+        buyerId,
+        userId,
+        partyType,
+        paymentMethod,
+        status,
+        notes,
+        totalAmount,
+        items
+    } = req.body;
+
+    if (!branchId || !userId || !partyType || !items || !totalAmount || items.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields.' });
+    }
+
+    try {
+        const newSale = await transactionService.createSale({
+            branchId,
+            buyerId,
+            userId,
+            partyType,
+            paymentMethod,
+            status,
+            notes,
+            totalAmount,
+            items
+        });
+        console.log('New Sale:', newSale);
+        res.status(201).json({
+            ...newSale,
+            id: newSale.id ? newSale.id.toString() : null, // Safely handle undefined
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -194,5 +233,6 @@ module.exports = {
     createRepayment,
     getSellerLoans,
     getEmployeeLoans,
-    createPurchase
+    createPurchase,
+    createSale
 };

@@ -18,6 +18,7 @@ router.post('/loans', transactionController.createLoan);
 router.post('/repayments', transactionController.createRepayment);
 
 router.post('/purchases', transactionController.createPurchase);
+router.post('/sales', transactionController.createSale);
 
 // Get seller loans
 router.get('/seller-loans', transactionController.getSellerLoans);

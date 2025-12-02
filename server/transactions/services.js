@@ -558,7 +558,71 @@ async function createPurchase(data) {
 
 
 async function createSale(data) {
-    // Implementation for creating a sale transaction
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const transactionDate = createdAt;
+
+        // Insert into transaction table
+        const transactionResult = await conn.query(
+            `INSERT INTO transaction 
+            (BranchID, 
+            BuyerID, 
+            UserID, 
+            PartyType, 
+            TransactionType, 
+            TransactionDate, 
+            PaymentMethod, Status, Notes, TotalAmount, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.branchId,
+                data.buyerId,
+                data.userId,
+                data.partyType,
+                'sale',
+                transactionDate,
+                data.paymentMethod,
+                data.status,
+                data.notes,
+                data.totalAmount,
+                createdAt
+            ]
+        );
+        const transactionId = transactionResult.insertId;
+
+        // Insert into transaction_item table
+        for (const item of data.items) {
+            await conn.query(
+                'INSERT INTO transaction_item (TransactionID, ItemID, Quantity, Price, Subtotal, CreatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+                [transactionId, item.itemId, item.quantity, item.itemPrice, item.subtotal, createdAt]
+            );
+        }
+
+        // Insert into weighing_log table
+        for (const item of data.items) {
+            await conn.query(
+                'INSERT INTO weighing_log (ItemID, BranchID, TransactionID, Weight, UserID, WeighedAt) VALUES (?, ?, ?, ?, ?, ?)',
+                [
+                    item.itemId,
+                    data.branchId,
+                    transactionId,
+                    item.quantity,
+                    data.userId,
+                    transactionDate,
+                ]
+            );
+        }
+
+        await conn.commit();
+        return { id: transactionResult.insertId, ...data };
+    } catch (error) {
+        if (conn) await conn.rollback();
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
 }
 
 module.exports = {

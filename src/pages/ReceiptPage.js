@@ -20,7 +20,7 @@ function ReceiptPage() {
         const receiptElement = document.getElementById('receipt-content');
         html2canvas(receiptElement).then((canvas) => {
             const link = document.createElement('a');
-            link.download = 'receipt.png';
+            link.download = `${receiptData.transactionType}_${receiptData.transactionDate}_receipt.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
@@ -50,12 +50,12 @@ function ReceiptPage() {
                 <p>{receiptData.transactionDate}</p>
                 <p>{receiptData.transactionType} Receipt - {receiptData.paymentMethod.toUpperCase()}</p>
                 <p><strong>Employee:</strong> {receiptData.employeeName.toUpperCase()}</p>
-                {receiptData.partyType.toLowerCase() === 'extra' ? (
-                    <p>EXTRA</p>
-                ) : (receiptData.sellerName &&
-                    <p><strong>Seller:</strong> {receiptData.sellerName.toUpperCase()} - {receiptData.partyType.toUpperCase()}</p>
-                )
-                }
+                {receiptData.transactionType.toLowerCase() === 'purchase' && receiptData.sellerName && (
+                    <p><strong>Seller:</strong> {receiptData.sellerName.toUpperCase()}</p>
+                )}
+                {receiptData.transactionType.toLowerCase() === 'sale' && receiptData.buyerName && (
+                    <p><strong>Buyer:</strong> {receiptData.buyerName.toUpperCase()}</p>
+                )}
                 <Table striped bordered hover style={{ margin: '0 auto', maxWidth: '80%' }}>
                     <thead>
                         <tr>

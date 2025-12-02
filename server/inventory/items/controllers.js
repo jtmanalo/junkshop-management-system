@@ -33,6 +33,25 @@ async function getItemsWithPrice(req, res) {
     }
 }
 
+async function getItemsOfBuyerWithPrice(req, res) {
+    const { buyerId } = req.params;
+
+    if (!buyerId) {
+        return res.status(400).json({ error: 'BuyerID is required' });
+    }
+
+    try {
+        const items = await itemService.getItemsOfBuyerWithPrice(buyerId);
+        if (!items) {
+            return res.status(404).send("Item not found");
+        }
+        res.status(200).json(items);
+    } catch (error) {
+        console.error('Error in getItemsOfBuyerWithPrice:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 // Items Page get all items
 async function getAllItems(req, res) {
     try {
@@ -208,6 +227,7 @@ module.exports = {
     update,
     updateItemPriceForBranch,
     updateItemPriceForBuyer,
-    getItemsWithPrice
+    getItemsWithPrice,
+    getItemsOfBuyerWithPrice
     // remove
 };

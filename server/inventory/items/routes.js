@@ -7,6 +7,8 @@ router.get('/items', itemController.getAllItemsWithPricing);
 
 router.get('/items/branch/:branchId', itemController.getItemsWithPrice);
 
+router.get('/items/buyer/:buyerId', itemController.getItemsOfBuyerWithPrice);
+
 router.get('/all-items', itemController.getAllItems);
 
 router.get('/all-items-with-prices', itemController.crossReferenceItemsWithPrices);

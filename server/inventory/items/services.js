@@ -1,5 +1,6 @@
 const pool = require('../../db');
 const moment = require('moment-timezone');
+const { get } = require('./routes');
 
 // Items Page get all items of a branch with pricing
 async function getAllItemsWithPricing() {
@@ -109,6 +110,54 @@ async function getItemsWithPrice(branchId) {
     }
 }
 
+async function getItemsOfBuyerWithPrice(buyerId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const query = `
+            SELECT
+                b.BuyerID,
+                b.CompanyName,
+                b.ContactPerson,
+                i.ItemID,
+                i.Name,
+                i.Classification,
+                i.UnitOfMeasurement,
+                i.Description,
+                pli.Price AS ItemPrice
+            FROM
+                buyer b
+            JOIN
+                pricelist pl ON b.BuyerID = pl.BuyerID
+            JOIN
+                pricelist_item pli ON pl.PriceListID = pli.PriceListID
+            JOIN
+                item i ON pli.ItemID = i.ItemID
+            WHERE
+                b.Status = 'active'
+                AND b.BuyerID = ?
+                AND pl.BranchID IS NULL
+            ORDER BY
+                i.ItemID;
+        `;
+
+        const rows = await conn.query(query, [buyerId]);
+
+        // Ensures timestamps are in UTC+8 if applicable
+        rows.forEach(row => {
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
+
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
 
 async function getAllItems() {
     let conn;
@@ -452,5 +501,6 @@ module.exports = {
     updateItemPriceForBranch,
     getItemsWithPricesForBuyer,
     updateItemPriceForBuyer,
-    getItemsWithPrice
+    getItemsWithPrice,
+    getItemsOfBuyerWithPrice
 };

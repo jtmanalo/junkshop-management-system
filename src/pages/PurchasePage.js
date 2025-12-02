@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Form, Row, Col, InputGroup, Modal, Table } from 'react-bootstrap';
+import { Container, Card, Button, Form, Row, Col, InputGroup, Modal, Table, Spinner } from 'react-bootstrap';
 import { FaPlus, FaTrash, FaMinus, FaChevronLeft } from 'react-icons/fa';
-import { BackHeader } from '../components/Header';
 import { DeleteConfirmModal } from '../components/Modal';
 import { useDashboard } from '../services/DashboardContext';
 import { useAuth } from '../services/AuthContext';
@@ -12,15 +11,27 @@ function PurchasePage() {
     // Modal state for delete confirmation
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteIdx, setDeleteIdx] = useState(null);
-    const { actualBranchId, shiftId, fetchActiveShift, branchName, branchLocation } = useDashboard();
+    const { actualBranchId, shiftId, branchName, branchLocation } = useDashboard();
     const { user } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        console.log('Actual Branch ID:', actualBranchId);
-        console.log('Shift ID:', shiftId);
-    }, [actualBranchId, shiftId, fetchActiveShift]);
+    const [allSellers, setAllSellers] = useState([]);
+    const [allItems, setAllItems] = useState([]);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
+    const [transactionNotes, setTransactionNotes] = useState('');
+    const [showRowRemove, setShowRowRemove] = useState(false);
+    const [seller, setSeller] = useState('');
+    const [type, setType] = useState('');
+    const sellerOptions = [];
+    const typeOptions = [
+        'Regular',
+        'Extra'
+    ];
+    const [items, setItems] = useState([
+        { name: '', quantity: '', pricing: '', subtotal: '' },
+    ]);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     // Show modal when trash is clicked
     const handleTrashClick = (idx) => {
@@ -42,24 +53,6 @@ function PurchasePage() {
         setDeleteIdx(null);
         setShowDeleteModal(false);
     };
-    const [showRowRemove, setShowRowRemove] = useState(false);
-    const [seller, setSeller] = useState('');
-    const [type, setType] = useState('');
-
-    const sellerOptions = [
-    ];
-
-    const typeOptions = [
-        'Regular',
-        'Extra'
-    ];
-
-    const [items, setItems] = useState([
-        { name: '', quantity: '', pricing: '', subtotal: '' },
-    ]);
-    const [allSellers, setAllSellers] = useState([]);
-    const [allItems, setAllItems] = useState([]);
-    const [pendingTransactions, setPendingTransactions] = useState([]);
 
     const fetchSellers = async () => {
         try {
@@ -75,7 +68,7 @@ function PurchasePage() {
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/branch/${actualBranchId}`);
             setAllItems(response.data);
-            console.log('Fetched items:', response.data);
+            // console.log('Fetched items:', response.data);
         } catch (error) {
             console.error('Error fetching items:', error);
         }
@@ -98,7 +91,7 @@ function PurchasePage() {
         setItems([...items, { name: '', quantity: '', pricing: '', subtotal: '' }]);
     };
 
-    // Fix handleItemChange to use correct property names
+
     const handleItemChange = (idx, selectedItem) => {
         const selected = allItems.find(item => item.Name === selectedItem);
         if (selected) {
@@ -106,43 +99,64 @@ function PurchasePage() {
             updatedItems[idx] = {
                 ...updatedItems[idx],
                 name: selectedItem,
-                classification: selected.Classification || '', // Added classification
-                pricing: selected.ItemPrice || 0,
-                subtotal: (updatedItems[idx].quantity || 0) * (selected.ItemPrice || 0),
+                classification: selected.Classification || '',
+                pricing: Math.max(selected.ItemPrice || 0, 0.01), // Ensure price is never 0 or negative
+                subtotal: (updatedItems[idx].quantity || 0) * Math.max(selected.ItemPrice || 0, 0.01),
             };
             setItems(updatedItems);
+            console.log(`Item selected: ${selectedItem}, Price: ${selected.ItemPrice}`);
         }
     };
 
-    // Add an onChange handler to update the quantity and recalculate the total
     const handleQuantityChange = (idx, newQuantity) => {
+        if (isNaN(newQuantity)) return; // Prevent non-numeric values
         const updatedItems = [...items];
         updatedItems[idx] = {
             ...updatedItems[idx],
-            quantity: newQuantity,
-            subtotal: (newQuantity || 0) * (updatedItems[idx].pricing || 0),
+            quantity: Math.max(newQuantity || 0, 1), // Ensure quantity is never 0 or negative
+            subtotal: Math.max(newQuantity || 0, 1) * (updatedItems[idx].pricing || 0.01),
         };
         setItems(updatedItems);
     };
 
-    // Add an onChange handler to update the pricing and recalculate the total
     const handlePricingChange = (idx, newPricing) => {
+        if (isNaN(newPricing)) return; // Prevent non-numeric values
         const updatedItems = [...items];
         updatedItems[idx] = {
             ...updatedItems[idx],
-            pricing: newPricing,
-            subtotal: (updatedItems[idx].quantity || 0) * (newPricing || 0),
+            pricing: Math.max(newPricing || 0, 0.01), // Ensure price is never 0 or negative
+            subtotal: (updatedItems[idx].quantity || 0) * Math.max(newPricing || 0, 0.01),
         };
         setItems(updatedItems);
     };
-
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
-    const [transactionNotes, setTransactionNotes] = useState('');
-    const [receiptData, setReceiptData] = useState(null);
 
     const handleFinalize = async () => {
-        setShowPaymentModal(true);
+        let isValid = true;
+        const updatedItems = items.map((item) => {
+            const updatedItem = { ...item };
+
+            if (!item.name || item.quantity <= 0 || item.pricing <= 0) {
+                isValid = false;
+                updatedItem.isInvalid = true; // Mark invalid fields
+            } else {
+                updatedItem.isInvalid = false;
+            }
+
+            return updatedItem;
+        });
+
+        setItems(updatedItems);
+
+        if (isValid) {
+            setIsProcessing(true);
+            try {
+                setShowPaymentModal(true);
+            } finally {
+                setIsProcessing(false);
+            }
+        } else {
+            alert('Please fill out all fields correctly.');
+        }
     };
 
     const confirmPaymentMethod = async () => {
@@ -171,8 +185,8 @@ function PurchasePage() {
                     subtotal: item.subtotal,
                 })),
             };
-            console.log("Seller ID:", transactionData.sellerId);
-            console.log('Transaction Data:', JSON.stringify(transactionData));
+            // console.log("Seller ID:", transactionData.sellerId);
+            // console.log('Transaction Data:', JSON.stringify(transactionData));
 
             const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/purchases`, transactionData);
 
@@ -190,7 +204,7 @@ function PurchasePage() {
                 partyType: type,
             };
 
-            console.log('Receipt Data:', receipt);
+            // console.log('Receipt Data:', receipt);
             setSeller('');
             setType('');
             setItems([{ name: '', quantity: '', pricing: '', subtotal: '' }]);
@@ -237,13 +251,10 @@ function PurchasePage() {
                 })),
             };
 
-            console.log('Transaction Data (Pending):', transactionData);
+            // console.log('Transaction Data (Pending):', transactionData);
 
             const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/purchases`, transactionData);
             alert('Transaction saved as pending.');
-
-            // Add transaction to pending list
-            setPendingTransactions(prev => [...prev, { id: response.data.transactionId, ...transactionData }]);
 
             // Clear fields
             setSeller('');
@@ -282,34 +293,6 @@ function PurchasePage() {
             </Card.Header>
         );
     };
-
-    // // Add logic to render pending transactions as rows
-    // const PendingTransactions = ({ transactions, onSelectTransaction }) => {
-    //     return (
-    //         <div>
-    //             {transactions.map((transaction, idx) => (
-    //                 <div key={idx} onClick={() => onSelectTransaction(transaction)} style={{ cursor: 'pointer', padding: '10px', borderBottom: '1px solid #ccc' }}>
-    //                     <span>{`Transaction ID: ${transaction.id}, Status: ${transaction.status}`}</span>
-    //                 </div>
-    //             ))}
-    //         </div>
-    //     );
-    // };
-
-    // // Add logic to restore a pending transaction
-    // const restoreTransaction = (transaction) => {
-    //     setSeller(allSellers.find(s => s.SellerID === transaction.sellerId)?.Name || '');
-    //     setType(transaction.partyType);
-    //     setItems(transaction.items.map(item => ({
-    //         name: allItems.find(i => i.ItemID === item.itemId)?.Name || '',
-    //         quantity: item.quantity,
-    //         pricing: item.itemPrice,
-    //         subtotal: item.subtotal,
-    //     })));
-    //     setSelectedPaymentMethod(transaction.paymentMethod);
-    //     setTransactionNotes(transaction.notes);
-    //     setSelectedStatus(transaction.status);
-    // };
 
     return (
         <Container fluid className="p-0 d-flex flex-column min-vh-100" style={{ background: '#fff', fontFamily: 'inherit' }}>
@@ -382,7 +365,20 @@ function PurchasePage() {
                                     type="number"
                                     value={item.pricing}
                                     onChange={(e) => handlePricingChange(idx, parseFloat(e.target.value) || 0)}
-                                    style={{ background: '#f5f5f5', color: '#222', border: 'none', fontSize: '1rem', fontFamily: 'inherit', letterSpacing: 1, textAlign: 'center' }}
+                                    onKeyPress={(e) => {
+                                        if (!/^[0-9.]$/.test(e.key)) {
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                    style={{
+                                        background: '#f5f5f5',
+                                        color: '#222',
+                                        border: item.isInvalid && (!item.pricing || item.pricing <= 0) ? '2px solid red' : 'none',
+                                        fontSize: '1rem',
+                                        fontFamily: 'inherit',
+                                        letterSpacing: 1,
+                                        textAlign: 'center',
+                                    }}
                                     placeholder="-"
                                 />
                             </div>
@@ -391,7 +387,20 @@ function PurchasePage() {
                                     type="number"
                                     value={item.quantity}
                                     onChange={(e) => handleQuantityChange(idx, parseFloat(e.target.value) || 0)}
-                                    style={{ background: '#f5f5f5', color: '#222', border: 'none', fontSize: '1rem', fontFamily: 'inherit', letterSpacing: 1, textAlign: 'center' }}
+                                    onKeyPress={(e) => {
+                                        if (!/^[0-9.]$/.test(e.key)) {
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                    style={{
+                                        background: '#f5f5f5',
+                                        color: '#222',
+                                        border: item.isInvalid && (!item.quantity || item.quantity <= 0) ? '2px solid red' : 'none',
+                                        fontSize: '1rem',
+                                        fontFamily: 'inherit',
+                                        letterSpacing: 1,
+                                        textAlign: 'center',
+                                    }}
                                     placeholder="0"
                                 />
                             </div>
@@ -413,8 +422,8 @@ function PurchasePage() {
                             <Button variant="light" style={{ border: '2px solid #dc3545', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }} onClick={() => setShowRowRemove(show => !show)}>
                                 <FaMinus color="#dc3545" size={24} />
                             </Button>
-                            <Button variant="dark" style={{ borderRadius: '1rem', fontFamily: 'inherit', fontSize: '1.1rem', padding: '0.75rem 2rem', fontWeight: 600, letterSpacing: 1, margin: '0 1rem', flex: 1, pointerEvents: 'auto' }} onClick={handleFinalize}>
-                                Generate Receipt
+                            <Button variant="dark" style={{ borderRadius: '1rem', fontFamily: 'inherit', fontSize: '1.1rem', padding: '0.75rem 2rem', fontWeight: 600, letterSpacing: 1, margin: '0 1rem', flex: 1, pointerEvents: 'auto' }} onClick={handleFinalize} disabled={isProcessing}>
+                                {isProcessing ? <Spinner animation="border" size="sm" /> : 'Generate Receipt'}
                             </Button>
                             <Button variant="light" style={{ border: '2px solid #343a40', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }} onClick={addItemRow}>
                                 <FaPlus size={24} color="#343a40" />
@@ -424,7 +433,7 @@ function PurchasePage() {
                 </Card.Body>
             </Card>
             <DeleteConfirmModal show={showDeleteModal} onCancel={cancelRemoveItem} onConfirm={confirmRemoveItem} />
-            <Modal show={showPaymentModal} centered>
+            <Modal show={showPaymentModal} centered onHide={() => setShowPaymentModal(false)}>
                 <Modal.Header closeButton>
                     <Modal.Title>Confirm Payment</Modal.Title>
                 </Modal.Header>

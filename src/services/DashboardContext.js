@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const DashboardContext = createContext();
@@ -75,9 +75,7 @@ export const DashboardProvider = ({ children, user }) => {
         }
     };
 
-    // console.log('User in DashboardContext:', user);
-
-    const fetchActiveShift = async () => {
+    const fetchActiveShift = useCallback(async () => {
         if (!user?.userID) return;
         try {
             const response = await axios.get(
@@ -94,24 +92,14 @@ export const DashboardProvider = ({ children, user }) => {
             setShiftId(ShiftID);
             setBranchName(Name);
             setBranchLocation(Location);
-            // console.log('Set actualBranchId:', BranchID);
-            // console.log('Set shiftId:', ShiftID);
         } catch (error) {
             console.error('Error fetching active shift:', error);
         }
-    };
-
-    useEffect(() => {
-        // console.log('actualBranchId updated:', actualBranchId);
-    }, [actualBranchId]);
-
-    useEffect(() => {
-        // console.log('shiftId updated:', shiftId);
-    }, [shiftId]);
+    }, [user]);
 
     useEffect(() => {
         fetchActiveShift();
-    }, [user]);
+    }, [user, fetchActiveShift]);
 
     return (
         <DashboardContext.Provider value={{
