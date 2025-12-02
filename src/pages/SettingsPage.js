@@ -30,6 +30,7 @@ function SettingsPage() {
                 const userDetails = response.data;
                 console.log('Mapped User Details:', userDetails); // Debugging log
                 setFormData({
+                    Name: userDetails.Name || '',
                     FirstName: userDetails.FirstName || '',
                     MiddleName: userDetails.MiddleName || '',
                     LastName: userDetails.LastName || '',

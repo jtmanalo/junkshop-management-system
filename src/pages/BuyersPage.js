@@ -1,3 +1,8 @@
+// Table: Company Name | Item Name | Price | Actions (View Contacts, View Pricelist, Edit)
+// Company Name only mentioned once and then the items/prices listed below it
+// View Contacts and View Pricelist are buttons only for rows with Company Name
+// Edit button only for rows with items/prices
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { Table, Form, Button, Alert, Modal } from 'react-bootstrap';
 import { FaInfoCircle } from 'react-icons/fa';
@@ -6,7 +11,7 @@ import { useMatch } from 'react-router-dom';
 import axios from 'axios';
 
 function BuyersPage() {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const [buyers, setBuyers] = useState([]);
     const [buyerPricelist, setBuyerPricelist] = useState([]);
     const [showSuccessAlert, setShowSuccessAlert] = useState(false);
@@ -31,18 +36,12 @@ function BuyersPage() {
     const [viewPricelistItems, setViewPricelistItems] = useState([]);
     const [viewPricelistName, setViewPricelistName] = useState('');
     const [showEditPriceModal, setShowEditPriceModal] = useState(false);
-
-    // Add state for managing the "Add Buyer" modal visibility
     const [showAddBuyerModal, setShowAddBuyerModal] = useState(false);
     const [newBuyerName, setNewBuyerName] = useState('');
     const [newBuyerCompany, setNewBuyerCompany] = useState('');
-
-    // Add state for new fields in the "Add Buyer" modal
     const [newBuyerNotes, setNewBuyerNotes] = useState('');
-    const [newBuyerContactMethod, setNewBuyerContactMethod] = useState('');
-    const [newBuyerContactDetail, setNewBuyerContactDetail] = useState('');
-
-    // Add state for managing the "Edit Buyer" modal visibility and form fields
+    const [newBuyerContactMethod, setNewBuyerContactMethod] = useState(null);
+    const [newBuyerContactDetail, setNewBuyerContactDetail] = useState(null);
     const [showEditBuyerModal, setShowEditBuyerModal] = useState(false);
     const [editBuyerId, setEditBuyerId] = useState(null);
     const [editBuyerCompany, setEditBuyerCompany] = useState('');
@@ -52,7 +51,6 @@ function BuyersPage() {
     const [editBuyerNotes, setEditBuyerNotes] = useState('');
     const [editBuyerStatus, setEditBuyerStatus] = useState('active');
 
-    // Move `fetchBuyers` outside of the `useEffect` to make it reusable.
     const fetchBuyers = async () => {
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers`);
@@ -61,13 +59,13 @@ function BuyersPage() {
             const buyerPricelist = Array.from(
                 response.data.reduce((map, buyer) => {
                     if (buyer.BuyerID && buyer.CompanyName && !map.has(buyer.BuyerID)) {
-                        console.log('Adding BuyerID:', buyer.BuyerID); // Log BuyerID for debugging
+                        console.log('Adding BuyerID:', buyer.BuyerID);
                         map.set(buyer.BuyerID, { id: buyer.BuyerID, companyName: buyer.CompanyName });
                     }
                     return map;
                 }, new Map()).values()
             );
-            // Ensure the `items` state only contains unique entries by filtering duplicates.
+
             const formattedItems = Array.from(
                 new Map(
                     response.data.map(buyer => {
@@ -89,7 +87,7 @@ function BuyersPage() {
                             ];
                         }
                         return null;
-                    }).filter(item => item) // Ensure unique and non-null items
+                    }).filter(item => item)
                 ).values()
             );
 

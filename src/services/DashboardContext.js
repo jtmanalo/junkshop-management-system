@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const DashboardContext = createContext();
@@ -10,7 +10,10 @@ export const DashboardProvider = ({ children, user }) => {
     const [totalExpense, setTotalExpense] = useState(0);
     const [totalPurchase, setTotalPurchase] = useState(0);
     const [totalSale, setTotalSale] = useState(0);
-    const [branch, setBranch] = useState(null); // Add branch state
+    const [branchName, setBranchName] = useState(null); // Add branch state
+    const [branchLocation, setBranchLocation] = useState(null); // Add branch location state
+    const [actualBranchId, setActualBranchId] = useState(null); // Store actual branch ID
+    const [shiftId, setShiftId] = useState(null); // Store shift ID
 
     const refreshBalance = async () => {
         if (!user?.branchId || !user?.userID) return;
@@ -72,6 +75,44 @@ export const DashboardProvider = ({ children, user }) => {
         }
     };
 
+    // console.log('User in DashboardContext:', user);
+
+    const fetchActiveShift = async () => {
+        if (!user?.userID) return;
+        try {
+            const response = await axios.get(
+                `${process.env.REACT_APP_BASE_URL}/api/shifts/active/${user.userID}`
+            );
+
+            if (response.error) {
+                alert(response.error); // Display the error message from the backend
+                return;
+            }
+
+            const { BranchID, ShiftID, Name, Location } = response.data[0];
+            setActualBranchId(BranchID);
+            setShiftId(ShiftID);
+            setBranchName(Name);
+            setBranchLocation(Location);
+            // console.log('Set actualBranchId:', BranchID);
+            // console.log('Set shiftId:', ShiftID);
+        } catch (error) {
+            console.error('Error fetching active shift:', error);
+        }
+    };
+
+    useEffect(() => {
+        // console.log('actualBranchId updated:', actualBranchId);
+    }, [actualBranchId]);
+
+    useEffect(() => {
+        // console.log('shiftId updated:', shiftId);
+    }, [shiftId]);
+
+    useEffect(() => {
+        fetchActiveShift();
+    }, [user]);
+
     return (
         <DashboardContext.Provider value={{
             balance,
@@ -82,8 +123,13 @@ export const DashboardProvider = ({ children, user }) => {
             refreshTotalPurchase,
             totalSale,
             refreshTotalSale,
-            branch,
-            setBranch // Provide branch state and updater
+            branchName,
+            setBranchName,
+            branchLocation,
+            setBranchLocation,
+            actualBranchId, // Provide actual branch ID
+            shiftId, // Provide shift ID
+            fetchActiveShift // Provide fetchActiveShift function
         }}>
             {children}
         </DashboardContext.Provider>

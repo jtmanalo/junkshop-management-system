@@ -73,7 +73,7 @@ async function create(data) {
         );
 
         // Insert into buyer_contact if contact details are provided
-        if (data.contactMethod || data.contactDetail) {
+        if (data.contactMethod && data.contactDetail) {
             await conn.query(
                 'INSERT INTO buyer_contact (BuyerID, ContactMethod, ContactDetail, IsPrimary, CreatedAt) VALUES (?, ?, ?, ?, ?)',
                 [

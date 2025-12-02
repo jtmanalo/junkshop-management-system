@@ -262,14 +262,20 @@ export function TopNav({ toggleSidebar, isCollapsed }) {
         <div className="flex-grow-1" />
         {/* Right Side Icons and User Profile */}
         <div className="d-flex align-items-center" style={{ gap: 10, marginRight: 8, flexWrap: 'nowrap', minWidth: 0 }}>
-          {/* Employee Dashboard Button */}
-          <Button
-            variant="outline-dark"
-            className="me-3"
-            onClick={() => navigate(`/employee-dashboard/${user?.username}`)}
-          >
-            Employee Dashboard
-          </Button>
+          {/* Conditionally render Employee Dashboard button based on SideNav state */}
+          {isCollapsed && (
+            <Button
+              variant="outline-dark"
+              className="me-3"
+              style={{
+                fontSize: '0.8rem', // Smaller font size for mobile
+                padding: '0.4rem 0.6rem', // Adjust padding for smaller buttons
+              }}
+              onClick={() => navigate(`/employee-dashboard/${user?.username}`)}
+            >
+              Employee Dashboard
+            </Button>
+          )}
           {/* User Profile Dropdown */}
           <div style={{ minWidth: 32, flexShrink: 0 }}>
             <UserProfileDropdown />

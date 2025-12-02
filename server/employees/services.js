@@ -1,6 +1,5 @@
 const pool = require('../db');
 const moment = require('moment-timezone');
-const { get } = require('./routes');
 
 async function getAll() {
     let conn;

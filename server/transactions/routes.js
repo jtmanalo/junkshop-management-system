@@ -17,6 +17,8 @@ router.post('/loans', transactionController.createLoan);
 // Create a repayment
 router.post('/repayments', transactionController.createRepayment);
 
+router.post('/purchases', transactionController.createPurchase);
+
 // Get seller loans
 router.get('/seller-loans', transactionController.getSellerLoans);
 router.get('/employee-loans', transactionController.getEmployeeLoans); // reuse same controller

@@ -22,6 +22,7 @@ import ExpensePage from './ExpensePage';
 import SalePage from './SalePage';
 import DebtPage from './DebtPage';
 import axios from 'axios';
+import ReceiptPage from './ReceiptPage';
 
 
 function SetBranchModal({ show, branchOptions, onSetBranch }) {
@@ -712,6 +713,7 @@ export default function MobileRoutes() {
           <Route path=":username/expenses" element={<ExpensePage />} />
           <Route path=":username/sales" element={<SalePage />} />
           <Route path=":username/debts" element={<DebtPage />} />
+          <Route path=":username/receipt" element={<ReceiptPage />} />
           {/* Dashboard */}
           <Route path=":username" element={<MobileDashboard />} />
           <Route path="*" element={

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaInfoCircle } from 'react-icons/fa';
+import { FaInfoCircle, FaSearch } from 'react-icons/fa';
 import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
@@ -30,6 +30,10 @@ function LoanPage() {
     const [newSellerContact, setNewSellerContact] = useState('');
     const [showEmployeeModal, setShowEmployeeModal] = useState(false);
     const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState(null);
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [sellerSearch, setSellerSearch] = useState('');
+    const [employeeSearch, setEmployeeSearch] = useState('');
 
     // fetch sellers from table ( name, contact number, createdat )
     // joined with transaction table details ( loan amount, payment amount, 
@@ -139,7 +143,8 @@ function LoanPage() {
                 }
             );
             console.log(`${transactionType === 'repayment' ? 'Repayment' : 'Loan'} Recorded:`, response.data);
-            alert('Transaction successful!');
+            setSuccessMessage('Transaction successful!');
+            setShowSuccessAlert(true);
             setShowTransactionModal(false);
             setAmount('');
             setNotes('');
@@ -174,7 +179,8 @@ function LoanPage() {
                 }
             );
             console.log('Seller added:', response.data);
-            alert('Seller added successfully!');
+            setSuccessMessage('Seller added successfully!');
+            setShowSuccessAlert(true);
             setShowAddSellerModal(false);
             setNewSellerName('');
             setNewSellerContact('');
@@ -208,55 +214,73 @@ function LoanPage() {
         setSelectedEmployeeDetails(null);
     };
 
+    const filteredSellers = sellers.filter(seller =>
+        seller.displayName.toLowerCase().includes(sellerSearch.toLowerCase())
+    );
+
+    const filteredEmployees = employees.filter(employee =>
+        employee.displayName.toLowerCase().includes(employeeSearch.toLowerCase())
+    );
+
+    // Removed all margin and padding to eliminate remaining space on the left
     return (
         <div>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h1>Loans</h1>
-            </div>
-            <Card className="mb-3">
-                <Card.Header>
-                    <Tabs defaultActiveKey="sellers" id="sellers-employees-tabs">
-                        <Tab eventKey="sellers" title="Sellers">
-                            <div className="mt-3">
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <Form >
-                                        <Form.Group controlId="branchSelect" className="d-inline-block me-2">
-                                            <Form.Label>Seller</Form.Label>
-                                            <Form.Select
-                                                value={selectedSeller}
-                                                onChange={(e) => setSelectedSeller(e.target.value)}
-                                            >
-                                                <option value="all">All Sellers</option>
-                                                {sellers.map((seller) => (
-                                                    <option key={seller.id} value={seller.id}>{seller.displayName}</option>
-                                                ))}
-                                            </Form.Select>
-                                        </Form.Group>
-                                    </Form>
-                                    <Button variant="outline-dark" onClick={() => setShowAddSellerModal(true)}>Add Seller</Button>
-                                    {/* <Button variant="outline-dark" onClick={() => setShowAddItemModal(true)}>Add Item</Button> */}
-                                </div>
-                                <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                                    <Table striped bordered hover>
-                                        <thead>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Loan Amount</th>
-                                                <th>Repayment Amount</th>
-                                                <th>Outstanding Balance</th>
-                                                <th>Last Transaction Date</th>
-                                                {!isMobileRoute && <th>Actions</th>}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {sellers.length === 0 ? (
+            <div className="container-fluid" style={{ maxWidth: '90vw' }}>
+                {showSuccessAlert && (
+                    <Alert
+                        variant="success"
+                        onClose={() => setShowSuccessAlert(false)}
+                        dismissible
+                        style={{
+                            position: 'fixed',
+                            bottom: '20px',
+                            right: '20px',
+                            width: '300px',
+                            zIndex: 1050,
+                        }}
+                    >
+                        {successMessage}
+                    </Alert>
+                )}
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h1>Loans</h1>
+                </div>
+                <Card className="mb-3">
+                    <Card.Header>
+                        <Tabs defaultActiveKey="sellers" id="sellers-employees-tabs">
+                            <Tab eventKey="sellers" title="Sellers">
+                                <div className="mt-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <Form>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Search seller..."
+                                                value={sellerSearch}
+                                                onChange={(e) => setSellerSearch(e.target.value)}
+                                                className="mb-3"
+                                            />
+                                        </Form>
+                                        <Button variant="outline-dark" onClick={() => setShowAddSellerModal(true)}>Add Seller</Button>
+                                    </div>
+                                    <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                        <Table striped bordered hover responsive>
+                                            <thead>
                                                 <tr>
-                                                    <td colSpan={isMobileRoute ? 5 : 6} className="text-center">No sellers found</td>
+                                                    <th>Name</th>
+                                                    <th>Loan Amount</th>
+                                                    <th>Repayment Amount</th>
+                                                    <th>Outstanding Balance</th>
+                                                    <th>Last Transaction Date</th>
+                                                    {!isMobileRoute && <th>Actions</th>}
                                                 </tr>
-                                            ) : (
-                                                sellers
-                                                    .filter(seller => selectedSeller === 'all' || seller.id === parseInt(selectedSeller))
-                                                    .map((seller) => (
+                                            </thead>
+                                            <tbody>
+                                                {filteredSellers.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={isMobileRoute ? 5 : 6} className="text-center">No sellers found</td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredSellers.map((seller) => (
                                                         <tr key={seller.id} onClick={() => handleRowClick(seller, true)} style={isMobileRoute ? { cursor: 'pointer' } : {}}>
                                                             <td>{seller.displayName}</td>
                                                             <td>{seller.loanAmount}</td>
@@ -291,57 +315,43 @@ function LoanPage() {
                                                             )}
                                                         </tr>
                                                     ))
-                                            )}
-                                        </tbody>
-                                    </Table>
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                    </div>
                                 </div>
-                            </div>
-                        </Tab>
-                        <Tab eventKey="employees" title="Employees">
-                            <div className="mt-3">
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <Form.Group controlId="employeeSelect" className="d-inline-block me-2">
-                                        <Form.Label>Employee</Form.Label>
-                                        <Form.Select
-                                            value={selectedEmployee}
-                                            onChange={(e) => setSelectedEmployee(e.target.value)}
-                                        >
-                                            <option value="all">All Employees</option>
-                                            {employees.map((employee) => (
-                                                <option key={employee.id} value={employee.id}>{employee.displayName}</option>
-                                            ))}
-                                        </Form.Select>
-                                    </Form.Group>
-                                </div>
-                                <Table striped bordered hover>
-                                    <thead>
-                                        <tr>
-                                            <th>
-                                                {/* <th onClick={() => requestSort('Name')} style={{ cursor: 'pointer' }}> */}
-                                                Name
-                                            </th>
-                                            <th>
-                                                {/* <th onClick={() => requestSort('UnitOfMeasurement')} style={{ cursor: 'pointer' }}> */}
-                                                Loan Amount
-                                            </th>
-                                            <th>
-                                                {/* <th onClick={() => requestSort('Description')} style={{ cursor: 'pointer' }}> */}
-                                                Repayment Amount
-                                            </th>
-                                            <th>Outstanding Balance</th>
-                                            <th>Last Transaction Date</th>
-                                            {!isMobileRoute && <th>Actions</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {employees.length === 0 ? (
+                            </Tab>
+                            <Tab eventKey="employees" title="Employees">
+                                <div className="mt-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <Form>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Search employee..."
+                                                value={employeeSearch}
+                                                onChange={(e) => setEmployeeSearch(e.target.value)}
+                                                className="mb-3"
+                                            />
+                                        </Form>
+                                    </div>
+                                    <Table striped bordered hover responsive>
+                                        <thead>
                                             <tr>
-                                                <td colSpan={isMobileRoute ? 5 : 6} className="text-center">No employees found</td>
+                                                <th>Name</th>
+                                                <th>Loan Amount</th>
+                                                <th>Repayment Amount</th>
+                                                <th>Outstanding Balance</th>
+                                                <th>Last Transaction Date</th>
+                                                {!isMobileRoute && <th>Actions</th>}
                                             </tr>
-                                        ) : (
-                                            employees
-                                                .filter(employee => selectedEmployee === 'all' || employee.id === parseInt(selectedEmployee))
-                                                .map((employee) => (
+                                        </thead>
+                                        <tbody>
+                                            {filteredEmployees.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={isMobileRoute ? 5 : 6} className="text-center">No employees found</td>
+                                                </tr>
+                                            ) : (
+                                                filteredEmployees.map((employee) => (
                                                     <tr key={employee.id} onClick={() => handleRowClick(employee, false)} style={isMobileRoute ? { cursor: 'pointer' } : {}}>
                                                         <td>{employee.displayName}</td>
                                                         <td>{employee.loanAmount}</td>
@@ -376,191 +386,192 @@ function LoanPage() {
                                                         )}
                                                     </tr>
                                                 ))
-                                        )}
-                                    </tbody>
-                                </Table>
+                                            )}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            </Tab>
+                        </Tabs>
+                    </Card.Header>
+                </Card>
+
+                {/* Modal for displaying seller details */}
+                <Modal show={showSellerModal} onHide={handleCloseModal} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Seller Details</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {selectedSellerDetails && (
+                            <Table striped bordered hover>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Name</strong></td>
+                                        <td>{selectedSellerDetails.displayName}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Contact Number</strong></td>
+                                        <td>{selectedSellerDetails.contactNumber || 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Created At</strong></td>
+                                        <td>{selectedSellerDetails.createdAt}</td>
+                                    </tr>
+                                </tbody>
+                            </Table>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseModal}>
+                            Close
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal for displaying employee details */}
+                <Modal show={showEmployeeModal} onHide={handleCloseEmployeeModal} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Employee Details</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {selectedEmployeeDetails && (
+                            <Table striped bordered hover>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Name</strong></td>
+                                        <td>{selectedEmployeeDetails.displayName}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Position Title</strong></td>
+                                        <td>{selectedEmployeeDetails.positionTitle}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Nickname</strong></td>
+                                        <td>{selectedEmployeeDetails.nickname || 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Contact Number</strong></td>
+                                        <td>{selectedEmployeeDetails.contactNumber || 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Address</strong></td>
+                                        <td>{selectedEmployeeDetails.address || 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Hire Date</strong></td>
+                                        <td>{selectedEmployeeDetails.hireDate}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Status</strong></td>
+                                        <td>{selectedEmployeeDetails.status}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Created At</strong></td>
+                                        <td>{selectedEmployeeDetails.createdAt}</td>
+                                    </tr>
+                                </tbody>
+                            </Table>
+                        )}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseEmployeeModal}>
+                            Close
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Modal for adding loan or repayment */}
+                <Modal show={showTransactionModal} onHide={() => setShowTransactionModal(false)} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>{transactionType === 'repayment' ? 'Add Repayment' : 'Add Loan'}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {selectedPerson && (
+                            <div>
+                                <p><strong>Name:</strong> {selectedPerson.displayName}</p>
                             </div>
-                        </Tab>
-                    </Tabs>
-                </Card.Header>
-            </Card>
+                        )}
+                        <Form onSubmit={handleTransactionSubmit} id="transactionForm">
+                            <Form.Group className="mb-3" controlId="paymentMethod">
+                                <Form.Label>Payment Method</Form.Label>
+                                <Form.Select
+                                    value={paymentMethod}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                >
+                                    <option value="cash">Cash</option>
+                                    <option value="credit">Credit</option>
+                                    <option value="bank">Bank Transfer</option>
+                                </Form.Select>
+                            </Form.Group>
+                            <Form.Group className="mb-3" controlId="amount">
+                                <Form.Label>Amount</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    value={amount}
+                                    onChange={handleAmountChange}
+                                    required
+                                    min="0"
+                                />
+                            </Form.Group>
+                            <Form.Group className="mb-3" controlId="notes">
+                                <Form.Label>Notes</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                />
+                            </Form.Group>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowTransactionModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="primary" type="submit" form="transactionForm">
+                            Submit
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
 
-            {/* Modal for displaying seller details */}
-            <Modal show={showSellerModal} onHide={handleCloseModal} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Seller Details</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {selectedSellerDetails && (
-                        <Table striped bordered hover>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Name</strong></td>
-                                    <td>{selectedSellerDetails.displayName}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Contact Number</strong></td>
-                                    <td>{selectedSellerDetails.contactNumber || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Created At</strong></td>
-                                    <td>{selectedSellerDetails.createdAt}</td>
-                                </tr>
-                            </tbody>
-                        </Table>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleCloseModal}>
-                        Close
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
-            {/* Modal for displaying employee details */}
-            <Modal show={showEmployeeModal} onHide={handleCloseEmployeeModal} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Employee Details</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {selectedEmployeeDetails && (
-                        <Table striped bordered hover>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Name</strong></td>
-                                    <td>{selectedEmployeeDetails.displayName}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Position Title</strong></td>
-                                    <td>{selectedEmployeeDetails.positionTitle}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Nickname</strong></td>
-                                    <td>{selectedEmployeeDetails.nickname || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Contact Number</strong></td>
-                                    <td>{selectedEmployeeDetails.contactNumber || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Address</strong></td>
-                                    <td>{selectedEmployeeDetails.address || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Hire Date</strong></td>
-                                    <td>{selectedEmployeeDetails.hireDate}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Status</strong></td>
-                                    <td>{selectedEmployeeDetails.status}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Created At</strong></td>
-                                    <td>{selectedEmployeeDetails.createdAt}</td>
-                                </tr>
-                            </tbody>
-                        </Table>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleCloseEmployeeModal}>
-                        Close
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
-            {/* Modal for adding loan or repayment */}
-            <Modal show={showTransactionModal} onHide={() => setShowTransactionModal(false)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>{transactionType === 'repayment' ? 'Add Repayment' : 'Add Loan'}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {selectedPerson && (
-                        <div>
-                            <p><strong>Name:</strong> {selectedPerson.displayName}</p>
-                        </div>
-                    )}
-                    <Form onSubmit={handleTransactionSubmit} id="transactionForm">
-                        <Form.Group className="mb-3" controlId="paymentMethod">
-                            <Form.Label>Payment Method</Form.Label>
-                            <Form.Select
-                                value={paymentMethod}
-                                onChange={(e) => setPaymentMethod(e.target.value)}
-                            >
-                                <option value="cash">Cash</option>
-                                <option value="credit">Credit</option>
-                                <option value="bank">Bank Transfer</option>
-                            </Form.Select>
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="amount">
-                            <Form.Label>Amount</Form.Label>
-                            <Form.Control
-                                type="number"
-                                value={amount}
-                                onChange={handleAmountChange}
-                                required
-                                min="0"
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="notes">
-                            <Form.Label>Notes</Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                rows={3}
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                            />
-                        </Form.Group>
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowTransactionModal(false)}>
-                        Cancel
-                    </Button>
-                    <Button variant="primary" type="submit" form="transactionForm">
-                        Submit
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
-            {/* Modal for adding a new seller */}
-            <Modal show={showAddSellerModal} onHide={() => setShowAddSellerModal(false)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Add New Seller</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form onSubmit={handleAddSeller}>
-                        <Form.Group className="mb-3" controlId="newSellerName">
-                            <Form.Label>Name <span style={{ color: 'red' }}>*</span></Form.Label>
-                            <Form.Control
-                                type="text"
-                                value={newSellerName}
-                                onChange={(e) => setNewSellerName(e.target.value)}
-                                placeholder="Enter seller name"
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3" controlId="newSellerContact">
-                            <Form.Label>Contact Number</Form.Label>
-                            <Form.Control
-                                type="text"
-                                value={newSellerContact}
-                                onChange={(e) => setNewSellerContact(e.target.value)}
-                                placeholder="Enter contact number (optional)"
-                            />
-                        </Form.Group>
-                        <Modal.Footer>
-                            <Button variant="secondary" onClick={() => setShowAddSellerModal(false)}>
-                                Cancel
-                            </Button>
-                            <Button variant="primary" type="submit">
-                                Add Seller
-                            </Button>
-                        </Modal.Footer>
-                    </Form>
-                </Modal.Body>
-            </Modal>
-        </div >
+                {/* Modal for adding a new seller */}
+                <Modal show={showAddSellerModal} onHide={() => setShowAddSellerModal(false)} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Add New Seller</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form onSubmit={handleAddSeller}>
+                            <Form.Group className="mb-3" controlId="newSellerName">
+                                <Form.Label>Name <span style={{ color: 'red' }}>*</span></Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={newSellerName}
+                                    onChange={(e) => setNewSellerName(e.target.value)}
+                                    placeholder="Enter seller name"
+                                    required
+                                />
+                            </Form.Group>
+                            <Form.Group className="mb-3" controlId="newSellerContact">
+                                <Form.Label>Contact Number</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={newSellerContact}
+                                    onChange={(e) => setNewSellerContact(e.target.value)}
+                                    placeholder="Enter contact number (optional)"
+                                />
+                            </Form.Group>
+                            <Modal.Footer>
+                                <Button variant="secondary" onClick={() => setShowAddSellerModal(false)}>
+                                    Cancel
+                                </Button>
+                                <Button variant="primary" type="submit">
+                                    Add Seller
+                                </Button>
+                            </Modal.Footer>
+                        </Form>
+                    </Modal.Body>
+                </Modal>
+            </div >
+        </div>
     )
 }
 

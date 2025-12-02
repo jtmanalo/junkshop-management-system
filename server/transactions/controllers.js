@@ -1,4 +1,3 @@
-const { get } = require('./routes');
 const transactionService = require('./services');
 
 // Get all transactions
@@ -144,6 +143,45 @@ async function update(req, res) {
     }
 }
 
+async function createPurchase(req, res) {
+    const {
+        branchId,
+        sellerId,
+        userId,
+        partyType,
+        paymentMethod,
+        status,
+        notes,
+        totalAmount,
+        items
+    } = req.body;
+
+    if (!branchId || !userId || !partyType || !items || !totalAmount || items.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields.' });
+    }
+
+    try {
+        const newPurchase = await transactionService.createPurchase({
+            branchId,
+            sellerId,
+            userId,
+            partyType,
+            paymentMethod,
+            status,
+            notes,
+            totalAmount,
+            items
+        });
+        console.log('New Purchase:', newPurchase);
+        res.status(201).json({
+            ...newPurchase,
+            id: newPurchase.id ? newPurchase.id.toString() : null, // Safely handle undefined
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -155,5 +193,6 @@ module.exports = {
     createLoan,
     createRepayment,
     getSellerLoans,
-    getEmployeeLoans
+    getEmployeeLoans,
+    createPurchase
 };

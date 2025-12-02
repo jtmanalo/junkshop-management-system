@@ -1,4 +1,3 @@
-const { get } = require('./routes');
 const shiftService = require('./services');
 
 // Get all shifts

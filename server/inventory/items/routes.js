@@ -5,6 +5,8 @@ const router = express.Router();
 // Get all items of a branch with pricing
 router.get('/items', itemController.getAllItemsWithPricing);
 
+router.get('/items/branch/:branchId', itemController.getItemsWithPrice);
+
 router.get('/all-items', itemController.getAllItems);
 
 router.get('/all-items-with-prices', itemController.crossReferenceItemsWithPrices);
