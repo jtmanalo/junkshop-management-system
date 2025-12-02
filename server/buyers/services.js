@@ -59,6 +59,7 @@ async function create(data) {
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const DateEffective = moment().tz('Asia/Manila').format('YYYY-MM-DD');
 
         // Perform the INSERT query for the buyer
         const result = await conn.query(
@@ -85,6 +86,16 @@ async function create(data) {
                 ]
             );
         }
+
+        // Insert into pricelist table
+        await conn.query(
+            'INSERT INTO pricelist (BuyerID, DateEffective, CreatedAt) VALUES (?, ?, ?)',
+            [
+                result.insertId, // Use the BuyerID from the first insert
+                DateEffective, // DateEffective defaults to today
+                createdAt
+            ]
+        );
 
         // Commit the transaction
         await conn.commit();

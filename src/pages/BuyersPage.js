@@ -422,7 +422,6 @@ function BuyersPage() {
                 </Modal.Header>
                 <Modal.Body>
                     <Form.Group controlId="buyerSelectForPricelist" className="mb-3">
-                        <Form.Label>Buyer</Form.Label>
                         <Form.Select
                             value={selectedBuyerForPricelist}
                             onChange={e => {

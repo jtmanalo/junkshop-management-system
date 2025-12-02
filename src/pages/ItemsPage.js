@@ -15,7 +15,6 @@ function ItemsPage() {
     const [selectedBranch, setSelectedBranch] = useState('');
     const [items, setItems] = useState([]);
     const [allItemsList, setAllItemsList] = useState([]);
-    const [allItemsPricelist, setAllItemsPricelist] = useState([]);
     const [allItems, setAllItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -40,44 +39,13 @@ function ItemsPage() {
         currentPrice: '',
         newPrice: ''
     });
-    const [shiftStarted, setShiftStarted] = useState(false);
-    const [shiftId, setShiftId] = useState(null);
-    const [branch, setBranch] = useState(null);
-
-    const fetchActiveShift = async () => {
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/shifts/active/${user.userID}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-            });
-            const data = response.data;
-            // console.log('Fetched active shift data:', data);
-            if (data && data.length > 0) {
-                const activeShift = data[0];
-                // console.log('Active shift found:', activeShift);
-                setShiftId(activeShift.ShiftID); // Set the active shift ID
-                setBranch({
-                    display: `${activeShift.Name} - ${activeShift.Location}`,
-                    id: activeShift.BranchID
-                }); // Set the branch details
-                setShiftStarted(true); // Mark the shift as started
-            } else {
-                setShiftStarted(false); // No active shift
-            }
-            return data;
-        } catch (error) {
-            console.error('Error fetching active shift:', error.response?.data || error.message);
-            return null;
-        }
-    };
 
     const fetchItemsforItemTable = useCallback(() => {
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items`)
             .then(response => {
                 if (Array.isArray(response.data)) {
                     setAllItems(response.data);
-                    // console.log('Fetched all items for item table:', response.data);
+                    console.log('Fetched all items for item table:', response.data);
                 } else {
                     console.error('Unexpected response format for all items:', response.data);
                     setAllItems([]);
@@ -92,7 +60,7 @@ function ItemsPage() {
     const fetchBranches = useCallback(async () => {
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches`);
-            // console.log('API Response:', response.data); // Log the API response
+            console.log('API Response:', response.data); // Log the API response
             const formattedBranches = response.data.map(branch => ({
                 id: branch.BranchID,
                 displayName: `${branch.Name} - ${branch.Location}`
@@ -101,11 +69,12 @@ function ItemsPage() {
         } catch (error) {
             console.error('Error fetching branches:', error);
         }
-    }, []);
+    }, [user?.username]);
 
     // gets all items of the branch using username
     const fetchItems = useCallback(() => {
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/items`)
+        if (!user?.username) return;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/items?username=${user.username}`)
             .then(response => {
                 setItems(Array.isArray(response.data) ? response.data : []); // Ensure items is an array
             })
@@ -119,9 +88,7 @@ function ItemsPage() {
         fetchItemsforItemTable();
         fetchItems();
         fetchBranches();
-    }, []);
-
-    const matchPricelistRoute = useMatch('/employee-dashboard/:username/pricelist');
+    }, [fetchItems, fetchBranches, fetchItemsforItemTable]);
 
     // get all items from item table
     const fetchAllItems = useCallback((branchId) => {
@@ -129,29 +96,26 @@ function ItemsPage() {
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?branchId=${branchId}`)
             .then(response => {
                 setAllItemsList(response.data);
-                // console.log('All items with prices:', response.data); // Log the fetched items
-                const filteredItems = response.data.filter(item => item.Price !== '');
-                // console.log('Filtered items with prices:', filteredItems);
-                setAllItemsPricelist(filteredItems);
+                console.log('All items with prices:', response.data); // Log the fetched items
             })
             .catch(error => {
                 console.error('Error fetching all items:', error);
             });
     }, []);
 
-    useEffect(() => {
-        const initializeShift = async () => {
-            const activeShiftData = await fetchActiveShift();
-            if (activeShiftData && activeShiftData.length > 0) {
-                const branchId = activeShiftData[0].BranchID;
-                fetchAllItems(branchId); // Fetch items for the branch
-            }
-        };
+    // useEffect(() => {
+    //     if (selectedBranchForPricelist) {
+    //         const branchItems = items.filter(item => {
+    //             const branchDetails = branches.find(branch => branch.id === Number(selectedBranchForPricelist));
+    //             if (!branchDetails) return false;
 
-        initializeShift();
-    }, [fetchActiveShift, fetchAllItems]);
-
-
+    //             const branchNameLocation = `${branchDetails.displayName}`;
+    //             const itemBranchNameLocation = `${item.BranchName} - ${item.BranchLocation}`;
+    //             return itemBranchNameLocation === branchNameLocation;
+    //         });
+    //         setPricelistItems(branchItems);
+    //     }
+    // }, [selectedBranchForPricelist, items, branches]);
 
     const handleEdit = async (itemId, branchId, price) => {
         const userID = user?.userID;
@@ -177,7 +141,7 @@ function ItemsPage() {
                 }
             );
             fetchItems();
-            // console.log('Price updated successfully:', response.data);
+            console.log('Price updated successfully:', response.data);
         } catch (error) {
             console.error('Error updating price:', error);
         }
@@ -208,7 +172,7 @@ function ItemsPage() {
             }
         })
             .then(response => {
-                // console.log('Item added successfully:', response.data);
+                console.log('Item added successfully:', response.data);
                 // Show success alert
                 setSuccessMessage("Item added successfully!");
                 setShowSuccessAlert(true);
@@ -282,7 +246,7 @@ function ItemsPage() {
                 ...updatedItems[index],
                 price: value, // Update the price
             };
-            // console.log('Updated Items:', updatedItems);
+            console.log('Updated Items:', updatedItems);
             return updatedItems;
         });
     };
@@ -295,7 +259,7 @@ function ItemsPage() {
             price: item.price // Send the updated price
         })
             .then(response => {
-                // console.log('Pricelist item updated successfully:', response.data);
+                console.log('Pricelist item updated successfully:', response.data);
                 setAllItemsList(prevItems => {
                     const updatedItems = [...prevItems];
                     updatedItems[index].isUpdated = true;
@@ -458,54 +422,53 @@ function ItemsPage() {
                                             >
                                                 <option value="">All Items</option>
                                                 {filteredItems.map(item => (
-                                                    <option key={item.ItemID} value={item.Name}>
-                                                        {item.Name}{item.Classification ? ` - ${item.Classification}` : ''}
-                                                    </option>
+                                                    <option key={item.ItemID} value={item.Name}>{item.Name}</option>
                                                 ))}
                                             </Form.Select>
                                         </Form.Group>
                                     </Form>
                                     {!isEmployee && (
-                                        <Button variant="outline-dark" className="me-2" onClick={() => setShowEditPricelistModal(true)}>
+                                        <Button variant="outline-dark" onClick={() => setShowEditPricelistModal(true)}>
                                             Edit Branch Pricelist
                                         </Button>
                                     )}
                                 </div>
-
-                                <Table striped bordered hover>
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Unit of Measurement</th>
-                                            <th>Price</th>
-                                            <th>Branch</th>
-                                            {!isMobileRoute && <th>Actions</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredItems.length === 0 ? (
+                                <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                    <Table striped bordered hover>
+                                        <thead>
                                             <tr>
-                                                <td colSpan="5" className="text-center">No items found</td>
+                                                <th>Name</th>
+                                                <th>Unit of Measurement</th>
+                                                <th>Price</th>
+                                                <th>Branch</th>
+                                                {!isMobileRoute && <th>Actions</th>}
                                             </tr>
-                                        ) : (
-                                            filteredItemsByNameClassification.map(item => (
-                                                <tr key={item.ItemID}>
-                                                    <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
-                                                    <td>{item.UnitOfMeasurement}</td>
-                                                    <td>{item.ItemPrice}</td>
-                                                    <td>{item.BranchName} - {item.BranchLocation}</td>
-                                                    {!isMobileRoute && (
-                                                        <td>
-                                                            <Button variant="outline-success" size="sm" onClick={() => openEditPriceModal(item)}>
-                                                                Edit
-                                                            </Button>
-                                                        </td>
-                                                    )}
+                                        </thead>
+                                        <tbody>
+                                            {filteredItems.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="5" className="text-center">No items found</td>
                                                 </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </Table>
+                                            ) : (
+                                                filteredItemsByNameClassification.map(item => (
+                                                    <tr key={item.ItemID}>
+                                                        <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
+                                                        <td>{item.UnitOfMeasurement}</td>
+                                                        <td>{item.ItemPrice}</td>
+                                                        <td>{item.BranchName} - {item.BranchLocation}</td>
+                                                        {!isMobileRoute && (
+                                                            <td>
+                                                                <Button variant="outline-success" size="sm" onClick={() => openEditPriceModal(item)}>
+                                                                    Edit
+                                                                </Button>
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </Table>
+                                </div>
                             </div>
                         </Tab>
                     </Tabs>
@@ -589,12 +552,10 @@ function ItemsPage() {
                 </Modal.Header>
                 <Modal.Body>
                     <Form.Group controlId="branchSelectForPricelist" className="mb-3">
-                        <Form.Label>Branch</Form.Label>
                         <Form.Select
                             value={selectedBranchForPricelist}
                             onChange={e => {
                                 const branchId = e.target.value;
-                                // console.log('Selected branch for pricelist:', branchId);
                                 setSelectedBranchForPricelist(branchId);
                                 fetchAllItems(branchId);
                             }}
@@ -605,8 +566,8 @@ function ItemsPage() {
                             ))}
                         </Form.Select>
                     </Form.Group>
-                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
-                        <Table striped bordered hover>
+                    <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                        <Table striped bordered hover >
                             <thead>
                                 <tr>
                                     <th>Item</th>
@@ -615,14 +576,25 @@ function ItemsPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {allItemsPricelist.map((item, index) => (
+                                {allItemsList.map((item, index) => (
                                     <tr key={item.id || `item-${index}`}>
+                                        {console.log('Rendering item:', item, "itemID:", item.id)}
                                         <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
                                         <td>
                                             <Form.Control
                                                 type="number"
                                                 value={item.price || ''} // Ensure it doesn't break if price is undefined
-                                                onChange={e => handlePricelistChange(index, e.target.value)}
+                                                onChange={(e) => {
+                                                    const value = parseFloat(e.target.value);
+                                                    if (value > 0) {
+                                                        handlePricelistChange(index, value);
+                                                    }
+                                                }}
+                                                onKeyPress={(e) => {
+                                                    if (!/^[0-9.]$/.test(e.key)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
                                             />
                                         </td>
                                         <td>
