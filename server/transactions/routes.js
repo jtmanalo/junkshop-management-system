@@ -22,6 +22,9 @@ router.post('/sales', transactionController.createSale);
 
 router.get('/daily-logs/:shiftId', transactionController.getDailyLogs);
 
+router.get('/pending-transactions/:shiftId', transactionController.getPendingTransactionsByShift);
+router.get('/transaction-items/:transactionId', transactionController.getTransactionItems);
+
 // Get seller loans
 router.get('/seller-loans', transactionController.getSellerLoans);
 router.get('/employee-loans', transactionController.getEmployeeLoans); // reuse same controller
@@ -31,7 +34,7 @@ router.get('/sale-balance', transactionController.getSaleBalance);
 router.get('/purchase-balance', transactionController.getPurchaseBalance);
 
 // Update a transaction
-router.put('/transactions/:id', transactionController.update);
+router.put('/purchases/:transactionId', transactionController.update);
 
 // Delete a transaction
 // router.delete('/transactions/:id', transactionController.remove);

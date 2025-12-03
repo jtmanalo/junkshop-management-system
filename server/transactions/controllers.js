@@ -1,3 +1,4 @@
+const { get } = require('./routes');
 const transactionService = require('./services');
 
 // Get all transactions
@@ -132,7 +133,8 @@ async function create(req, res) {
 }
 
 async function update(req, res) {
-    const transactionId = parseInt(req.params.id, 10);
+    const transactionId = parseInt(req.params.transactionId, 10);
+    console.log('Updating transaction with ID:', transactionId);
 
     try {
         const updatedTransaction = await transactionService.update(transactionId, req.body);
@@ -235,6 +237,34 @@ async function getDailyLogs(req, res) {
     }
 }
 
+async function getPendingTransactionsByShift(req, res) {
+    const shiftId = parseInt(req.params.shiftId, 10);
+
+    try {
+        const transactions = await transactionService.getPendingTransactionsByShift(shiftId);
+        if (transactions.length === 0) {
+            return res.status(204).send("No pending transactions found");
+        }
+        res.status(200).json(transactions);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getTransactionItems(req, res) {
+    const transactionId = parseInt(req.params.transactionId, 10);
+
+    try {
+        const transactions = await transactionService.getTransactionItems(transactionId);
+        if (transactions.length === 0) {
+            return res.status(204).send("No pending transactions found");
+        }
+        res.status(200).json(transactions);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -249,5 +279,7 @@ module.exports = {
     getEmployeeLoans,
     createPurchase,
     createSale,
-    getDailyLogs
+    getDailyLogs,
+    getPendingTransactionsByShift,
+    getTransactionItems,
 };

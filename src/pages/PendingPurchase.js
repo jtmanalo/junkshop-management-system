@@ -6,11 +6,10 @@ import { DeleteConfirmModal } from '../components/Modal';
 import { useDashboard } from '../services/DashboardContext';
 import { useAuth } from '../services/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import moment from 'moment-timezone';
 
-function PurchasePage() {
+function PendingPurchase() {
     const location = useLocation();
-    // const { state } = location || {};
+    const { state } = location || {};
 
     // Modal state for delete confirmation
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -35,6 +34,7 @@ function PurchasePage() {
     const [items, setItems] = useState([
         { name: '', quantity: '', pricing: '', subtotal: '' },
     ]);
+    const [originalItems, setOriginalItems] = useState([]); // Store original fetched transaction items
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Show modal when trash is clicked
@@ -79,7 +79,7 @@ function PurchasePage() {
     };
 
     useEffect(() => {
-        if (type === 'Regular') {
+        if (type === 'regular') {
             fetchSellers();
         }
         fetchItems();
@@ -91,67 +91,100 @@ function PurchasePage() {
         }
     }, [actualBranchId, shiftId]);
 
-    // useEffect(() => {
-    //     if (state) {
-    //         console.log('PurchasePage received state:', state);
-    //         const transactionId = state?.transactionId;
-    //         const sellerName = state?.sellerName;
-    //         const partyType = state?.partyType;
-    //         setType(partyType || '');
-    //         setSeller(sellerName || '');
-    //         console.log('Setting seller to:', sellerName, 'and type to:', partyType);
+    useEffect(() => {
+        if (state) {
+            console.log('PurchasePage received state:', state);
+            const transactionId = state?.transactionId;
+            const sellerName = state?.sellerName;
+            const partyType = state?.partyType;
 
-    //         if (transactionId) {
-    //             console.log('Loading transaction items for ID:', transactionId);
-    //             const fetchTransactionItems = async () => {
-    //                 try {
-    //                     const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/transaction-items/${transactionId}`);
-    //                     const transactionData = response.data;
-    //                     console.log('Transaction Items:', transactionData);
+            // Set type if valid
+            if (partyType && typeOptions.includes(partyType)) {
+                setType(partyType);
+            }
 
-    //                     if (Array.isArray(transactionData) && transactionData.length > 0) {
-    //                         setItems(transactionData.map(item => ({
-    //                             name: item.ItemName || '',
-    //                             quantity: item.Quantity || '',
-    //                             pricing: item.ItemPrice || '',
-    //                             subtotal: item.Subtotal || '',
-    //                         })));
-    //                     } else {
-    //                         console.warn('No items found for transactionId:', transactionId);
-    //                     }
+            // Set seller once allSellers is available
+            if (sellerName && allSellers.length > 0) {
+                const matchingSeller = allSellers.find(s => s.Name === sellerName);
+                if (matchingSeller) {
+                    setSeller(matchingSeller.Name);
+                }
+            }
 
-    //                     // Pass state to handleMinimize
-    //                     handleMinimize({
-    //                         status: state?.status,
-    //                         sellerName: sellerName,
-    //                         partyType: partyType,
-    //                         items: transactionData.map(item => ({
-    //                             name: item.ItemName,
-    //                             quantity: item.Quantity,
-    //                             pricing: item.ItemPrice,
-    //                             subtotal: item.Subtotal,
-    //                         })),
-    //                     });
-    //                 } catch (error) {
-    //                     console.error('Error fetching transaction items:', error);
-    //                 }
-    //             };
+            if (transactionId) {
+                const fetchTransactionItems = async () => {
+                    try {
+                        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/transaction-items/${transactionId}`);
+                        const transactionData = response.data;
+                        console.log('Transaction Items:', transactionData);
 
-    //             fetchTransactionItems();
-    //         }
-    //     } else {
-    //         console.warn('No state received in PurchasePage');
-    //     }
-    // }, [state]);
+                        if (Array.isArray(transactionData) && transactionData.length > 0) {
+                            setItems(transactionData.map(item => ({
+                                transactionItemId: item.TransactionItemID || '',
+                                name: item.ItemName || '',
+                                quantity: item.Quantity || '',
+                                pricing: item.ItemPrice || '',
+                                subtotal: item.Subtotal || '',
+                            })));
+                            setOriginalItems(transactionData.map(item => ({ // Store the original fetched items
+                                transactionItemId: item.TransactionItemID || '',
+                                name: item.ItemName || '',
+                                quantity: item.Quantity || '',
+                                pricing: item.ItemPrice || '',
+                                subtotal: item.Subtotal || '',
+                            })));
+                        } else {
+                            console.warn('No items found for transactionId:', transactionId);
+                        }
+                    } catch (error) {
+                        console.error('Error fetching transaction items:', error);
+                    }
+                };
 
-    // useEffect(() => {
-    //     console.log('USE Setting seller to:', seller, 'and type to:', type);
-    // }, [seller, type]);
+                fetchTransactionItems();
+            }
+        } else {
+            console.warn('No state received in PurchasePage');
+        }
+    }, [state, allSellers]);
+
+    useEffect(() => {
+        if (state?.sellerName && allSellers.length > 0) {
+            const matchingSeller = allSellers.find(s => s.Name === state.sellerName);
+            console.log('Matching seller for name', state.sellerName, ':', matchingSeller);
+            if (matchingSeller) {
+                setSeller(matchingSeller.Name);
+            }
+        }
+    }, [state?.sellerName, allSellers]);
+
+
+    useEffect(() => {
+        if (state?.partyType && typeOptions.includes(state.partyType)) {
+            setType(state.partyType);
+        }
+    }, [state?.partyType]);
+
+    useEffect(() => {
+        if (state) {
+            const partyType = state?.partyType?.toLowerCase();
+            const sellerName = state?.sellerName;
+
+            if (partyType === 'regular') {
+                setType(state?.partyType || '');
+                setSeller(sellerName || '');
+            } else {
+                setType('Extra' || '');
+                setSeller(''); // Clear seller if not regular
+            }
+        } else {
+            console.warn('No state received in PurchasePage');
+        }
+    }, [state]);
 
     const addItemRow = () => {
         setItems([...items, { name: '', quantity: '', pricing: '', subtotal: '' }]);
     };
-
 
     const handleItemChange = (idx, selectedItem) => {
         const selected = allItems.find(item => item.Name === selectedItem);
@@ -220,7 +253,8 @@ function PurchasePage() {
         }
     };
 
-    const confirmPaymentMethod = async () => {
+    const confirmPaymentMethod = async (state) => {
+        console.log('Confirming payment method with state:', state);
         if (!selectedPaymentMethod) {
             alert('Please select a payment method.');
             return;
@@ -230,9 +264,8 @@ function PurchasePage() {
             const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
             const sellerId = allSellers.find(s => s.Name === seller)?.SellerID || null;
             const transactionData = {
-                branchId: actualBranchId,
                 sellerId: sellerId,
-                userId: user?.userID,
+                userType: user?.userType,
                 partyType: type,
                 paymentMethod: selectedPaymentMethod,
                 status: 'completed',
@@ -240,24 +273,22 @@ function PurchasePage() {
                 totalAmount,
                 items: items.map(item => ({
                     itemId: allItems.find(i => i.Name === item.name).ItemID,
+                    transactionItemId: item.transactionItemId,
                     classification: item.classification, // Include classification in transaction data
                     quantity: item.quantity,
-                    itemPrice: item.pricing,
+                    price: item.pricing,
                     subtotal: item.subtotal,
                 })),
             };
             // console.log("Seller ID:", transactionData.sellerId);
             // console.log('Transaction Data:', JSON.stringify(transactionData));
 
-            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/purchases`, transactionData);
-
-            const transactionDate = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/purchases/${state?.transactionId}`, transactionData);
 
             // Prepare receipt data
             const receipt = {
                 branchName: branchName,
                 branchLocation: branchLocation,
-                transactionDate: transactionDate,
                 sellerName: seller,
                 paymentMethod: selectedPaymentMethod,
                 employeeName: user?.username,
@@ -293,68 +324,53 @@ function PurchasePage() {
         }
     };
 
-    const handleMinimize = async () => {
+    const handleMinimize = async (state) => {
         try {
+            if (!state?.transactionId) {
+                console.error('Transaction ID is missing.');
+                alert('Transaction ID is required to save as pending.');
+                return;
+            }
+
             const totalAmount = items.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
             const sellerId = allSellers.find(s => s.Name === seller)?.SellerID || null;
-            // console.log('Minimizing transaction with items:', state?.status, state?.sellerName, state?.partyType, items);
-            // console.log('State:', state);
-
-            // // Check if the transaction is already saved as pending and no changes were made
-            // if (state?.status === 'pending' && state?.transactionData?.items?.length === items.length && state?.transactionData?.items.every((item, idx) => {
-            //     const currentItem = items[idx];
-            //     return (
-            //         item.itemId === allItems.find(i => i.Name === currentItem.name)?.ItemID &&
-            //         item.quantity === currentItem.quantity &&
-            //         item.itemPrice === currentItem.pricing &&
-            //         item.subtotal === currentItem.subtotal
-            //     );
-            // }) && seller === state?.transactionData?.sellerName && type === state?.transactionData?.partyType && transactionNotes === state?.transactionData?.notes) {
-            //     console.log('No changes detected, skipping minimize operation.');
-            //     alert('No changes detected, transaction remains as pending.');
-            //     return;
-            // }
+            console.log('Seller ID for pending transaction:', sellerId);
+            console.log('Transaction ID for pending transaction:', state?.transactionId);
 
             const transactionData = {
-                branchId: actualBranchId,
                 sellerId: sellerId,
-                userId: user?.userID,
+                userType: user?.userType,
                 partyType: type,
                 paymentMethod: selectedPaymentMethod,
                 status: 'pending',
                 notes: transactionNotes || '',
-                totalAmount,
+                totalAmount: totalAmount,
                 items: items.map(item => ({
-                    itemId: allItems.find(i => i.Name === item.name).ItemID,
+                    itemId: allItems.find(i => i.Name === item.name)?.ItemID,
                     quantity: item.quantity,
-                    itemPrice: item.pricing,
+                    price: item.pricing,
                     subtotal: item.subtotal,
+                    transactionItemId: item.TransactionItemID
                 })),
+                // items: items.map(item => {
+                //     const transactionItemId = item.transactionItemId;
+                //     console.log(`Item: ${item.name}, TransactionItemId: ${transactionItemId}`); // Debug log
+                //     return {
+                //         transactionItemId: item.TransactionItemID, // Include transactionItemId for updates
+                //         itemId: allItems.find(i => i.Name === item.name)?.ItemID,
+                //         quantity: item.quantity,
+                //         price: item.pricing,
+                //         subtotal: item.subtotal,
+                //     };
+                // }),
             };
 
             console.log('Transaction Data (Pending):', transactionData);
 
-            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/purchases`, transactionData);
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/purchases/${state?.transactionId}`, transactionData);
+            console.log('Pending transaction saved:', response.data);
 
-            const transactionDate = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-
-            // Pending transaction details
-            const pendingTransaction = {
-                branchName: branchName,
-                branchLocation: branchLocation,
-                transactionDate: transactionDate,
-                sellerName: seller,
-                paymentMethod: selectedPaymentMethod,
-                employeeName: user?.username,
-                items: items,
-                total: totalAmount,
-                transactionType: 'Purchase',
-                partyType: type,
-            };
-
-            console.log('Pending Transaction Data:', pendingTransaction);
             alert('Transaction saved as pending.');
-
             // Clear fields
             setSeller('');
             setType('');
@@ -363,20 +379,43 @@ function PurchasePage() {
             setTransactionNotes('');
             navigate(-1);
         } catch (error) {
-            console.error('Error saving transaction as pending:', error);
-            alert('Failed to save transaction as pending.');
+            if (error.response && error.response.status === 404) {
+                console.error('Resource not found:', error.response.data);
+                alert('The requested resource could not be found.');
+            } else {
+                console.error('Error:', error.message);
+            }
         }
+    };
+
+    const hasChanges = () => {
+        if (items.length !== originalItems.length) return true;
+
+        for (let i = 0; i < items.length; i++) {
+            const currentItem = items[i];
+            const originalItem = originalItems[i];
+
+            if (
+                currentItem.name !== originalItem.name ||
+                currentItem.quantity !== originalItem.quantity ||
+                currentItem.pricing !== originalItem.pricing ||
+                currentItem.subtotal !== originalItem.subtotal
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     };
 
     const BackHeader = ({ text, onBack }) => {
         const navigate = useNavigate();
 
         const handleBackClick = () => {
-            if (items.every(item => !item.name && !item.quantity && !item.pricing && !item.subtotal)) {
-                navigate(-1);
+            if (!hasChanges()) {
+                navigate(-1); // Navigate back if no changes are made
             } else {
-                // alert('Transaction minimized.');
-                handleMinimize();
+                handleMinimize(state); // Send updated items to the backend if changes are made
             }
         };
 
@@ -407,7 +446,7 @@ function PurchasePage() {
                                         <InputGroup.Text style={{ background: 'transparent', color: '#222', border: 'none', fontWeight: 600, fontSize: '1rem', letterSpacing: 1, paddingRight: '0.5rem' }}>Seller:</InputGroup.Text>
                                         <Form.Select value={seller || ''} onChange={e => setSeller(e.target.value)} style={{ background: '#f5f5f5', color: '#222', border: 'none', fontSize: '1rem', fontFamily: 'inherit', letterSpacing: 1 }}>
                                             <option value="" disabled>Name</option>
-                                            {(type === 'Regular' ? allSellers : sellerOptions).map((option, idx) => (
+                                            {(type === 'regular' ? allSellers : sellerOptions).map((option, idx) => (
                                                 <option key={idx} value={option.Name || option}>{option.Name || option}</option>
                                             ))}
                                         </Form.Select>
@@ -570,4 +609,4 @@ function PurchasePage() {
     );
 }
 
-export default PurchasePage;
+export default PendingPurchase;

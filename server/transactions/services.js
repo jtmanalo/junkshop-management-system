@@ -570,33 +570,35 @@ async function update(transactionId, data) {
     let conn;
     try {
         conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        console.log('Updating transaction with data:', data);
+        console.log('Transaction ID:', transactionId);
+
+        const shift = await conn.query(
+            `SELECT ShiftID 
+             FROM transaction 
+             WHERE TransactionID = ?`,
+            [transactionId]
+        );
+
+        if (!shift[0]?.ShiftID && data.userType !== 'owner') {
+            throw new Error('No active shift found for the user to record the expense.');
+        }
 
         const fields = [];
         const values = [];
 
-        if (data.buyerId) {
-            fields.push('BuyerID = ?');
-            values.push(data.buyerId);
-        }
         if (data.sellerId) {
             fields.push('SellerID = ?');
             values.push(data.sellerId);
-        }
-        if (data.employeeId) {
-            fields.push('EmployeeID = ?');
-            values.push(data.employeeId);
         }
         if (data.partyType) {
             fields.push('PartyType = ?');
             values.push(data.partyType);
         }
-        if (data.transactionDate) {
-            fields.push('TransactionDate = ?');
-            const formattedDate = moment(data.transactionDate).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-            values.push(formattedDate);
-        }
         if (data.totalAmount) {
-            fields.push('TotalAmount = ?');
+            fields.push('TotalAmount = TotalAmount + ?'); // Accumulate totalAmount
             values.push(data.totalAmount);
         }
         if (data.paymentMethod) {
@@ -616,6 +618,10 @@ async function update(transactionId, data) {
             throw new Error('No fields to update');
         }
 
+        fields.push('TransactionDate = ?');
+        const formattedDate = moment(data.transactionDate).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        values.push(formattedDate);
+
         const query = `UPDATE transaction SET ${fields.join(', ')} WHERE TransactionID = ?`;
         values.push(transactionId);
 
@@ -624,8 +630,40 @@ async function update(transactionId, data) {
         if (result.affectedRows === 0) {
             throw new Error('Transaction not found');
         }
+
+        // Update or insert transaction items
+        for (const item of data.items) {
+            const [existingItem] = await conn.query(
+                'SELECT TransactionItemID FROM transaction_item WHERE TransactionID = ? AND TransactionItemID = ?',
+                [transactionId, item.transactionItemId]
+            );
+
+            if (existingItem) {
+                // Update existing transaction item
+                await conn.query(
+                    'UPDATE transaction_item SET ItemID = ?, Quantity = ?, Price = ?, Subtotal = ? WHERE TransactionItemID = ?',
+                    [item.itemId, item.quantity, item.price, item.subtotal, item.transactionItemId]
+                );
+            } else {
+                // Insert new transaction item
+                await conn.query(
+                    'INSERT INTO transaction_item (TransactionID, ItemID, Quantity, Price, Subtotal, CreatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+                    [transactionId, item.itemId, item.quantity, item.price, item.subtotal, moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss')]
+                );
+            }
+        }
+
+        await conn.query(
+            `UPDATE shift 
+            SET RunningTotal = RunningTotal + ? 
+            WHERE ShiftID = ?`,
+            [data.totalAmount, shift[0]?.ShiftID]
+        );
+
+        await conn.commit();
         return { id: transactionId, ...data };
     } catch (error) {
+        if (conn) await conn.rollback();
         throw error;
     } finally {
         if (conn) conn.release();
@@ -639,7 +677,7 @@ async function createPurchase(data) {
         await conn.beginTransaction();
 
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const transactionDate = createdAt;
+        const transactionDate = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
         // Get ShiftID
         const shift = await conn.query(
@@ -689,19 +727,19 @@ async function createPurchase(data) {
         }
 
         // Insert into weighing_log table
-        for (const item of data.items) {
-            await conn.query(
-                'INSERT INTO weighing_log (ItemID, BranchID, TransactionID, Weight, UserID, WeighedAt) VALUES (?, ?, ?, ?, ?, ?)',
-                [
-                    item.itemId,
-                    data.branchId,
-                    transactionId,
-                    item.quantity,
-                    data.userId,
-                    transactionDate,
-                ]
-            );
-        }
+        // for (const item of data.items) {
+        //     await conn.query(
+        //         'INSERT INTO weighing_log (ItemID, BranchID, TransactionID, Weight, UserID, WeighedAt) VALUES (?, ?, ?, ?, ?, ?)',
+        //         [
+        //             item.itemId,
+        //             data.branchId,
+        //             transactionId,
+        //             item.quantity,
+        //             data.userId,
+        //             transactionDate,
+        //         ]
+        //     );
+        // }
 
         await conn.query(
             `UPDATE shift 
@@ -778,19 +816,19 @@ async function createSale(data) {
         }
 
         // Insert into weighing_log table
-        for (const item of data.items) {
-            await conn.query(
-                'INSERT INTO weighing_log (ItemID, BranchID, TransactionID, Weight, UserID, WeighedAt) VALUES (?, ?, ?, ?, ?, ?)',
-                [
-                    item.itemId,
-                    data.branchId,
-                    transactionId,
-                    item.quantity,
-                    data.userId,
-                    transactionDate,
-                ]
-            );
-        }
+        // for (const item of data.items) {
+        //     await conn.query(
+        //         'INSERT INTO weighing_log (ItemID, BranchID, TransactionID, Weight, UserID, WeighedAt) VALUES (?, ?, ?, ?, ?, ?)',
+        //         [
+        //             item.itemId,
+        //             data.branchId,
+        //             transactionId,
+        //             item.quantity,
+        //             data.userId,
+        //             transactionDate,
+        //         ]
+        //     );
+        // }
 
         await conn.query(
             `UPDATE shift 
@@ -833,6 +871,101 @@ async function getDailyLogs(shiftId) {
     }
 }
 
+
+async function getPendingTransactionDetails(shiftId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query to get transaction details
+        const rows = await conn.query(`
+            SELECT 
+                t.TransactionID,
+                t.SellerID,
+                s.Name AS SellerName,
+                t.PartyType,
+                ti.ItemID,
+                i.Name AS ItemName,
+                i.UnitOfMeasurement,
+                ti.Quantity,
+                ti.Price,
+                ti.Subtotal,
+                t.TotalAmount
+            FROM transaction t
+            LEFT JOIN transaction_item ti ON t.TransactionID = ti.TransactionID
+            LEFT JOIN item i ON ti.ItemID = i.ItemID
+            LEFT JOIN seller s ON t.SellerID = s.SellerID
+            WHERE t.ShiftID = ? AND t.Status = "pending"
+        `, [shiftId]);
+
+        // Return all rows
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getTransactionItems(transactionId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query to get items for the given transaction
+        const rows = await conn.query(`
+            SELECT 
+                ti.ItemID,
+                i.Name AS ItemName,
+                ti.Quantity,
+                ti.Price AS ItemPrice,
+                ti.Subtotal,
+                ti.TransactionItemID
+            FROM transaction_item ti
+            LEFT JOIN item i ON ti.ItemID = i.ItemID
+            WHERE ti.TransactionID = ?
+        `, [transactionId]);
+
+        // Return all rows
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getPendingTransactionsByShift(shiftId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query to get pending transactions for the given shift
+        const rows = await conn.query(`
+            SELECT 
+                t.TransactionID,
+                t.TransactionType,
+                t.TotalAmount,
+                t.SellerID,
+                s.Name AS SellerName,
+                t.PartyType,
+                t.TransactionDate,
+                t.PaymentMethod,
+                t.Status
+            FROM transaction t
+            LEFT JOIN seller s ON t.SellerID = s.SellerID
+            WHERE t.ShiftID = ? AND t.Status = "pending"
+        `, [shiftId]);
+
+        // Return all rows
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -848,5 +981,8 @@ module.exports = {
     createPurchase,
     createSale,
     getDailyLogs,
-    getBalance
+    getBalance,
+    getPendingTransactionDetails,
+    getTransactionItems,
+    getPendingTransactionsByShift
 };

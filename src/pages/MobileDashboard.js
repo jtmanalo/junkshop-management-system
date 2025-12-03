@@ -24,6 +24,7 @@ import DebtPage from './DebtPage';
 import axios from 'axios';
 import ReceiptPage from './ReceiptPage';
 import PricelistPage from './ItemsTable';
+import PendingPurchase from './PendingPurchase';
 
 function SetBranchModal({ show, branchOptions, onSetBranch }) {
   const [selectedBranch, setSelectedBranch] = useState(branchOptions[0] || ''); // Default to the first branch
@@ -677,6 +678,8 @@ const soloPages = [
   '/:username/expenses',
   '/:username/sales',
   '/:username/debts',
+  '/:username/receipt',
+  '/:username/pending-purchases'
 ];
 
 function MobileLayout({ activePage, setActivePage, username, userType, children }) {
@@ -761,6 +764,7 @@ export default function MobileRoutes() {
           <Route path=":username/items" element={<ItemsPage />} />
           {/* Record */}
           <Route path=":username/purchases" element={<PurchasePage />} />
+          <Route path=":username/pending-purchases" element={<PendingPurchase />} />
           <Route path=":username/expenses" element={<ExpensePage />} />
           <Route path=":username/sales" element={<SalePage />} />
           <Route path=":username/debts" element={<DebtPage />} />
