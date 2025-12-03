@@ -23,11 +23,16 @@ export const DashboardProvider = ({ children, user }) => {
                 return;
             }
 
-            const { BranchID, ShiftID, Name, Location } = response.data[0];
-            setActualBranchId(BranchID);
-            setShiftId(ShiftID);
-            setBranchName(Name);
-            setBranchLocation(Location);
+            const shiftData = response.data && response.data[0];
+            if (shiftData) {
+                const { BranchID, ShiftID, Name, Location } = shiftData;
+                setActualBranchId(BranchID);
+                setShiftId(ShiftID);
+                setBranchName(Name);
+                setBranchLocation(Location);
+            } else {
+                console.warn('No active shift data found.');
+            }
         } catch (error) {
             console.error('Error fetching active shift:', error);
         }

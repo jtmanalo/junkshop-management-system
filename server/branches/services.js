@@ -11,14 +11,13 @@ async function createBranch(data) {
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO branch (Name, Location, Status, OpeningDate, CreatedAt, OwnerID) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO branch (Name, Location, Status, OpeningDate, CreatedAt) VALUES (?, ?, ?, ?, ?)',
             [
                 data.name,
                 data.location,
                 data.status || 'active',
                 data.openingDate,
                 createdAt,
-                data.ownerId // Added OwnerID field
             ]
         );
 
@@ -37,52 +36,9 @@ async function getBranchesofOwner() {
         conn = await pool.getConnection();
 
         const rows = await conn.query(
-            `SELECT b.*
-             FROM branch b
-             JOIN owner o ON b.OwnerID = o.OwnerID
-             WHERE o.OwnerType = 'User'`
+            `SELECT * FROM branch`
         );
-        console.log('Branches fetched for usertype owner:', rows);
         return rows; // Return all branches for the given username
-    } catch (error) {
-        throw error;
-    } finally {
-        if (conn) conn.release();
-    }
-}
-
-async function addOwner(data) {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-
-        // Perform the INSERT query
-        const result = await conn.query(
-            'INSERT INTO owner (OwnerType, ReferenceID) VALUES (?, ?)',
-            [
-                data.ownerType,
-                data.referenceId
-            ]
-        );
-
-        // Return the inserted owner data
-        return { id: result.insertId.toString(), ...data };
-    } catch (error) {
-        throw error;
-    } finally {
-        if (conn) conn.release();
-    }
-}
-
-async function getOwner(referenceId, ownerType) {
-    let conn;
-    try {
-        conn = await pool.getConnection();
-        const rows = await conn.query(
-            'SELECT * FROM owner WHERE ReferenceID = ? AND OwnerType = ?',
-            [referenceId, ownerType]
-        );
-        return rows[0]; // Return the first row if found
     } catch (error) {
         throw error;
     } finally {
@@ -145,7 +101,7 @@ async function createPricelist(branchId) {
         conn = await pool.getConnection();
 
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        dateEffective = createdAt;
+        const dateEffective = createdAt;
 
         const result = await conn.query(
             'INSERT INTO pricelist (BranchID, DateEffective, CreatedAt) VALUES (?, ?, ?)',
@@ -164,6 +120,30 @@ async function createPricelist(branchId) {
     }
 }
 
+async function createInventory(branchId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+
+        const result = await conn.query(
+            'INSERT INTO inventory (BranchID, Date, CreatedAt) VALUES (?, ?, ?)',
+            [
+                branchId,
+                createdAt,
+                createdAt
+            ]
+        );
+
+        return { id: result.insertId.toString(), branchId, createdAt };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function getBrancheswithUserTypeOwner() {
     let conn;
     try {
@@ -171,9 +151,7 @@ async function getBrancheswithUserTypeOwner() {
         const rows = await conn.query(
             `SELECT b.BranchID, b.Name, b.Location
              FROM branch b
-             JOIN owner o ON b.OwnerID = o.OwnerID
-             JOIN user u ON o.ReferenceID = u.UserID
-             WHERE o.OwnerType = 'user' AND u.UserType = 'owner' AND b.Status = 'active'`
+             WHERE Status = 'active'`
         );
         return rows; // Return all branches with owner user type
     } catch (error) {
@@ -187,8 +165,7 @@ module.exports = {
     createBranch,
     update,
     getBranchesofOwner,
-    addOwner,
-    getOwner,
     createPricelist,
-    getBrancheswithUserTypeOwner
+    getBrancheswithUserTypeOwner,
+    createInventory
 };

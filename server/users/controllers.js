@@ -8,6 +8,29 @@ const nodemailer = require('nodemailer'); // Import nodemailer
 // Secret key for JWT (should be stored securely in environment variables)
 const JWT_SECRET = process.env.JWT_SECRET;
 
+async function approveReject(req, res) {
+    const userId = parseInt(req.params.id, 10);
+    const { status } = req.body; // 'approved' or 'rejected'
+
+    if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status. Must be "approved" or "rejected".' });
+    }
+
+    try {
+        const updatedUser = await userService.approveReject(userId, status);
+
+        // If approved, also update employee status to 'active'
+        if (status === 'approved') {
+            await userService.updateEmployeeStatus(userId, 'active');
+        }
+
+        res.json({ message: `User has been ${status} successfully`, user: updatedUser });
+    } catch (error) {
+        console.error('Error in approveRejectUser:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 // Get all users
 async function getAll(req, res) {
     try {
@@ -89,25 +112,6 @@ async function register(req, res) {
             userType,
             status
         });
-
-        if (userType === 'owner') {
-            await userService.createOwner({
-                referenceId: user.id,
-                ownerType: 'user'
-            });
-
-            return res.status(201).json({
-                message: 'User and owner created successfully',
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    username: user.username,
-                    email: user.email,
-                    userType: user.userType,
-                    status: user.status
-                }
-            });
-        }
 
         if (userType === 'employee') {
             await userService.createEmployee({
@@ -362,5 +366,6 @@ module.exports = {
     forgotPassword,
     getUserDetails,
     getDetails,
-    updateUser
+    updateUser,
+    approveReject
 };

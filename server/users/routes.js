@@ -13,6 +13,8 @@ router.post('/login', userController.login);
 // Get all users
 router.get('/users', userController.getAll);
 
+router.put('/users/:id/approve-reject', userController.approveReject);
+
 // Get user by username
 router.get('/users/:username', userController.getUserDetails);
 

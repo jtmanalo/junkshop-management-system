@@ -29,7 +29,7 @@ const AuthProvider = ({ children }) => {
                 return;
             }
 
-            if (res.token && res.userType && res.username && res.userID && res.defaultBranchID) {
+            if (res.token && res.userType && res.username && res.userID) {
                 const { token, userType, username, userID, defaultBranchID, branchName, branchLocation } = res;
                 console.log("Login response data:", { token, userType, username, userID, defaultBranchID, branchName, branchLocation });
                 const userData = { username, userType, userID, defaultBranchID, branchName, branchLocation };

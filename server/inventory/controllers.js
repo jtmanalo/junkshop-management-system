@@ -14,6 +14,20 @@ async function getAll(req, res) {
     }
 }
 
+async function getBranchInventory(req, res) {
+    const branchId = parseInt(req.params.branchId, 10);
+    try {
+        const items = await inventoryService.getByBranch(branchId);
+        if (items.length === 0) {
+            return res.status(204).send("No inventory items found for this branch");
+        }
+        res.json(items);
+    } catch (error) {
+        console.error('Error getBranchInventoryItems:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 // Create an inventory item
 async function create(req, res) {
     const {
@@ -67,5 +81,6 @@ module.exports = {
     getAll,
     create,
     getById,
-    update
+    update,
+    getBranchInventory
 };

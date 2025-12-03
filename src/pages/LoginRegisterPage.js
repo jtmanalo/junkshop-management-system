@@ -218,29 +218,35 @@ function LoginPage() {
                 if (user.userType === 'employee') {
                     alert('Your account is pending approval. Please wait for the owner to activate your account.');
                 }
-
-                // Reset the form fields to their default empty state
-                setFormData({
-                    username: '',
-                    userType: 'owner', // Default user type
-                    email: '',
-                    positionTitle: '',
-                    firstName: '',
-                    middleName: '',
-                    lastName: '',
-                    contactNumber: '',
-                    address: '',
-                    hireDate: '',
-                    password: ''
-                });
             } else {
                 console.error('User registration failed:', userResponse.data?.error || 'Unknown error');
                 setErrors({ general: userResponse.data?.error || 'Registration failed. Please try again.' });
             }
+
+            // Reset the form fields to their default empty state
+            setFormData({
+                username: '',
+                userType: 'owner', // Default user type
+                email: '',
+                positionTitle: '',
+                firstName: '',
+                middleName: '',
+                lastName: '',
+                contactNumber: '',
+                address: '',
+                hireDate: '',
+                password: ''
+            });
         } catch (error) {
-            if (error.response && error.response.status === 500) {
+            if (error.response && error.response.status === 409) {
+                // Handle duplicate entry error
+                const errorMessage = error.response.data.error;
+                alert(errorMessage); // Show alert for duplicate username/email
+                setErrors({ general: errorMessage });
+            } else if (error.response && error.response.status === 500) {
                 // Handle duplicate entry error
                 if (error.response.data.error.includes('Duplicate entry')) {
+                    alert('Email or username already in use.');
                     setErrors({ general: 'The email or username is already in use. Please try another.' });
                 } else {
                     setErrors({ general: 'An internal server error occurred. Please try again later.' });

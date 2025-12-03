@@ -4,7 +4,7 @@ import { useAuth } from '../services/AuthContext';
 import axios from 'axios';
 
 function SettingsPage() {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         FirstName: '',
         MiddleName: '',
@@ -105,7 +105,7 @@ function SettingsPage() {
             );
 
             console.log('Save response:', response.data);
-            alert('User details updated successfully!');
+            alert('User details updated successfully! Please log out and log back in to apply the default branch update.');
         } catch (error) {
             console.error('Error saving user details:', error);
             alert('Failed to update user details. Please try again.');
@@ -119,7 +119,7 @@ function SettingsPage() {
     return (
         <div>
             <h1>Settings</h1>
-            <div style={{ maxWidth: '600px', margin: '0 auto', overflowX: 'auto' }}>
+            <div style={{ maxWidth: '600px', margin: '0 auto', overflowX: 'auto', maxHeight: '50vh' }}>
                 <Table striped bordered hover>
                     <tbody>
                         {user?.userType === 'owner' && (
@@ -300,11 +300,11 @@ function SettingsPage() {
                         )}
                     </tbody>
                 </Table>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                    <Button variant="primary" onClick={handleSave}>
-                        Save Changes
-                    </Button>
-                </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <Button variant="primary" onClick={handleSave}>
+                    Save Changes
+                </Button>
             </div>
         </div>
     );

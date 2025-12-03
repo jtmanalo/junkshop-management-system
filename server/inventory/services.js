@@ -25,6 +25,33 @@ async function getAll() {
     }
 }
 
+async function getBranchInventory(branchId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(
+            'SELECT * FROM inventory WHERE BranchID = ?',
+            [branchId]
+        );
+
+        // Ensures timestamps are in UTC+8
+        rows.forEach(row => {
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+            if (row.UpdatedAt) {
+                row.UpdatedAt = moment(row.UpdatedAt).tz('Asia/Manila').format();
+            }
+        });
+
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function create(data) {
     let conn;
     try {
@@ -112,5 +139,6 @@ module.exports = {
     getAll,
     create,
     getById,
-    update
+    update,
+    getBranchInventory
 };

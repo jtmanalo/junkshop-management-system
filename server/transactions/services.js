@@ -741,12 +741,14 @@ async function createPurchase(data) {
         //     );
         // }
 
-        await conn.query(
-            `UPDATE shift 
+        if (data.status === 'completed') {
+            await conn.query(
+                `UPDATE shift 
             SET RunningTotal = RunningTotal + ? 
             WHERE ShiftID = ?`,
-            [data.totalAmount, shift[0]?.ShiftID]
-        );
+                [data.totalAmount, shift[0]?.ShiftID]
+            );
+        }
 
         await conn.commit();
         return { id: transactionResult.insertId, ...data };
@@ -852,8 +854,24 @@ async function getDailyLogs(shiftId) {
     try {
         conn = await pool.getConnection();
 
-        // Perform the SELECT query
-        const rows = await conn.query(`SELECT * FROM transaction WHERE ShiftID = ? AND Status = "completed"`, [shiftId]);
+        // Perform the SELECT query with joins to fetch names based on IDs
+        const rows = await conn.query(`
+            SELECT
+                t.*,
+                COALESCE(b.CompanyName, s.Name, CONCAT(e.FirstName, ' ', e.LastName), u.Name) AS PartyName
+            FROM 
+                transaction t
+            LEFT JOIN 
+                buyer b ON t.BuyerID = b.BuyerID
+            LEFT JOIN 
+                seller s ON t.SellerID = s.SellerID
+            LEFT JOIN 
+                employee e ON t.EmployeeID = e.EmployeeID
+            LEFT JOIN 
+                user u ON t.UserID = u.UserID
+            WHERE 
+                t.ShiftID = ? AND t.Status = "completed"
+        `, [shiftId]);
 
         // Ensures timestamps are in UTC+8
         rows.forEach(row => {

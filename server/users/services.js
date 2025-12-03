@@ -37,7 +37,7 @@ async function createUser(data) {
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO user (Name, Username, PasswordHash, UserType, Status' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?, ?' + (data.email ? ', ?' : '') + ', ?)',
+            'INSERT INTO user (Name, Username, PasswordHash, UserType, Status' + (data.email ? ', Email' : '') + ', CreatedAt) VALUES (?, ?, ?, ?' + (data.email ? ', ?' : '') + ', ?, ?)',
             data.email ?
                 [
                     data.name,
@@ -238,6 +238,27 @@ async function update(userId, data) {
     }
 }
 
+async function approveReject(userId, status) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const result = await conn.query(
+            'UPDATE user SET Status = ? WHERE UserID = ?',
+            [status, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            throw new Error('User not found');
+        }
+
+        return { id: userId, status };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function remove(userId) {
     let conn;
     try {
@@ -276,28 +297,6 @@ async function createEmployee(data) {
         );
 
         return { id: result.insertId.toString(), ...data, createdAt };
-    } catch (error) {
-        throw error;
-    } finally {
-        if (conn) conn.release();
-    }
-}
-
-async function createOwner(data) {
-    let conn;
-
-    try {
-        conn = await pool.getConnection();
-
-        const result = await conn.query(
-            'INSERT INTO owner (OwnerType, ReferenceID) VALUES (?, ?)',
-            [
-                data.ownerType,
-                data.referenceId
-            ]
-        );
-
-        return { id: result.insertId.toString(), ...data };
     } catch (error) {
         throw error;
     } finally {
@@ -371,8 +370,8 @@ module.exports = {
     getByUsername,
     getUserDetailsByUsername,
     createEmployee,
-    createOwner,
     updateEmployeeStatus,
     getDetails,
-    getUserAndEmployeeDetailsByUsername
+    getUserAndEmployeeDetailsByUsername,
+    approveReject
 };

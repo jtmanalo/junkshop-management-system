@@ -3,6 +3,7 @@ import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootst
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import { useMatch } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 function ItemsPage() {
     const { token, user } = useAuth();
@@ -39,6 +40,7 @@ function ItemsPage() {
         currentPrice: '',
         newPrice: ''
     });
+    const [showEditItemModal, setShowEditItemModal] = useState(false);
 
     const fetchItemsforItemTable = useCallback(() => {
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items`)
@@ -141,6 +143,7 @@ function ItemsPage() {
                 }
             );
             fetchItems();
+            fetchAllItems();
             console.log('Price updated successfully:', response.data);
         } catch (error) {
             console.error('Error updating price:', error);
@@ -333,147 +336,201 @@ function ItemsPage() {
         }
     };
 
+    const openEditItemModal = (item) => {
+        setEditItemDetails({
+            itemId: item.ItemID,
+            name: item.Name,
+            unitOfMeasurement: item.UnitOfMeasurement,
+            classification: item.Classification,
+            description: item.Description
+        });
+        setShowEditItemModal(true);
+    };
+
+    const handleEditItemSubmit = async () => {
+        const { itemId, name, unitOfMeasurement, classification, description } = editItemDetails;
+
+        if (!itemId || !name || !unitOfMeasurement) {
+            console.error('Missing required fields');
+            return;
+        }
+
+        try {
+            const response = await axios.put(
+                `${process.env.REACT_APP_BASE_URL}/api/items/${itemId}`,
+                {
+                    name,
+                    unitOfMeasurement,
+                    classification,
+                    description
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+            console.log('Item updated successfully:', response.data);
+            fetchItemsforItemTable();
+            fetchItems();
+            setShowEditItemModal(false);
+        } catch (error) {
+            console.error('Error updating item:', error);
+        }
+    };
+
     return (
         <div>
-            {showSuccessAlert && (
-                <Alert
-                    variant="success"
-                    onClose={() => setShowSuccessAlert(false)}
-                    dismissible
-                    style={{
-                        position: 'fixed',
-                        bottom: '20px',
-                        right: '20px',
-                        width: '300px',
-                        zIndex: 1050,
-                    }}
-                >
-                    {successMessage}
-                </Alert>
-            )}
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h1>Items and Pricing</h1>
-            </div>
-
-            <Card className="mb-3">
-                <Card.Header>
-                    <Tabs defaultActiveKey="items" id="items-pricelist-tabs">
-                        <Tab eventKey="items" title="Items">
-                            <div className="mt-3">
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <h2></h2>
-                                    <Button variant="outline-dark" onClick={() => setShowAddItemModal(true)}>Add Item</Button>
-                                </div>
-                                <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                                    <Table striped bordered hover>
-                                        <thead>
-                                            <tr>
-                                                <th onClick={() => requestSort('Name')} style={{ cursor: 'pointer' }}>
-                                                    Name and Classification
-                                                </th>
-                                                <th onClick={() => requestSort('UnitOfMeasurement')} style={{ cursor: 'pointer' }}>
-                                                    Unit of Measurement
-                                                </th>
-                                                <th onClick={() => requestSort('Description')} style={{ cursor: 'pointer' }}>
-                                                    Description
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {sortedItems.length === 0 ? (
+            <div className="container-fluid" style={{ maxWidth: '90vw' }}>
+                {showSuccessAlert && (
+                    <Alert
+                        variant="success"
+                        onClose={() => setShowSuccessAlert(false)}
+                        dismissible
+                        style={{
+                            position: 'fixed',
+                            bottom: '20px',
+                            right: '20px',
+                            width: '300px',
+                            zIndex: 1050,
+                        }}
+                    >
+                        {successMessage}
+                    </Alert>
+                )}
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h1>Items and Pricing</h1>
+                </div>
+                <Card className="mb-3">
+                    <Card.Header>
+                        <Tabs defaultActiveKey="items" id="items-pricelist-tabs">
+                            <Tab eventKey="items" title="Items">
+                                <div className="mt-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <h2></h2>
+                                        <Button variant="outline-dark" onClick={() => setShowAddItemModal(true)}>Add Item</Button>
+                                    </div>
+                                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                                        <Table striped bordered hover>
+                                            <thead>
                                                 <tr>
-                                                    <td colSpan="4" className="text-center">No items found</td>
+                                                    <th onClick={() => requestSort('Name')} style={{ cursor: 'pointer' }}>
+                                                        Item
+                                                    </th>
+                                                    <th onClick={() => requestSort('UnitOfMeasurement')} style={{ cursor: 'pointer' }}>
+                                                        Unit
+                                                    </th>
+                                                    <th onClick={() => requestSort('Description')} style={{ cursor: 'pointer' }}>
+                                                        Description
+                                                    </th>
+                                                    <th>Actions</th>
                                                 </tr>
-                                            ) : (
-                                                sortedItems.map(item => (
-                                                    <tr key={item.ItemID}>
-                                                        <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
-                                                        <td>{item.UnitOfMeasurement}</td>
-                                                        <td>{item.Description || 'N/A'}</td>
+                                            </thead>
+                                            <tbody>
+                                                {sortedItems.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="4" className="text-center">No items found</td>
                                                     </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </Table>
-                                </div>
-                            </div>
-                        </Tab>
-                        <Tab eventKey="pricelist" title="Pricelist">
-                            <div className="mt-3">
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <Form className="mb-3">
-                                        <Form.Group controlId="branchSelect" className="d-inline-block me-3">
-                                            <Form.Label>Branch</Form.Label>
-                                            <Form.Select
-                                                value={selectedBranch}
-                                                onChange={e => setSelectedBranch(e.target.value)}
-                                            >
-                                                {branches.map(branch => (
-                                                    <option key={branch.id} value={branch.id}>{branch.displayName}</option>
-                                                ))}
-                                            </Form.Select>
-                                        </Form.Group>
-
-                                        <Form.Group controlId="itemSelect" className="d-inline-block me-3">
-                                            <Form.Label>Item</Form.Label>
-                                            <Form.Select
-                                                value={searchTerm}
-                                                onChange={e => setSearchTerm(e.target.value)}
-                                            >
-                                                <option value="">All Items</option>
-                                                {filteredItems.map(item => (
-                                                    <option key={item.ItemID} value={item.Name}>{item.Name}</option>
-                                                ))}
-                                            </Form.Select>
-                                        </Form.Group>
-                                    </Form>
-                                    {!isEmployee && (
-                                        <Button variant="outline-dark" onClick={() => setShowEditPricelistModal(true)}>
-                                            Edit Branch Pricelist
-                                        </Button>
-                                    )}
-                                </div>
-                                <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                                    <Table striped bordered hover>
-                                        <thead>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Unit of Measurement</th>
-                                                <th>Price</th>
-                                                <th>Branch</th>
-                                                {!isMobileRoute && <th>Actions</th>}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredItems.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="5" className="text-center">No items found</td>
-                                                </tr>
-                                            ) : (
-                                                filteredItemsByNameClassification.map(item => (
-                                                    <tr key={item.ItemID}>
-                                                        <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
-                                                        <td>{item.UnitOfMeasurement}</td>
-                                                        <td>{item.ItemPrice}</td>
-                                                        <td>{item.BranchName} - {item.BranchLocation}</td>
-                                                        {!isMobileRoute && (
+                                                ) : (
+                                                    sortedItems.map(item => (
+                                                        <tr key={item.ItemID}>
+                                                            <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
+                                                            <td>{item.UnitOfMeasurement}</td>
+                                                            <td>{item.Description || 'N/A'}</td>
                                                             <td>
-                                                                <Button variant="outline-success" size="sm" onClick={() => openEditPriceModal(item)}>
+                                                                <Button
+                                                                    variant="outline-primary"
+                                                                    size="sm"
+                                                                    onClick={() => openEditItemModal(item)}
+                                                                >
                                                                     Edit
                                                                 </Button>
                                                             </td>
-                                                        )}
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </Table>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                    </div>
                                 </div>
-                            </div>
-                        </Tab>
-                    </Tabs>
-                </Card.Header>
-            </Card>
+                            </Tab>
+                            <Tab eventKey="pricelist" title="Pricelist">
+                                <div className="mt-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <Form className="mb-3">
+                                            <Form.Group controlId="branchSelect" className="d-inline-block me-3">
+                                                <Form.Label>Branch</Form.Label>
+                                                <Form.Select
+                                                    value={selectedBranch}
+                                                    onChange={e => setSelectedBranch(e.target.value)}
+                                                >
+                                                    {branches.map(branch => (
+                                                        <option key={`${branch.id}-${branch.displayName}`} value={branch.id}>{branch.displayName}</option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Form.Group>
+
+                                            <Form.Group controlId="itemSelect" className="d-inline-block me-3">
+                                                <Form.Label>Item</Form.Label>
+                                                <Form.Select
+                                                    value={searchTerm}
+                                                    onChange={e => setSearchTerm(e.target.value)}
+                                                >
+                                                    <option value="">All Items</option>
+                                                    {filteredItems.map(item => (
+                                                        <option key={uuidv4()} value={item.Name}>{item.Name}</option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Form.Group>
+                                        </Form>
+                                        {!isEmployee && (
+                                            <Button variant="outline-dark" onClick={() => setShowEditPricelistModal(true)}>
+                                                Edit Branch Pricelist
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+                                        <Table striped bordered hover>
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Unit</th>
+                                                    <th>Price</th>
+                                                    <th>Branch</th>
+                                                    {!isMobileRoute && <th>Actions</th>}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {filteredItems.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="5" className="text-center">No items found</td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredItemsByNameClassification.map(item => (
+                                                        <tr key={uuidv4()}>
+                                                            <td>{item.Name}{item.Classification ? ` - ${item.Classification}` : ''}</td>
+                                                            <td>{item.UnitOfMeasurement}</td>
+                                                            <td>{item.ItemPrice}</td>
+                                                            <td>{item.BranchName} - {item.BranchLocation}</td>
+                                                            {!isMobileRoute && (
+                                                                <td>
+                                                                    <Button variant="outline-success" size="sm" onClick={() => openEditPriceModal(item)}>
+                                                                        Edit
+                                                                    </Button>
+                                                                </td>
+                                                            )}
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            </Tab>
+                        </Tabs>
+                    </Card.Header>
+                </Card>
+            </div>
 
             <Modal show={showAddItemModal} onHide={() => setShowAddItemModal(false)}>
                 <Modal.Header closeButton>
@@ -566,7 +623,7 @@ function ItemsPage() {
                             ))}
                         </Form.Select>
                     </Form.Group>
-                    <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                    <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
                         <Table striped bordered hover >
                             <thead>
                                 <tr>
@@ -665,6 +722,63 @@ function ItemsPage() {
                     </Button>
                     <Button variant="primary" onClick={handleEditPriceSubmit}>
                         Update Price
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            <Modal show={showEditItemModal} onHide={() => setShowEditItemModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Item Details</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editItemDetails.name}
+                                onChange={(e) => setEditItemDetails({ ...editItemDetails, name: e.target.value })}
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Unit of Measurement</Form.Label>
+                            <Form.Select
+                                value={editItemDetails.unitOfMeasurement}
+                                onChange={(e) => setEditItemDetails({ ...editItemDetails, unitOfMeasurement: e.target.value })}
+                            >
+                                <option value="per piece">Per Piece</option>
+                                <option value="per kg">Per Kg</option>
+                                <option value="others">Others</option>
+                            </Form.Select>
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Classification</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editItemDetails.classification}
+                                onChange={(e) => setEditItemDetails({ ...editItemDetails, classification: e.target.value })}
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Description</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                value={editItemDetails.description}
+                                onChange={(e) => setEditItemDetails({ ...editItemDetails, description: e.target.value })}
+                            />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowEditItemModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleEditItemSubmit}>
+                        Save Changes
                     </Button>
                 </Modal.Footer>
             </Modal>

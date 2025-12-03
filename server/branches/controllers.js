@@ -17,28 +17,18 @@ async function create(req, res) {
             return res.status(400).json({ error: 'Invalid Username provided.' });
         }
 
-        // Fetch OwnerID from the owner table
-        const owner = await branchService.getOwner(user.UserID, 'user');
-        if (!owner || !owner.OwnerID) {
-            const newOwner = await branchService.addOwner({
-                referenceId: user.UserID,
-                ownerType: 'user'
-            });
-
-            owner = { OwnerID: newOwner.id, ...newOwner };
-        }
-
         // Create the branch
         const newBranch = await branchService.createBranch({
             name,
             location,
-            openingDate,
-            ownerId: owner.OwnerID
+            openingDate
         });
 
         try {
             // Create the pricelist
             await branchService.createPricelist(newBranch.id);
+            // Create inventory
+            await branchService.createInventory(newBranch.id);
         } catch (error) {
             console.error('Error creating pricelist:', error);
             return res.status(500).json({ error: 'Failed to create pricelist.' });
@@ -61,41 +51,6 @@ async function getBranchesofOwner(req, res) {
         res.json(branches);
     } catch (error) {
         console.error('Error in getBranchByUsername:', error);
-        res.status(500).json({ error: error.message });
-    }
-}
-
-async function createOwner(req, res) {
-    const { referenceId, ownerType } = req.body;
-
-    if (!referenceId || !ownerType) {
-        return res.status(400).json({ error: 'ReferenceID and OwnerType are required.' });
-    }
-
-    try {
-        const newOwner = await branchService.addOwner({
-            referenceId,
-            ownerType
-        });
-
-        res.status(201).json(newOwner);
-    } catch (error) {
-        console.error('Error in createOwner:', error);
-        res.status(500).json({ error: error.message });
-    }
-}
-
-async function getOwner(req, res) {
-    const { referenceId, ownerType } = req.params;
-
-    try {
-        const owner = await branchService.getOwner(referenceId, ownerType);
-        if (!owner) {
-            return res.status(404).send("Owner not found");
-        }
-        res.json(owner);
-    } catch (error) {
-        console.error('Error in getOwner:', error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -127,7 +82,5 @@ module.exports = {
     create,
     update,
     getBranchesofOwner,
-    createOwner,
-    getOwner,
     getBrancheswithUserTypeOwner
 };

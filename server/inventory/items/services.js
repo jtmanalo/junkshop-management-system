@@ -20,11 +20,7 @@ async function getAllItemsWithPricing() {
                 i.Description,
                 pli.Price AS ItemPrice
             FROM 
-                user u
-            JOIN 
-                owner o ON u.UserID = o.ReferenceID
-            JOIN 
-                branch b ON o.OwnerID = b.OwnerID
+                branch b
             JOIN 
                 pricelist pl ON b.BranchID = pl.BranchID
             JOIN 
@@ -32,8 +28,7 @@ async function getAllItemsWithPricing() {
             JOIN 
                 item i ON pli.ItemID = i.ItemID
             WHERE 
-                u.UserType = 'owner'
-                AND b.Status = 'active'
+                b.Status = 'active'
                 AND pl.BuyerID IS NULL
             ORDER BY 
                 i.ItemID;
@@ -73,11 +68,7 @@ async function getItemsWithPrice(branchId) {
                 i.Description,
                 pli.Price AS ItemPrice
             FROM 
-                user u
-            JOIN 
-                owner o ON u.UserID = o.ReferenceID
-            JOIN 
-                branch b ON o.OwnerID = b.OwnerID
+                branch b
             JOIN 
                 pricelist pl ON b.BranchID = pl.BranchID
             JOIN 
@@ -85,8 +76,7 @@ async function getItemsWithPrice(branchId) {
             JOIN 
                 item i ON pli.ItemID = i.ItemID
             WHERE 
-                u.UserType = 'owner'
-                AND b.Status = 'active'
+                b.Status = 'active'
                 AND pl.BuyerID IS NULL
                 AND b.BranchID = ?
             ORDER BY 
@@ -164,7 +154,7 @@ async function getAllItems() {
     try {
         conn = await pool.getConnection();
 
-        const rows = await conn.query('SELECT ItemID, Name, Classification, UnitOfMeasurement FROM item');
+        const rows = await conn.query('SELECT ItemID, Name, Classification, UnitOfMeasurement, Description FROM item');
 
         return rows;
     } catch (error) {

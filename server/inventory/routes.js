@@ -5,6 +5,8 @@ const router = express.Router();
 // Get all inventory items
 router.get('/inventory', inventoryController.getAll);
 
+router.get('/branch-inventory', inventoryController.getBranchInventory);
+
 // Create an inventory item
 router.post('/inventory', inventoryController.create);
 

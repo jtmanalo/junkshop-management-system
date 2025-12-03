@@ -163,10 +163,10 @@ function MobileDashboard() {
   };
 
   useEffect(() => {
-    refreshBalance(); // Refresh balance when shift starts
-    refreshTotalExpense(); // Refresh expense balance when shift starts
-    refreshTotalPurchase(); // Refresh purchase balance when shift starts
-    refreshTotalSale(); // Refresh sale balance when shift starts
+    refreshBalance(actualBranchId, user?.userId);// Refresh balance when shift starts
+    refreshTotalExpense(actualBranchId, user?.userId); // Refresh expense balance when shift starts
+    refreshTotalPurchase(actualBranchId, user?.userId); // Refresh purchase balance when shift starts
+    refreshTotalSale(actualBranchId, user?.userId); // Refresh sale balance when shift starts
   }, [shiftStarted, user, actualBranchId]);
 
   const fetchActiveShift = async () => {
@@ -281,6 +281,7 @@ function MobileDashboard() {
       );
       // console.log('Shift created successfully:', response.data);
       return response.data;
+      refreshBalance(branchId, userId); // Refresh balance after creating shift
     } catch (error) {
       console.error('Error creating shift:', error.response?.data || error.message);
       throw error;
@@ -333,11 +334,12 @@ function MobileDashboard() {
       const branchId = branch.id;
       const userId = user?.userID;
       const initialCash = Number(startingCash);
+      console.log('Starting shift with:', { branchId, userId, initialCash });
 
       const shiftData = await createShift(branchId, userId, initialCash, token);
       setShiftId(shiftData.id);
 
-      refreshBalance(); // Refresh balance after starting shift
+      refreshBalance(branchId, userId); // Refresh balance after starting shift
       setShiftStarted(true); // Ensure this is called
       setShowModal(false);
     } catch (error) {
@@ -521,7 +523,7 @@ function MobileDashboard() {
           )}
         </div>
       </div>
-      <Container fluid className="py-4" style={{ maxWidth: 480 }}>
+      <Container fluid className="py-4" style={{ maxWidth: 480, maxHeight: '45vh', overflowY: 'auto' }}>
         <div>
           <div style={{ height: 10 }} />
           <ButtonsCard
@@ -600,7 +602,6 @@ function MobileDashboard() {
 
                     setShiftStarted(false);
                     setShowEndShiftModal(false);
-                    alert('Shift ended successfully.');
                   } catch (error) {
                     alert('Error ending shift. Please try again.');
                   }
@@ -627,7 +628,7 @@ function MobileDashboard() {
                 </Card.Body>
               </Card>
               <div style={{ height: 10 }} />
-              <div align="center">
+              <div align="center" style={{ paddingBottom: '1rem' }}>
                 <CustomButton
                   text="Start Shift"
                   color="primary"
@@ -797,7 +798,7 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
     const [firstName, lastName] = selectedEmployee.split(' ');
 
     try {
-      // console.log('Adding employee to shift:', { shiftId, firstName, lastName });
+      console.log('Adding employee to shift:', { shiftId, firstName, lastName });
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}/api/shift-employees`,
         {
@@ -806,6 +807,7 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
           lastName,
         }
       );
+      console.log('Employee added successfully:', response.data);
 
       alert('Employee added successfully!');
       onClose();

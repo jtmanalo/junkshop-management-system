@@ -19,6 +19,25 @@ function ShiftsPage() {
     const [isLoadingShifts, setIsLoadingShifts] = useState(false);
     const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
     const [isLoadingShiftEmployees, setIsLoadingShiftEmployees] = useState(false);
+    const [shiftLogs, setShiftLogs] = useState([]);
+    const [showLogsModal, setShowLogsModal] = useState(false);
+    const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+    const [selectedLog, setSelectedLog] = useState(null);
+
+    const fetchShiftLogs = async (shiftId) => {
+        setIsLoadingLogs(true);
+        try {
+            const response = await axios.get(
+                `${process.env.REACT_APP_BASE_URL}/api/daily-logs/${shiftId}`
+            );
+            setShiftLogs(response.data);
+            console.log('Shift logs:', response.data);
+        } catch (error) {
+            console.error('Error fetching shift logs:', error.response?.data || error.message);
+        } finally {
+            setIsLoadingLogs(false);
+        }
+    };
 
     const fetchShiftEmployees = async (shiftId) => {
         setIsLoadingShiftEmployees(true);
@@ -33,6 +52,24 @@ function ShiftsPage() {
         } finally {
             setIsLoadingShiftEmployees(false);
         }
+    };
+
+    const handleRowClick = (log) => {
+        setSelectedLog(log); // Set the selected log
+    };
+
+    const handleCloseModal = () => {
+        setSelectedLog(null); // Close the modal
+    };
+
+    const handleViewLogs = async (shiftId) => {
+        await fetchShiftLogs(shiftId);
+        setShowLogsModal(true);
+    };
+
+    const handleCloseLogsModal = () => {
+        setShowLogsModal(false);
+        setShiftLogs([]);
     };
 
     // fetch employee details from table ( id, FirstName, LastName, Email, Phone, Position, BranchID, isActive )
@@ -84,7 +121,7 @@ function ShiftsPage() {
         } finally {
             setIsLoadingShifts(false);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         fetchEmployees();
@@ -98,7 +135,9 @@ function ShiftsPage() {
         fetchShifts();
     }, [fetchShifts]);
 
-    const uniqueYears = Array.from(new Set(shifts.map(shift => new Date(shift.StartDatetime).getFullYear()))).sort((a, b) => b - a);
+    const uniqueYears = shifts.length > 0
+        ? Array.from(new Set(shifts.map(shift => new Date(shift.StartDatetime).getFullYear()))).sort((a, b) => b - a)
+        : [new Date().getFullYear()];
 
     const handleBranchChange = (e) => {
         setSelectedBranch(e.target.value);
@@ -126,13 +165,13 @@ function ShiftsPage() {
         setShiftEmployees([]);
     };
 
-    const filteredShifts = shifts.filter(shift => {
+    const filteredShifts = Array.isArray(shifts) ? shifts.filter(shift => {
         const branchMatch = selectedBranch === 'all' || shift.BranchID === parseInt(selectedBranch);
         const employeeMatch = selectedSeller === 'all' || shift.Name === selectedSeller;
         const monthMatch = selectedMonth === 'all' || new Date(shift.StartDatetime).getMonth() + 1 === parseInt(selectedMonth);
         const yearMatch = selectedYear === 'all' || new Date(shift.StartDatetime).getFullYear() === parseInt(selectedYear);
         return branchMatch && employeeMatch && monthMatch && yearMatch;
-    });
+    }) : [];
 
     return (
         <div>
@@ -203,9 +242,10 @@ function ShiftsPage() {
                                 <tr>
                                     <th>Branch</th>
                                     <th>Employee</th>
-                                    <th>Start Date & Time</th>
-                                    <th>Initial Cash</th>
-                                    <th>End Date & Time</th>
+                                    <th>Start</th>
+                                    <th>Starting Cash</th>
+                                    <th>End</th>
+                                    <th>Remaining Cash</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -222,8 +262,16 @@ function ShiftsPage() {
                                             <td>{moment(shift.StartDatetime).tz('Asia/Manila').format('MMMM DD YYYY, HH:mm')}</td>
                                             <td>{shift.InitialCash}</td>
                                             <td>{shift.EndDatetime ? moment(shift.EndDatetime).tz('Asia/Manila').format('MMMM DD YYYY, HH:mm') : 'Active'}</td>
+                                            <td>{shift.FinalCash !== null ? shift.FinalCash : 'N/A'}</td>
                                             <td>
-                                                <Button variant="outline-secondary" size="sm" className="me-2">View Logs</Button>
+                                                <Button
+                                                    variant="outline-secondary"
+                                                    size="sm"
+                                                    className="me-2"
+                                                    onClick={() => handleViewLogs(shift.ShiftID)}
+                                                >
+                                                    View Logs
+                                                </Button>
                                                 <Button
                                                     variant="outline-primary"
                                                     size="sm"
@@ -241,6 +289,50 @@ function ShiftsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Logs Modal */}
+            <Modal show={showLogsModal} onHide={handleCloseLogsModal} size="lg" centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Transaction Logs</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {isLoadingLogs ? (
+                        <div className="text-center">
+                            <Spinner animation="border" role="status">
+                                <span className="visually-hidden">Loading logs...</span>
+                            </Spinner>
+                        </div>
+                    ) : shiftLogs.length === 0 ? (
+                        <p>No transaction logs found for this shift.</p>
+                    ) : (
+                        <Table striped bordered hover>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Method</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {shiftLogs.map((log, index) => (
+                                    <tr key={index} onClick={() => handleRowClick(log)} style={{ cursor: 'pointer' }}>
+                                        <td>{moment(log.TransactionDate).tz('Asia/Manila').format('HH:mm')}</td>
+                                        <td>{log.TransactionType.toUpperCase()}</td>
+                                        <td>{log.PaymentMethod.toUpperCase()}</td>
+                                        <td>{`₱${log.TotalAmount}`}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleCloseLogsModal}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
 
             {/* Employee Modal */}
             <Modal show={showEmployeeModal} onHide={handleCloseEmployeeModal} size="lg" centered>
@@ -283,6 +375,24 @@ function ShiftsPage() {
                     </Button>
                 </Modal.Footer>
             </Modal>
+            {selectedLog && (
+                <Modal show={!!selectedLog} onHide={handleCloseModal} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Transaction Details</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <p><strong>Date:</strong> {moment(selectedLog.TransactionDate).tz('Asia/Manila').format('MMMM DD, YYYY')}</p>
+                        <p><strong>Time:</strong> {moment(selectedLog.TransactionDate).tz('Asia/Manila').format('HH:mm')}</p>
+                        <p><strong>Transaction Type:</strong> {selectedLog.TransactionType.toUpperCase()}</p>
+                        <p><strong>Payment Method:</strong> {selectedLog.PaymentMethod.toUpperCase()}</p>
+                        <p><strong>Notes:</strong> {selectedLog.Notes ? selectedLog.Notes : 'N/A'}</p>
+                        <p><strong>Amount:</strong> ₱{selectedLog.TotalAmount}</p>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseModal}>Close</Button>
+                    </Modal.Footer>
+                </Modal>
+            )}
         </div>
     );
 }

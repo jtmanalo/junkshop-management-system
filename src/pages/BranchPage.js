@@ -8,7 +8,7 @@ function BranchPage() {
     const [branches, setBranches] = useState([]);
     const [showAdd, setShowAdd] = useState(false);
     const [showEdit, setShowEdit] = useState(false);
-    const [formData, setFormData] = useState({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
+    const [formData, setFormData] = useState({ name: '', location: '', openingDate: '', status: '' });
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [showAddSuccessAlert, setShowAddSuccessAlert] = useState(false);
     const [showEditSuccessAlert, setShowEditSuccessAlert] = useState(false);
@@ -39,7 +39,7 @@ function BranchPage() {
     const handleCloseAdd = () => {
         setShowAdd(false);
         // Clear form data
-        setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
+        setFormData({ name: '', location: '', openingDate: '', status: '' });
     };
 
     const handleEditBranch = (BranchID) => {
@@ -57,7 +57,6 @@ function BranchPage() {
             name: branch?.Name || '',
             location: branch?.Location || '',
             openingDate: branch?.OpeningDate || '',
-            ownerId: branch?.OwnerID || '',
             status: branch?.Status || '',
             BranchID: branch?.BranchID || ''
         });
@@ -67,7 +66,7 @@ function BranchPage() {
     const handleCloseEdit = () => {
         setShowEdit(false);
         // Clear form data
-        setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
+        setFormData({ name: '', location: '', openingDate: '', status: '' });
     };
 
     const handleFormChange = (e) => {
@@ -91,7 +90,7 @@ function BranchPage() {
             setTimeout(() => setShowEditSuccessAlert(false), 3000); // Auto-hide after 3 seconds
 
             // Clear form data
-            setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
+            setFormData({ name: '', location: '', openingDate: '', status: '' });
         } catch (error) {
             console.error('Error updating branch:', error);
             alert('Failed to update branch. Please try again.');
@@ -105,8 +104,6 @@ function BranchPage() {
         // console.log('User ID inside handleAddFormSubmit:', user?.userID); // Log userID
 
         try {
-            // Check if user is in the owner table
-            // console.log('Checking owner for user:', user);
             // console.log('User ID:', user?.userID);
             // console.log('User Type:', user?.userType);
 
@@ -123,7 +120,7 @@ function BranchPage() {
             setTimeout(() => setShowAddSuccessAlert(false), 3000); // Auto-hide after 3 seconds
 
             // Clear form data
-            setFormData({ name: '', location: '', openingDate: '', ownerID: '', status: '' });
+            setFormData({ name: '', location: '', openingDate: '', status: '' });
         } catch (error) {
             console.error('Error adding branch:', error);
         }
@@ -342,7 +339,7 @@ function BranchPage() {
                     <Button variant="outline-secondary" onClick={handleCloseAdd}>
                         Cancel
                     </Button>
-                    <Button variant="outline-primary" type="submit">
+                    <Button variant="outline-primary" type="submit" onClick={handleEditFormSubmit}>
                         Submit
                     </Button>
                 </Modal.Footer>

@@ -199,6 +199,7 @@ function BuyersPage() {
                 otherContacts: data.OtherContacts ? data.OtherContacts.split('; ') : [] // Split other contacts into an array
             };
             console.log('Fetched Buyer Contacts:', formattedContacts);
+            setBuyerContacts([formattedContacts]); // Set the contacts in state
             return formattedContacts;
         } catch (error) {
             console.error('Error fetching buyer contacts:', error);
@@ -262,15 +263,18 @@ function BuyersPage() {
     };
 
     // Function to handle opening the "Edit Buyer" modal
-    const handleEditBuyer = (buyer) => {
-        setEditBuyerId(buyer.buyerId);
-        setEditBuyerCompany(buyer.companyName);
-        setEditBuyerName(buyer.contactPerson || '');
-        // setEditBuyerContactMethod(buyer.contactMethod || '');
-        // setEditBuyerContactDetail(buyer.contactDetail || '');
-        setEditBuyerNotes(buyer.notes || '');
-        setEditBuyerStatus(buyer.status || 'active');
-        setShowEditBuyerModal(true);
+    const handleEditBuyer = async (buyerId) => {
+        const contacts = await fetchBuyerContacts(buyerId);
+        if (contacts) {
+            setEditBuyerId(contacts.buyerId);
+            setEditBuyerCompany(contacts.companyName);
+            setEditBuyerName(contacts.contactPerson);
+            setEditBuyerNotes(contacts.notes || '');
+            setEditBuyerStatus(contacts.status || 'active');
+            setShowEditBuyerModal(true);
+        } else {
+            console.error('No contacts found for BuyerID:', buyerId);
+        }
     };
 
     // Function to handle saving the edited buyer details
@@ -403,7 +407,7 @@ function BuyersPage() {
                                             <Button
                                                 variant="outline-warning"
                                                 size="sm"
-                                                onClick={() => handleEditBuyer(row)}
+                                                onClick={() => handleEditBuyer(row.buyerId)}
                                             >
                                                 Edit
                                             </Button>

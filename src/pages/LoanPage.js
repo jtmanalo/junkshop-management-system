@@ -20,6 +20,7 @@ function LoanPage() {
     // const [selectedEmployee, setSelectedEmployee] = useState('all');
     // const [selectedSeller, setSelectedSeller] = useState('all');
     const [showSellerModal, setShowSellerModal] = useState(false);
+    const [showEditSellerModal, setShowEditSellerModal] = useState(false);
     const [selectedSellerDetails, setSelectedSellerDetails] = useState(null);
     const [showTransactionModal, setShowTransactionModal] = useState(false);
     const [transactionType, setTransactionType] = useState('loan');
@@ -126,7 +127,29 @@ function LoanPage() {
 
     const handleCloseModal = () => {
         setShowSellerModal(false);
+        setShowEditSellerModal(false);
         setSelectedSellerDetails(null);
+    };
+
+    const handleUpdateClick = (seller) => {
+        setSelectedSellerDetails(seller);
+        setShowEditSellerModal(true);
+    };
+
+    const handleUpdateSellerSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/api/sellers/${selectedSellerDetails.id}`, {
+                name: selectedSellerDetails.displayName,
+                contactNumber: selectedSellerDetails.contactNumber,
+            });
+            setShowEditSellerModal(false);
+            setSelectedSellerDetails(null);
+            fetchSellers(); // Refresh sellers list
+        } catch (error) {
+            console.error('Error updating seller:', error);
+            alert('Failed to update seller. Please try again.');
+        }
     };
 
     // const handleTransactionClick = (person, personType, type) => {
@@ -318,6 +341,14 @@ function LoanPage() {
                                                                     >
                                                                         <FaInfoCircle /> Info
                                                                     </Button>
+                                                                    <Button
+                                                                        variant="outline-secondary"
+                                                                        size="sm"
+                                                                        className="me-2"
+                                                                        onClick={() => handleUpdateClick(seller)}
+                                                                    >
+                                                                        Edit Profile
+                                                                    </Button>
                                                                     {/* <Button
                                                                         variant="outline-primary"
                                                                         size="sm"
@@ -417,6 +448,39 @@ function LoanPage() {
                         </Tabs>
                     </Card.Header>
                 </Card>
+                {/* Modal for displaying seller details */}
+                <Modal show={showEditSellerModal} onHide={handleCloseModal} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Edit Seller Details</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {selectedSellerDetails && (
+                            <Form onSubmit={handleUpdateSellerSubmit}>
+                                <Form.Group className="mb-3" controlId="editSellerName">
+                                    <Form.Label>Name</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={selectedSellerDetails.displayName}
+                                        onChange={(e) => setSelectedSellerDetails({ ...selectedSellerDetails, displayName: e.target.value })}
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-3" controlId="editSellerContact">
+                                    <Form.Label>Contact Number</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={selectedSellerDetails.contactNumber}
+                                        onChange={(e) => setSelectedSellerDetails({ ...selectedSellerDetails, contactNumber: e.target.value })}
+                                    />
+                                </Form.Group>
+                                <Modal.Footer>
+                                    <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
+                                    <Button variant="primary" type="submit">Save Changes</Button>
+                                </Modal.Footer>
+                            </Form>
+                        )}
+                    </Modal.Body>
+                </Modal>
 
                 {/* Modal for displaying seller details */}
                 <Modal show={showSellerModal} onHide={handleCloseModal} centered>

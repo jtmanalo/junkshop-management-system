@@ -15,8 +15,4 @@ router.get('/branches-with-owner-usertype', branchController.getBrancheswithUser
 // Update a branch
 router.put('/branches/:id', branchController.update);
 
-router.post('/owners', branchController.createOwner);
-
-router.get('/owners/:referenceId/:ownerType', branchController.getOwner);
-
 module.exports = router;

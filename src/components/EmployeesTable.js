@@ -127,7 +127,7 @@ function EmployeesTable() {
 
     const handleUpdateEmployeeStatus = async () => {
         try {
-            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/employees/${selectedUser.UserID}`, {
+            const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/employees/${selectedUser.EmployeeID}`, {
                 status: newEmployeeStatus,
             });
             console.log('Update response:', response.data);
@@ -167,7 +167,7 @@ function EmployeesTable() {
                 console.log('Updating user:', selectedUser.Username, 'with userID', selectedUser.UserID, 'to status:', updatedStatus);
 
                 await axios.put(
-                    `${process.env.REACT_APP_BASE_URL}/api/users/${selectedUser.UserID}`,
+                    `${process.env.REACT_APP_BASE_URL}/api/users/${selectedUser.UserID}/approve-reject`,
                     { status: updatedStatus },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
@@ -180,21 +180,21 @@ function EmployeesTable() {
                 );
                 setUsers(updatedUsers);
 
-                setUndoAction(() => async () => {
-                    const revertStatus = updatedStatus === 'approved' ? 'pending' : 'pending';
-                    await axios.put(
-                        `${process.env.REACT_APP_BASE_URL}/api/users/${selectedUser.UserID}`,
-                        { status: revertStatus },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    const revertedUsers = users.map((user) =>
-                        user.UserID === selectedUser.UserID
-                            ? { ...user, AccountStatus: revertStatus }
-                            : user
-                    );
-                    setUsers(revertedUsers);
-                    setUndoAction(null);
-                });
+                // setUndoAction(() => async () => {
+                //     const revertStatus = updatedStatus === 'approved' ? 'pending' : 'pending';
+                //     await axios.put(
+                //         `${process.env.REACT_APP_BASE_URL}/api/users/${selectedUser.UserID}/approve-reject`,
+                //         { status: revertStatus },
+                //         { headers: { Authorization: `Bearer ${token}` } }
+                //     );
+                //     const revertedUsers = users.map((user) =>
+                //         user.UserID === selectedUser.UserID
+                //             ? { ...user, AccountStatus: revertStatus }
+                //             : user
+                //     );
+                //     setUsers(revertedUsers);
+                //     setUndoAction(null);
+                // });
 
                 if (modalAction === 'approve') {
                     setShowApproveSuccessAlert(true);
@@ -319,7 +319,8 @@ function EmployeesTable() {
                         zIndex: 1050,
                     }}
                 >
-                    User approved successfully! <Button variant="link" onClick={undoAction}>Undo</Button>
+                    User approved successfully!
+                    {/* <Button variant="link" onClick={undoAction}>Undo</Button> */}
                 </Alert>
             )}
             {showRejectSuccessAlert && (
@@ -334,7 +335,8 @@ function EmployeesTable() {
                         zIndex: 1050,
                     }}
                 >
-                    User rejected successfully! <Button variant="link" onClick={undoAction}>Undo</Button>
+                    User rejected successfully!
+                    {/* <Button variant="link" onClick={undoAction}>Undo</Button> */}
                 </Alert>
             )}
 
@@ -544,9 +546,9 @@ function EmployeesTable() {
                                     value={newEmployeeStatus}
                                     onChange={(e) => setNewEmployeeStatus(e.target.value)}
                                 >
-                                    {selectedUser.EmployeeStatus !== 'active' && <option value="active">Active</option>}
-                                    {selectedUser.EmployeeStatus !== 'inactive' && <option value="inactive">Inactive</option>}
-                                    {selectedUser.EmployeeStatus !== 'terminated' && <option value="terminated">Terminated</option>}
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="terminated">Terminated</option>
                                 </Form.Select>
                             </Form.Group>
                         </Form>
