@@ -66,10 +66,53 @@ async function update(req, res) {
     }
 }
 
+async function getPriceTrendController(req, res) { // Renamed to avoid confusion
+    // Parameters from the frontend (Axios GET query string)
+    const { itemId, entityId, entityType } = req.query;
+
+    if (!itemId || !entityId || !entityType) {
+        return res.status(400).json({ error: 'itemId, entityId, and entityType are required query parameters.' });
+    }
+
+    // Ensure entityType is normalized (e.g., 'Branch' vs 'branch')
+    const normalizedEntityType = entityType.toLowerCase();
+    if (normalizedEntityType !== 'buyer' && normalizedEntityType !== 'branch') {
+        return res.status(400).json({ error: 'Invalid entityType. Must be "Buyer" or "Branch".' });
+    }
+
+    try {
+        // Call the service function
+        const trendData = await pricelistService.getPriceTrend(itemId, entityId, entityType);
+        res.json(trendData);
+    } catch (error) {
+        // Pass a user-friendly error message, not the raw SQL error
+        console.error('Error in getPriceTrendController:', error);
+        res.status(500).json({ error: 'Failed to retrieve price trend due to server error.' });
+    }
+}
+
+async function getNetIncomeTrendController(req, res) {
+    const { year } = req.query;
+
+    if (!year) {
+        return res.status(400).json({ error: 'Year is required for the net income trend report.' });
+    }
+
+    try {
+        const data = await pricelistService.fetchNetIncomeTrend(year);
+        res.json(data); // Send monthly summary data
+    } catch (error) {
+        res.status(500).json({ error: 'Server error while fetching income trend.' });
+    }
+}
+
+
 module.exports = {
     getAll,
     create,
     getById,
-    update
+    update,
+    getPriceTrendController,
+    getNetIncomeTrendController
 };
 

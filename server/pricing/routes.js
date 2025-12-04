@@ -14,6 +14,10 @@ router.get('/pricelists/:id', pricelistController.getById);
 // Update a pricelist
 router.put('/pricelists/:id', pricelistController.update);
 
+router.get('/pricelist/trend', pricelistController.getPriceTrendController);
+
+router.get('/net-income', pricelistController.getNetIncomeTrendController);
+
 // Delete a pricelist
 // router.delete('/pricelists/:id', pricelistController.remove);
 

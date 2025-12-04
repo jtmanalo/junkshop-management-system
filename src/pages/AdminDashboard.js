@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Container, Card } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Container, Card, Row, Col, Form } from 'react-bootstrap';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { TopNav, SideNav } from '../components/NavBar';
 import SettingsPage from './SettingsPage';
@@ -15,52 +15,61 @@ import ItemsPage from './ItemsPage';
 import { useAuth } from '../services/AuthContext';
 import { MetricCard, MetricChartCard } from '../components/Card';
 import { FaChartLine, FaShoppingCart, FaMoneyBillWave, FaReceipt, FaWallet } from 'react-icons/fa';
+import moment from 'moment';
+import axios from 'axios';
+import NetIncomeChart from '../components/NetIncomeChart';
+
 
 function AdminDashboard() {
+    const currentYear = String(moment().year());
+    const [incomeYearFilter, setIncomeYearFilter] = useState(currentYear);
+    const [incomeChartData, setIncomeChartData] = useState([]);
+    const [incomeLoading, setIncomeLoading] = useState(false);
+
     // Example Net Income chart data for current month
-    const netIncomeChartData = {
-        labels: Array.from({ length: 31 }, (_, i) => (i + 1).toString()), // Days 1-31
-        datasets: [
-            {
-                label: 'Net Income (₱)',
-                data: [1200, 1500, 1100, 1800, 1700, 1600, 2000, 2100, 1900, 2200, 2300, 2100, 2000, 2500, 2400, 2300, 2200, 2100, 2000, 1900, 1800, 1700, 1600, 1500, 1400, 1300, 1200, 1100, 1000, 900, 800],
-                fill: true,
-                backgroundColor: 'rgba(33, 150, 243, 0.08)',
-                borderColor: '#2979FF',
-                pointBackgroundColor: '#2979FF',
-                pointBorderColor: '#fff',
-                pointRadius: 4,
-                tension: 0.3,
-            },
-        ],
-    };
-    const netIncomeChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: { display: false },
-            title: { display: false },
-            tooltip: { enabled: true },
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                title: { display: true, text: 'Day of Month' },
-                ticks: { color: '#B0B7C3', font: { size: 14 } },
-            },
-            y: {
-                grid: { color: '#F0F0F0' },
-                title: { display: true, text: 'Net Income (₱)' },
-                min: 0,
-                ticks: { color: '#B0B7C3', font: { size: 14 } },
-            },
-        },
-    };
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const years = ['2024', '2025'];
-    const [selectedMonth, setSelectedMonth] = useState('October');
-    const [selectedYear, setSelectedYear] = useState('2025');
-    const handleMonthChange = (e) => setSelectedMonth(e.target.value);
-    const handleYearChange = (e) => setSelectedYear(e.target.value);
+    // const netIncomeChartData = {
+    //     labels: Array.from({ length: 31 }, (_, i) => (i + 1).toString()), // Days 1-31
+    //     datasets: [
+    //         {
+    //             label: 'Net Income (₱)',
+    //             data: [1200, 1500, 1100, 1800, 1700, 1600, 2000, 2100, 1900, 2200, 2300, 2100, 2000, 2500, 2400, 2300, 2200, 2100, 2000, 1900, 1800, 1700, 1600, 1500, 1400, 1300, 1200, 1100, 1000, 900, 800],
+    //             fill: true,
+    //             backgroundColor: 'rgba(33, 150, 243, 0.08)',
+    //             borderColor: '#2979FF',
+    //             pointBackgroundColor: '#2979FF',
+    //             pointBorderColor: '#fff',
+    //             pointRadius: 4,
+    //             tension: 0.3,
+    //         },
+    //     ],
+    // };
+    // const netIncomeChartOptions = {
+    //     responsive: true,
+    //     plugins: {
+    //         legend: { display: false },
+    //         title: { display: false },
+    //         tooltip: { enabled: true },
+    //     },
+    //     scales: {
+    //         x: {
+    //             grid: { display: false },
+    //             title: { display: true, text: 'Day of Month' },
+    //             ticks: { color: '#B0B7C3', font: { size: 14 } },
+    //         },
+    //         y: {
+    //             grid: { color: '#F0F0F0' },
+    //             title: { display: true, text: 'Net Income (₱)' },
+    //             min: 0,
+    //             ticks: { color: '#B0B7C3', font: { size: 14 } },
+    //         },
+    //     },
+    // };
+    // const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    // const years = ['2024', '2025'];
+    // const [selectedMonth, setSelectedMonth] = useState('October');
+    // const [selectedYear, setSelectedYear] = useState('2025');
+    // const handleMonthChange = (e) => setSelectedMonth(e.target.value);
+    // const handleYearChange = (e) => setSelectedYear(e.target.value);
     // Example: Fetch metric data from backend/database
     // Replace with your actual data fetching logic (API, Redux, etc.)
     const [metrics, setMetrics] = useState({
@@ -141,6 +150,34 @@ function AdminDashboard() {
         },
     ];
 
+
+
+    // Generate year options (e.g., last 5 years)
+    const yearsOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+    // Fetch data when year changes
+    useEffect(() => {
+        const fetchIncomeData = async () => {
+            setIncomeLoading(true);
+            try {
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/net-income`, {
+                    params: { year: incomeYearFilter }
+                });
+                // The data is already aggregated by month in the backend
+                setIncomeChartData(response.data);
+            } catch (error) {
+                console.error('Error fetching income trend:', error);
+                setIncomeChartData([]);
+            } finally {
+                setIncomeLoading(false);
+            }
+        };
+        if (incomeYearFilter) {
+            fetchIncomeData();
+        }
+    }, [incomeYearFilter]);
+
+
     return (
         <>
             <h1 className="mb-4">Dashboard</h1>
@@ -151,7 +188,7 @@ function AdminDashboard() {
             </div>
             {/* Net Income Chart Card Example */}
             <div className="mt-4">
-                <MetricChartCard
+                {/* <MetricChartCard
                     title="Net Income"
                     chartData={netIncomeChartData}
                     chartOptions={netIncomeChartOptions}
@@ -161,8 +198,37 @@ function AdminDashboard() {
                     selectedYear={selectedYear}
                     onMonthChange={handleMonthChange}
                     onYearChange={handleYearChange}
-                />
+                /> */}
+                <Card className="mb-4 p-3">
+                    <h5 className="mb-3">Net Income Trend (Revenue - Expenses)</h5>
+                    <Row className="g-3 mb-3">
+                        <Col xs={12} md={3}>
+                            <Form.Group controlId="incomeYearFilter">
+                                <Form.Label>Select Year</Form.Label>
+                                <Form.Select
+                                    value={incomeYearFilter}
+                                    onChange={(e) => setIncomeYearFilter(e.target.value)}
+                                >
+                                    {yearsOptions.map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                    </Row>
+
+                    {/* Net Income Chart Rendering */}
+                    <div style={{ height: '400px' }}>
+                        {incomeLoading ? (
+                            <div className="text-center p-5 text-muted">Loading Income Data...</div>
+                        ) : (
+                            // PASSES the fetched data array to the new component
+                            <NetIncomeChart data={incomeChartData} />
+                        )}
+                    </div>
+                </Card>
             </div>
+
         </>
     );
 }

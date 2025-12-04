@@ -49,6 +49,23 @@ async function getAll() {
     }
 }
 
+async function getBuyersList() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query
+        const rows = await conn.query('SELECT BuyerID, CompanyName FROM buyer WHERE Status = ?', ['active']);
+
+        // Return all rows
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function create(data) {
     let conn;
     try {
@@ -217,5 +234,6 @@ module.exports = {
     create,
     getById,
     update,
-    createActivityLog
+    createActivityLog,
+    getBuyersList,
 };

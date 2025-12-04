@@ -5,6 +5,9 @@ const router = express.Router();
 // Get all buyers
 router.get('/buyers', buyerController.getAll);
 
+// Get buyers list (ID and CompanyName only)
+router.get('/buyers-list', buyerController.getList);
+
 // Create a buyer
 router.post('/buyers', buyerController.create);
 

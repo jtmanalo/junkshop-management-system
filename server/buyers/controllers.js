@@ -14,6 +14,19 @@ async function getAll(req, res) {
     }
 }
 
+async function getList(req, res) {
+    try {
+        const buyers = await buyerService.getBuyersList();
+        if (buyers.length === 0) {
+            return res.status(204).send("No buyers found");
+        }
+        res.json(buyers);
+    } catch (error) {
+        console.error('Error getBuyersList:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 // Create a buyer
 async function create(req, res) {
     const {
@@ -80,4 +93,5 @@ module.exports = {
     create,
     getById,
     update,
+    getList
 };

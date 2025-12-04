@@ -3,7 +3,7 @@ const branchController = require('./controllers');
 const router = express.Router();
 
 // Create a branch for owner+user
-// if owner, branch+pricelist
+// if owner, branch+pricelist (no more owner table)
 router.post('/branches', branchController.create);
 
 // Get all branches of owner
