@@ -10,6 +10,8 @@ router.post('/validate-token', userController.validateToken);
 // Login
 router.post('/login', userController.login);
 
+router.post('/logout/:userId', userController.logout);
+
 // Get all users
 router.get('/users', userController.getAll);
 

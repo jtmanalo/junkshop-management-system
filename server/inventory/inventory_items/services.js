@@ -37,7 +37,7 @@ async function create(data) {
 
         // Perform the INSERT query
         const result = await conn.query(
-            'INSERT INTO inventory_item (InventoryID, ItemID, TotalQuantity, CreatedAt) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO inventory_item (InventoryID, ItemID, TotalQuantity, CreatedAt) VALUES (?, ?, ?, ?)',
             [
                 data.inventoryId,
                 data.itemId,
@@ -57,13 +57,89 @@ async function create(data) {
     }
 }
 
-async function getById(inventoryitemId) {
+// async function getById(inventoryitemId) {
+//     let conn;
+//     try {
+//         conn = await pool.getConnection();
+//         const rows = await conn.query('SELECT * FROM inventory_item WHERE InventoryItemID = ?', [inventoryitemId]);
+
+//         return rows[0]; // Return the first row if found
+//     }
+//     catch (error) {
+//         throw error;
+//     }
+//     finally {
+//         if (conn) conn.release();
+//     }
+// }
+
+async function recordPrevious(data) {
     let conn;
     try {
         conn = await pool.getConnection();
-        const rows = await conn.query('SELECT * FROM inventory_item WHERE InventoryItemID = ?', [inventoryitemId]);
 
-        return rows[0]; // Return the first row if found
+        const branchId = parseInt(data.branchId, 10);
+        const itemId = parseInt(data.itemId, 10);
+
+        const timezone = moment.tz('Asia/Manila');
+        const previousDate = moment(timezone).subtract(1, 'months');
+        // Use a valid DATE value (first day of previous month)
+        const date = previousDate.startOf('month').format('YYYY-MM-01');
+
+        console.log('date:', date);
+
+        const existingInventory = await conn.query('SELECT * FROM inventory WHERE BranchID = ? AND Date = ?',
+            [branchId, date]);
+
+        let inventoryId;
+        if (existingInventory.length > 0) {
+            // Ensure BigInt or string is converted to a serializable number
+            const inv = existingInventory[0].InventoryID;
+            inventoryId = typeof inv === 'bigint' ? Number(inv) : Number(inv);
+        } else {
+            const newInventory = await conn.query(
+                'INSERT INTO inventory (BranchID, Date, CreatedAt) VALUES (?, ?, ?)',
+                [branchId, date, moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss')]
+            );
+            inventoryId = typeof newInventory.insertId === 'bigint' ? Number(newInventory.insertId) : Number(newInventory.insertId);
+        }
+
+        // Check if inventory item already exists for this inventory and item
+        const existingItem = await conn.query(
+            'SELECT * FROM inventory_item WHERE InventoryID = ? AND ItemID = ?',
+            [inventoryId, itemId]
+        );
+
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        let insertedId;
+
+        if (existingItem.length > 0) {
+            // Update existing record instead of inserting
+            await conn.query(
+                'UPDATE inventory_item SET TotalQuantity = ? WHERE InventoryID = ? AND ItemID = ?',
+                [data.totalQuantity || 0, inventoryId, itemId]
+            );
+            insertedId = existingItem[0].InventoryItemID;
+        } else {
+            // Insert new record
+            const result = await conn.query(
+                'INSERT INTO inventory_item (TotalQuantity, InventoryID, ItemID, CreatedAt) VALUES (?, ?, ?, ?)',
+                [data.totalQuantity || 0, inventoryId, itemId, createdAt]
+            );
+
+            if (result.affectedRows === 0) {
+                throw new Error('Inventory Item not found');
+            }
+            insertedId = result.insertId;
+        }
+
+        return {
+            id: typeof insertedId === 'bigint' ? Number(insertedId) : insertedId,
+            inventoryId: Number(inventoryId),
+            itemId: Number(itemId),
+            totalQuantity: Number(data.totalQuantity || 0),
+            createdAt
+        };
     }
     catch (error) {
         throw error;
@@ -73,47 +149,49 @@ async function getById(inventoryitemId) {
     }
 }
 
-async function update(inventoryitemId, data) {
+async function getPreviousRecords(branchId, month, year) {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        // Build the SET clause dynamically based on provided data
-        const fields = [];
-        const values = [];
+        // Use provided month/year or default to previous month
+        let targetMonth = month;
+        let targetYear = year;
 
-        if (data.inventoryId) {
-            fields.push('InventoryID = ?');
-            values.push(data.inventoryId);
-        }
-        if (data.itemId) {
-            fields.push('ItemID = ?');
-            values.push(data.itemId);
-        }
-        if (data.totalQuantity) {
-            fields.push('TotalQuantity = ?');
-            values.push(data.totalQuantity);
-        }
-        if (fields.length === 0) {
-            // No fields to update
-            return;
+        if (!month || !year) {
+            // Default to previous month if not provided
+            const timezone = moment.tz('Asia/Manila');
+            const previousDate = moment(timezone).subtract(1, 'months');
+            targetMonth = previousDate.month() + 1; // moment returns 0-11
+            targetYear = previousDate.year();
         }
 
-        // Finalize the query
-        const query = `UPDATE inventory_item SET ${fields.join(', ')} WHERE InventoryItemID = ?`;
-        values.push(inventoryitemId);
+        // Create date for the first day of the target month
+        const date = moment.tz(`${targetYear}-${targetMonth}`, 'YYYY-M', 'Asia/Manila').startOf('month').format('YYYY-MM-01');
+        console.log('Fetching inventory for date:', date);
 
-        const result = await conn.query(query, values);
+        const inventory = await conn.query(
+            'SELECT * FROM inventory WHERE BranchID = ? AND Date = ?',
+            [branchId, date]
+        );
 
-        if (result.affectedRows === 0) {
-            throw new Error('Inventory Item not found');
+        if (inventory.length === 0) {
+            console.log('No inventory found for branchId:', branchId, 'date:', date);
+            return [];
         }
-        return { id: inventoryitemId, ...data };
-    }
-    catch (error) {
+
+        const inventoryId = inventory[0]?.InventoryID;
+        console.log('Found inventoryId:', inventoryId);
+
+        const inventoryItems = await conn.query(
+            'SELECT * FROM inventory_item WHERE InventoryID = ?',
+            [inventoryId]
+        );
+
+        return inventoryItems;
+    } catch (error) {
         throw error;
-    }
-    finally {
+    } finally {
         if (conn) conn.release();
     }
 }
@@ -121,6 +199,7 @@ async function update(inventoryitemId, data) {
 module.exports = {
     getAll,
     create,
-    getById,
-    update
+    // getById,
+    recordPrevious,
+    getPreviousRecords
 };

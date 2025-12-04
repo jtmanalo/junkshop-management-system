@@ -726,21 +726,6 @@ async function createPurchase(data) {
             );
         }
 
-        // Insert into weighing_log table
-        // for (const item of data.items) {
-        //     await conn.query(
-        //         'INSERT INTO weighing_log (ItemID, BranchID, TransactionID, Weight, UserID, WeighedAt) VALUES (?, ?, ?, ?, ?, ?)',
-        //         [
-        //             item.itemId,
-        //             data.branchId,
-        //             transactionId,
-        //             item.quantity,
-        //             data.userId,
-        //             transactionDate,
-        //         ]
-        //     );
-        // }
-
         if (data.status === 'completed') {
             await conn.query(
                 `UPDATE shift 
@@ -816,21 +801,6 @@ async function createSale(data) {
                 [transactionId, item.itemId, item.quantity, item.itemPrice, item.subtotal, createdAt]
             );
         }
-
-        // Insert into weighing_log table
-        // for (const item of data.items) {
-        //     await conn.query(
-        //         'INSERT INTO weighing_log (ItemID, BranchID, TransactionID, Weight, UserID, WeighedAt) VALUES (?, ?, ?, ?, ?, ?)',
-        //         [
-        //             item.itemId,
-        //             data.branchId,
-        //             transactionId,
-        //             item.quantity,
-        //             data.userId,
-        //             transactionDate,
-        //         ]
-        //     );
-        // }
 
         await conn.query(
             `UPDATE shift 
@@ -984,9 +954,46 @@ async function getPendingTransactionsByShift(shiftId) {
     }
 }
 
+async function createActivityLog(data) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Convert LoggedAt to UTC+8 before inserting
+        const loggedAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+
+        const result = await conn.query(
+            'INSERT INTO activity_log (UserID,' + (data.branchId ? ' BranchID,' : '') + ' ActivityType, Description, LoggedAt) VALUES (?,' + (data.branchId ? '?, ' : '') + '?, ?, ?)',
+            data.branchId ?
+                [
+                    data.userId,
+                    data.branchId,
+                    data.activityType,
+                    data.description,
+                    loggedAt,
+                ] : [
+                    data.userId,
+                    data.activityType,
+                    data.description,
+                    loggedAt,
+                ]
+        );
+        return { id: result.insertId, ...data, loggedAt };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+
+
 module.exports = {
     getAll,
+    getSellerLoans,
+    // getByBranch,
     create,
+    // getById,
     update,
     createExpense,
     getExpenseBalance,
@@ -1002,5 +1009,6 @@ module.exports = {
     getBalance,
     getPendingTransactionDetails,
     getTransactionItems,
-    getPendingTransactionsByShift
+    getPendingTransactionsByShift,
+    createActivityLog
 };

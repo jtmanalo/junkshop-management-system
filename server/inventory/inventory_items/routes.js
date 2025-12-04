@@ -9,10 +9,12 @@ router.get('/inventory-items', inventoryitemController.getAll);
 router.post('/inventory-items', inventoryitemController.create);
 
 // Get inventory item by ID
-router.get('/inventory-items/:id', inventoryitemController.getById);
+// router.get('/inventory-items/:id', inventoryitemController.getById);
 
 // Update an inventory item
-router.put('/inventory-items/:id', inventoryitemController.update);
+router.post('/inventory-items/record-previous', inventoryitemController.recordPrevious);
+
+router.get('/inventory-items/previous-records', inventoryitemController.getPreviousRecords);
 
 // Delete an inventory item
 // router.delete('/inventory-items/:id', inventoryitemController.remove);

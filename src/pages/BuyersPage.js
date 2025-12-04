@@ -162,6 +162,7 @@ function BuyersPage() {
     const handleUpdatePricelistItem = (index) => {
         const item = pricelistItems[index]; // Use pricelistItems instead of allItemsList
         axios.post(`${process.env.REACT_APP_BASE_URL}/api/buyer-pricelist-items/update`, {
+            userId: user?.userID,
             buyerId: selectedBuyerForPricelist,
             itemId: item.id, // Ensure itemID is used
             price: item.price // Send the updated price

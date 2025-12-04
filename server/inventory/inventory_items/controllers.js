@@ -37,27 +37,46 @@ async function create(req, res) {
     }
 }
 
-async function getById(req, res) {
+// async function getById(req, res) {
+//     try {
+//         const item = await inventoryitemService.getById(parseInt(req.params.id));
+//         if (!item) {
+//             return res.status(404).send("Inventory item not found");
+//         }
+//         res.json(item);
+//     } catch (error) {
+//         console.error('Error in getInventoryItemById:', error);
+//         res.status(500).json({ error: error.message });
+//     }
+// }
+
+async function recordPrevious(req, res) {
     try {
-        const item = await inventoryitemService.getById(parseInt(req.params.id));
-        if (!item) {
-            return res.status(404).send("Inventory item not found");
-        }
-        res.json(item);
+        const updatedItem = await inventoryitemService.recordPrevious(req.body);
+        res.json(updatedItem);
     } catch (error) {
-        console.error('Error in getInventoryItemById:', error);
+        console.error('Error in recordPreviousInventoryItem:', error);
         res.status(500).json({ error: error.message });
     }
 }
 
-async function update(req, res) {
-    const itemId = parseInt(req.params.id, 10);
-
+async function getPreviousRecords(req, res) {
     try {
-        const updatedItem = await inventoryitemService.update(itemId, req.body);
-        res.json(updatedItem);
+        const branchId = parseInt(req.query.branchId);
+        const month = parseInt(req.query.month);
+        const year = parseInt(req.query.year);
+        console.log('Received branchId:', branchId, 'month:', month, 'year:', year);
+        if (isNaN(branchId)) {
+            return res.status(400).json({ error: 'Invalid or missing branchId parameter.' });
+        }
+
+        const items = await inventoryitemService.getPreviousRecords(branchId, month, year);
+        if (items.length === 0) {
+            return res.status(204).send("No previous inventory records found for the specified branch");
+        }
+        res.json(items);
     } catch (error) {
-        console.error('Error in updateInventoryItem:', error);
+        console.error('Error in getPreviousInventoryRecords:', error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -65,6 +84,7 @@ async function update(req, res) {
 module.exports = {
     getAll,
     create,
-    getById,
-    update
+    // getById,
+    recordPrevious,
+    getPreviousRecords
 };

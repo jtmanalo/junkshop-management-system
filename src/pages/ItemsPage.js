@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import { useMatch } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
+import moment from 'moment-timezone';
 
 function ItemsPage() {
     const { token, user } = useAuth();
@@ -41,6 +42,16 @@ function ItemsPage() {
         newPrice: ''
     });
     const [showEditItemModal, setShowEditItemModal] = useState(false);
+    const [showAddPreviousPricelistModal, setShowAddPreviousPricelistModal] = useState(false);
+    const [historicalEffectiveDate, setHistoricalEffectiveDate] = useState(moment().tz('Asia/Manila').format('YYYY-MM-DD'));
+    const [historicalItemsList, setHistoricalItemsList] = useState([]);
+
+    // Reset date when modal is opened
+    const handleOpenAddPreviousPricelistModal = () => {
+        setHistoricalEffectiveDate(moment().tz('Asia/Manila').format('YYYY-MM-DD'));
+        setShowAddPreviousPricelistModal(true);
+    };
+
 
     const fetchItemsforItemTable = useCallback(() => {
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items`)
@@ -97,8 +108,20 @@ function ItemsPage() {
         if (!branchId) return;
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?branchId=${branchId}`)
             .then(response => {
-                setAllItemsList(response.data);
-                console.log('All items with prices:', response.data); // Log the fetched items
+                const items = response.data;
+                console.log('Raw API response:', items);
+                setAllItemsList(items);
+                // Also update historicalItemsList with the fetched items, keeping current price and adding historical price field
+                const mappedItems = items.map(item => {
+                    console.log('Mapping item:', item);
+                    return {
+                        ...item,
+                        currentPrice: item.ItemPrice || item.price,  // Store the current price
+                        historicalPrice: 0  // Initialize historical price to 0
+                    };
+                });
+                setHistoricalItemsList(mappedItems);
+                console.log('historicalItemsList updated:', mappedItems);
             })
             .catch(error => {
                 console.error('Error fetching all items:', error);
@@ -169,10 +192,11 @@ function ItemsPage() {
             return;
         }
 
-        axios.post(`${process.env.REACT_APP_BASE_URL}/api/items`, newItem, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+        console.log('userId for new item:', user?.userID);
+
+        axios.post(`${process.env.REACT_APP_BASE_URL}/api/items`, {
+            ...newItem,
+            userId: user?.userID,
         })
             .then(response => {
                 console.log('Item added successfully:', response.data);
@@ -257,6 +281,7 @@ function ItemsPage() {
     const handleUpdatePricelistItem = (index) => {
         const item = allItemsList[index]; // Use allItemsList instead of pricelistItems
         axios.post(`${process.env.REACT_APP_BASE_URL}/api/pricelist-items/update`, {
+            userId: user?.userID,
             branchId: selectedBranchForPricelist,
             itemId: item.id, // Ensure itemID is used
             price: item.price // Send the updated price
@@ -379,6 +404,64 @@ function ItemsPage() {
         }
     };
 
+    const handleUploadHistoricalPrices = async () => {
+        const branchId = selectedBranchForPricelist;
+        const userId = user?.userID;
+        console.log('Uploading historical prices for branchId:', branchId, 'date:', historicalEffectiveDate, 'userId:', userId);
+        console.log('historicalItemsList before upload:', historicalItemsList);
+
+        if (!branchId || !historicalEffectiveDate || !userId) {
+            setErrors({ general: 'Branch, date, and user ID are required.' });
+            return;
+        }
+
+        const pricesToUpload = historicalItemsList
+            .filter(item => parseFloat(item.historicalPrice) > 0)
+            .map(item => {
+                console.log('Item being mapped:', item, 'ItemID:', item.id);
+                return {
+                    itemId: item.id,
+                    price: parseFloat(item.historicalPrice),
+                };
+            });
+
+        console.log('pricesToUpload:', pricesToUpload);
+
+        if (pricesToUpload.length === 0) {
+            setErrors({ general: 'Please enter at least one price greater than zero.' });
+            return;
+        }
+
+        try {
+            await axios.post(`${process.env.REACT_APP_BASE_URL}/api/pricelist/upload-historical`, {
+                userId,
+                entityId: branchId,
+                entityType: 'branch',
+                dateEffective: historicalEffectiveDate,
+                prices: pricesToUpload,
+            });
+
+            setSuccessMessage("Previous pricelist uploaded successfully!");
+            setShowSuccessAlert(true);
+            setTimeout(() => setShowSuccessAlert(false), 5000); // Auto-hide after 3 seconds
+
+            setErrors({});
+            setShowAddPreviousPricelistModal(false);
+
+        } catch (e) {
+            console.error('Error uploading historical prices:', e.response?.data || e.message);
+            setErrors({ general: e.response?.data?.message || 'Failed to upload history. Check server logs.' });
+        }
+    };
+
+    const handleHistoricalPriceChange = (index, value) => {
+        setHistoricalItemsList(prevItems => {
+            const updatedItems = [...prevItems];
+            updatedItems[index].historicalPrice = value;
+            return updatedItems;
+        });
+    };
+
     return (
         <div>
             <div className="container-fluid" style={{ maxWidth: '90vw' }}>
@@ -484,9 +567,14 @@ function ItemsPage() {
                                             </Form.Group>
                                         </Form>
                                         {!isEmployee && (
-                                            <Button variant="outline-dark" onClick={() => setShowEditPricelistModal(true)}>
-                                                Edit Branch Pricelist
-                                            </Button>
+                                            <div className="d-flex gap-2">
+                                                <Button variant="outline-primary" onClick={() => setShowEditPricelistModal(true)}>
+                                                    Edit Branch Pricelist
+                                                </Button>
+                                                <Button variant="outline-dark" onClick={handleOpenAddPreviousPricelistModal}>
+                                                    Add Previous Pricelist
+                                                </Button>
+                                            </div>
                                         )}
                                     </div>
                                     <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
@@ -635,7 +723,7 @@ function ItemsPage() {
                             <tbody>
                                 {allItemsList.map((item, index) => (
                                     <tr key={item.id || `item-${index}`}>
-                                        {console.log('Rendering item:', item, "itemID:", item.id)}
+                                        {/* {console.log('Rendering item:', item, "itemID:", item.id)} */}
                                         <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
                                         <td>
                                             <Form.Control
@@ -779,6 +867,105 @@ function ItemsPage() {
                     </Button>
                     <Button variant="primary" onClick={handleEditItemSubmit}>
                         Save Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            <Modal show={showAddPreviousPricelistModal} onHide={() => {
+                setShowAddPreviousPricelistModal(false);
+                setSelectedBranchForPricelist('');
+                setHistoricalItemsList([]);
+                setHistoricalEffectiveDate(moment().tz('Asia/Manila').format('YYYY-MM-DD'));
+                setErrors({});
+            }}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Add Previous Pricelist</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {errors.general && <Alert variant="danger">{errors.general}</Alert>}
+
+                    <Form>
+                        <div className="d-flex mb-3 gap-3">
+                            <Form.Group controlId="branchSelectHistory" style={{ flex: 1 }}>
+                                <Form.Label>Branch</Form.Label>
+                                <Form.Select
+                                    value={selectedBranchForPricelist}
+                                    onChange={e => {
+                                        const branchId = e.target.value;
+                                        setSelectedBranchForPricelist(branchId);
+                                        console.log('Selected branch for historical pricelist:', branchId);
+                                        // Load all items here for editing prices
+                                        fetchAllItems(branchId);
+                                    }}
+                                >
+                                    <option value="">Select a branch</option>
+                                    {branches.filter(branch => branch.id !== '').map(branch => (
+                                        <option key={branch.id} value={branch.id}>{branch.displayName}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+
+                            <Form.Group controlId="dateSelectHistory" style={{ flex: 1 }}>
+                                <Form.Label>Effective Date</Form.Label>
+                                <Form.Control
+                                    type="date"
+                                    value={historicalEffectiveDate}
+                                    onChange={e => setHistoricalEffectiveDate(e.target.value)}
+                                    max={moment().tz('Asia/Manila').format('YYYY-MM-DD')} // Cannot select future dates
+                                    required
+                                />
+                                <Form.Text muted>Must be a past or current date.</Form.Text>
+                            </Form.Group>
+                        </div>
+
+                        {/* Table for editing prices */}
+                        <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
+                            <Table striped bordered hover size="sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Current Price</th>
+                                        <th>Historical Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {console.log('historicalItemsList in render:', historicalItemsList, 'length:', historicalItemsList.length)}
+                                    {historicalItemsList.length === 0 ? (
+                                        <tr><td colSpan="3" className="text-center">Select a branch to load items.</td></tr>
+                                    ) : (
+                                        historicalItemsList.map((item, index) => (
+                                            <tr key={item.ItemID || item.id}>
+                                                <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
+                                                <td>{item.currentPrice || 'N/A'}</td> {/* Current Price */}
+                                                <td>
+                                                    <Form.Control
+                                                        type="number"
+                                                        placeholder="Enter historical price"
+                                                        value={item.historicalPrice || ''}
+                                                        onChange={e => {
+                                                            const value = parseFloat(e.target.value) || 0;
+                                                            setHistoricalItemsList(prevItems => {
+                                                                const updatedItems = [...prevItems];
+                                                                updatedItems[index].historicalPrice = value;
+                                                                return updatedItems;
+                                                            });
+                                                        }}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </Table>
+                        </div>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowAddPreviousPricelistModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleUploadHistoricalPrices}>
+                        Upload
                     </Button>
                 </Modal.Footer>
             </Modal>

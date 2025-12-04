@@ -8,6 +8,8 @@ router.get('/pricelist-items', pricelistitemController.getAll);
 // Create a pricelist item
 router.post('/pricelist-items', pricelistitemController.create);
 
+router.post('/pricelist/upload-historical', pricelistitemController.uploadHistoricalPrices);
+
 // Get pricelist item by ID
 // router.get('/pricelist-items/:id', pricelistitemController.getById);
 

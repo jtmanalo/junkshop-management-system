@@ -170,6 +170,13 @@ async function login(req, res) {
         // Generate JWT token
         const token = jwt.sign({ id: user.UserID, email: user.Email }, JWT_SECRET, { expiresIn: '7d' });
 
+        // Log the login activity
+        await userService.createActivityLog({
+            userId: user.UserID,
+            activityType: 'login',
+            description: `User ${user.Username} logged in.`,
+        });
+
         res.json({ message: 'Login successful', token, userType: user.UserType, username: user.Username, defaultBranchID: user.BranchID, branchName: user.BranchName, branchLocation: user.BranchLocation, userID: user.UserID });
     } catch (error) {
         console.error('Error during login:', error);
@@ -244,6 +251,12 @@ async function updateUser(req, res) {
 
         // Call the service to update the user
         const updatedUser = await userService.update(userId, updateData);
+
+        await userService.createActivityLog({
+            userId: userId,
+            activityType: 'update',
+            description: `User ${username} updated their profile.`,
+        });
 
         res.json({ message: 'User updated successfully', user: updatedUser });
     } catch (error) {
@@ -355,6 +368,25 @@ If you did not request this, please ignore this email.`
     }
 }
 
+async function logout(req, res) {
+    const userId = req.params.userId;
+    const { username } = req.body;
+
+    try {
+        // Log the logout activity
+        await userService.createActivityLog({
+            userId: userId,
+            activityType: 'logout',
+            description: `User ${username} logged out.`,
+        });
+
+        res.json({ message: 'Logout successful' });
+    } catch (error) {
+        console.error('Error during logout:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     register,
@@ -367,5 +399,6 @@ module.exports = {
     getUserDetails,
     getDetails,
     updateUser,
-    approveReject
+    approveReject,
+    logout
 };

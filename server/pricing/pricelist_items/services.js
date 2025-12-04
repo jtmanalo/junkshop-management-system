@@ -143,10 +143,13 @@ async function getItemsWithPricesForBranch(branchId) {
     }
 }
 
-async function updateOrCreatePricelistItemForBranch(branchId, itemId, price) {
+async function updateOrCreatePricelistItemForBranch(userId, branchId, itemId, price) {
     let conn;
     try {
         conn = await pool.getConnection();
+
+        const manilaTimestamp = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        await conn.query('SET @current_user_id = ?', [userId]);
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
@@ -179,14 +182,14 @@ async function updateOrCreatePricelistItemForBranch(branchId, itemId, price) {
         if (pricelistItem) {
             // Update the existing pricelist_item
             await conn.query(
-                'UPDATE pricelist_item SET Price = ? WHERE PriceListID = ? AND ItemID = ?',
-                [price, priceListId, itemId]
+                'UPDATE pricelist_item SET Price = ?, UpdatedAt = ? WHERE PriceListID = ? AND ItemID = ?',
+                [price, manilaTimestamp, priceListId, itemId]
             );
         } else {
             // Create a new pricelist_item
             await conn.query(
-                'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt) VALUES (?, ?, ?, ?)',
-                [priceListId, itemId, price, createdAt]
+                'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?)',
+                [priceListId, itemId, price, createdAt, manilaTimestamp]
             );
         }
 
@@ -198,10 +201,13 @@ async function updateOrCreatePricelistItemForBranch(branchId, itemId, price) {
     }
 }
 
-async function updateOrCreatePricelistItemForBuyer(buyerId, itemId, price) {
+async function updateOrCreatePricelistItemForBuyer(userId, buyerId, itemId, price) {
     let conn;
     try {
         conn = await pool.getConnection();
+
+        const manilaTimestamp = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        await conn.query('SET @current_user_id = ?', [userId]);
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
@@ -234,14 +240,14 @@ async function updateOrCreatePricelistItemForBuyer(buyerId, itemId, price) {
         if (pricelistItem) {
             // Update the existing pricelist_item
             await conn.query(
-                'UPDATE pricelist_item SET Price = ? WHERE PriceListID = ? AND ItemID = ?',
-                [price, priceListId, itemId]
+                'UPDATE pricelist_item SET Price = ?, UpdatedAt = ? WHERE PriceListID = ? AND ItemID = ?',
+                [price, manilaTimestamp, priceListId, itemId]
             );
         } else {
             // Create a new pricelist_item
             await conn.query(
-                'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt) VALUES (?, ?, ?, ?)',
-                [priceListId, itemId, price, createdAt]
+                'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?)',
+                [priceListId, itemId, price, createdAt, manilaTimestamp]
             );
         }
 
@@ -253,6 +259,58 @@ async function updateOrCreatePricelistItemForBuyer(buyerId, itemId, price) {
     }
 }
 
+async function processHistoricalUpload(userId, entityId, entityType, dateEffective, prices) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        console.log('Processing historical upload with data:', { userId, entityId, entityType, dateEffective });
+
+        // Start Transaction
+        await conn.query('START TRANSACTION');
+
+        // Set UserID session variable (although trigger won't fire on INSERT, it's good practice)
+        await conn.query('SET @current_user_id = ?', [userId]);
+
+        // 1. Create the NEW Historical Pricelist Header
+        let headerSql;
+        let headerValues;
+
+        if (entityType === 'branch') {
+            headerSql = 'INSERT INTO pricelist (BranchID, DateEffective) VALUES (?, ?)';
+            headerValues = [entityId, dateEffective];
+        } else if (entityType === 'buyer') {
+            headerSql = 'INSERT INTO pricelist (BuyerID, DateEffective) VALUES (?, ?)';
+            headerValues = [entityId, dateEffective];
+        } else {
+            throw new Error('Invalid entity type.');
+        }
+
+        const headerResult = await conn.query(headerSql, headerValues);
+        const priceListId = headerResult.insertId;
+
+        // 2. Insert each pricelist item individually
+        const manilaTimestamp = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+
+        for (const price of prices) {
+            await conn.query(
+                'INSERT INTO pricelist_item (PriceListID, ItemID, Price, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?)',
+                [priceListId, price.itemId, price.price, manilaTimestamp, manilaTimestamp]
+            );
+        }
+
+        // 3. Commit the transaction
+        await conn.query('COMMIT');
+
+    } catch (error) {
+        // Rollback on any failure (critical for data integrity)
+        await conn.query('ROLLBACK');
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 module.exports = {
     getAll,
     create,
@@ -260,5 +318,6 @@ module.exports = {
     // update,
     getItemsWithPricesForBranch,
     updateOrCreatePricelistItemForBranch,
-    updateOrCreatePricelistItemForBuyer
+    updateOrCreatePricelistItemForBuyer,
+    processHistoricalUpload
 };

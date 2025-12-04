@@ -24,5 +24,8 @@ router.get('/items/:id', itemController.getById);
 
 // Update an item
 router.put('/items/:id', itemController.update);
+ 
+// New: daily accumulation per item for a given branch/month/year
+router.get('/items/daily-accumulation', itemController.getDailyAccumulation);
 
 module.exports = router;

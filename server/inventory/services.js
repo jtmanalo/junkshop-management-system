@@ -1,6 +1,36 @@
 const pool = require('../db');
 const moment = require('moment-timezone');
 
+
+async function ensureMonthlyInventoryForAllBranches(targetDate) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const monthStart = moment(targetDate || moment().tz('Asia/Manila'))
+            .tz('Asia/Manila')
+            .startOf('month')
+            .format('YYYY-MM-01');
+
+        const branches = await conn.query('SELECT BranchID FROM branch');
+        for (const branch of branches) {
+            const branchId = branch.BranchID || branch.id || branch.Id || branch.ID;
+            if (!branchId) continue;
+            const existing = await conn.query('SELECT InventoryID FROM inventory WHERE BranchID = ? AND Date = ?', [branchId, monthStart]);
+            if (existing.length === 0) {
+                await conn.query(
+                    'INSERT INTO inventory (BranchID, Date, CreatedAt) VALUES (?, ?, ?)',
+                    [branchId, monthStart, moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss')]
+                );
+            }
+        }
+        return { ensuredDate: monthStart, count: branches.length };
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+// Export at end of file after function declarations
+
 async function getAll() {
     let conn;
     try {
@@ -135,10 +165,43 @@ async function update(inventoryId, data) {
         if (conn) conn.release();
     }
 }
+
+async function fetchDailyChanges(branchId, year, month) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(`
+            SELECT
+                ii.ItemID,
+                DAY(ii.CreatedAt) AS day_of_month,
+                ii.TotalQuantity AS change_amount
+            FROM
+                inventory_item ii
+            JOIN
+                inventory inv ON ii.InventoryID = inv.InventoryID
+            WHERE
+                inv.BranchID = ?
+                AND YEAR(inv.Date) = ?
+                AND MONTH(inv.Date) = ?
+            ORDER BY
+                ii.ItemID, day_of_month;
+    `, [branchId, year, month]);
+
+        return rows;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error; // Throw to be caught by the controller
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
 module.exports = {
+    ensureMonthlyInventoryForAllBranches,
     getAll,
+    getBranchInventory,
     create,
     getById,
     update,
-    getBranchInventory
+    fetchDailyChanges
 };

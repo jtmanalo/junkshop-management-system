@@ -138,8 +138,10 @@ async function create(req, res) {
         description,
         unitOfMeasurement,
         classification,
+        userId
     } = req.body;
 
+    console.log('Create item request body:', req.body);
     if (!name || !unitOfMeasurement) {
         return res.status(400).json({ error: 'Name and UnitOfMeasurement are required' });
     }
@@ -151,6 +153,16 @@ async function create(req, res) {
             classification,
             description
         });
+
+        // Get username for activity log
+        const username = await itemService.getUsernameById(userId);
+
+        await itemService.createActivityLog({
+            userId: userId,
+            activityType: 'create',
+            description: `Item ${name} created by user ${username}.`,
+        });
+
         res.status(201).json(item);
     } catch (error) {
         console.error('Error in createItem:', error);
@@ -194,6 +206,14 @@ async function updateItemPriceForBranch(req, res) {
 
     try {
         const result = await itemService.updateItemPriceForBranch(branchId, itemId, itemPrice, userId);
+
+        // const username = await itemService.getUsernameById(userId);
+
+        // await itemService.createActivityLog({
+        //     userId: userId,
+        //     activityType: 'update',
+        //     description: `User ${username} updated price for ItemID ${itemId} in BranchID ${branchId} to ${itemPrice}.`,
+        // });
         res.status(200).json(result);
     } catch (error) {
         console.error('Error in updateItemPriceForBranch:', error);
@@ -217,6 +237,23 @@ async function updateItemPriceForBuyer(req, res) {
     }
 }
 
+// New: Get daily accumulation per item for a branch/month/year
+async function getDailyAccumulation(req, res) {
+    const { branchId, year, month } = req.query;
+
+    if (!branchId || !year || !month) {
+        return res.status(400).json({ error: 'branchId, year and month are required' });
+    }
+
+    try {
+        const result = await itemService.getDailyAccumulation({ branchId: parseInt(branchId, 10), year: parseInt(year, 10), month: parseInt(month, 10) });
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error in getDailyAccumulation:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAllItemsWithPricing,
     getAllItems,
@@ -228,6 +265,7 @@ module.exports = {
     updateItemPriceForBranch,
     updateItemPriceForBuyer,
     getItemsWithPrice,
-    getItemsOfBuyerWithPrice
+    getItemsOfBuyerWithPrice,
+    getDailyAccumulation
     // remove
 };

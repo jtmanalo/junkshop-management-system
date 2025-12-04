@@ -61,7 +61,15 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    const logOut = () => {
+    const logOut = async () => {
+        try {
+            await axios.post(`${process.env.REACT_APP_BASE_URL}/api/logout/${user?.userID}`, {
+                username: user?.username
+            });
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
+
         setUser(null);
         setToken("");
         localStorage.removeItem("site");

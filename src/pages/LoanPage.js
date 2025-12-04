@@ -215,6 +215,7 @@ function LoanPage() {
                 {
                     name: newSellerName,
                     contactNumber: newSellerContact || null, // Allow empty contact number
+                    userId: user?.userID,
                 },
                 {
                     headers: {

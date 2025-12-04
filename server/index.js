@@ -5,6 +5,8 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const cron = require('node-cron');
+const inventorySvc = require('./inventory/services');
 
 // Initialize the Express app
 const app = express();
@@ -53,12 +55,22 @@ const itemRoutes = require('./inventory/items/routes');
 const transactionRoutes = require('./transactions/routes');
 const pricelistRoutes = require('./pricing/routes');
 const pricelistitemRoutes = require('./pricing/pricelist_items/routes');
+// Cron job: ensure monthly inventory for all branches at midnight on 1st day
+cron.schedule('0 0 4 * *', async () => {
+    try {
+        await inventorySvc.ensureMonthlyInventoryForAllBranches();
+        console.log('[cron] Ensured monthly inventory for all branches');
+    } catch (err) {
+        console.error('[cron] Failed to ensure monthly inventory:', err);
+    }
+}, {
+    timezone: 'Asia/Manila'
+});
 const inventoryRoutes = require('./inventory/routes');
 const inventoryitemRoutes = require('./inventory/inventory_items/routes');
 const shiftRoutes = require('./employees/shifts/routes');
 const shiftemployeeRoutes = require('./employees/shift_employees/routes');
 const pricelistactivityRoutes = require('./pricing/pricelist_activity/routes');
-const activitylogRoutes = require('./activity_logs/routes');
 
 app.use('/api', userRoutes);
 app.use('/api', employeeRoutes);
@@ -75,7 +87,6 @@ app.use('/api', inventoryitemRoutes);
 app.use('/api', shiftRoutes);
 app.use('/api', shiftemployeeRoutes);
 app.use('/api', pricelistactivityRoutes);
-app.use('/api', activitylogRoutes);
 
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Server is connected to the frontend!' });

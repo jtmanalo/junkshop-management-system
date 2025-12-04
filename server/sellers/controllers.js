@@ -18,7 +18,8 @@ async function getAll(req, res) {
 async function create(req, res) {
     const {
         name,
-        contactNumber
+        contactNumber,
+        userId
     } = req.body;
 
     if (!name) {
@@ -30,6 +31,15 @@ async function create(req, res) {
             name,
             contactNumber
         });
+
+        const username = await sellerService.getUsernameById(userId);
+
+        await sellerService.createActivityLog({
+            userId: userId,
+            activityType: 'create',
+            description: `Seller ${name} created by user ${username}.`,
+        });
+
         res.status(201).json(seller);
     } catch (error) {
         console.error('Error in createSeller:', error);

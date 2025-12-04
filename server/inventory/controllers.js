@@ -77,10 +77,34 @@ async function update(req, res) {
     }
 }
 
+async function getDailyInventoryChanges(req, res) {
+    // 1. Extract and sanitize query parameters from the Axios request
+    const { branchId, year, month } = req.query;
+    console.log('Received daily inventory changes request with params:', req.query);
+
+    if (!branchId || !year || !month) {
+        return res.status(400).json({ message: 'Missing report parameters.' });
+    }
+
+    try {
+        // 2. Delegate to the service layer
+        const rawInventoryData = await inventoryService.fetchDailyChanges(branchId, year, month);
+
+        // 3. Send the raw, un-pivoted data array back to the frontend
+        res.status(200).json(rawInventoryData);
+
+    } catch (error) {
+        console.error('Error fetching inventory:', error);
+        res.status(500).json({ message: 'Internal server error while fetching data.' });
+    }
+};
+
+
 module.exports = {
     getAll,
     create,
     getById,
     update,
-    getBranchInventory
+    getBranchInventory,
+    getDailyInventoryChanges
 };

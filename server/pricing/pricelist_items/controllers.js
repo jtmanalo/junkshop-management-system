@@ -1,4 +1,5 @@
 const pricelistitemService = require('./services');
+const moment = require('moment-timezone');
 
 // Get all pricelist items
 async function getAll(req, res) {
@@ -86,14 +87,14 @@ async function getItemsWithPricesForBranch(req, res) {
 
 // Update or create a pricelist item
 async function updateOrCreatePricelistItemForBranch(req, res) {
-    const { branchId, itemId, price } = req.body;
+    const { userId, branchId, itemId, price } = req.body;
 
     if (!branchId || !itemId || price === undefined) {
         return res.status(400).json({ error: 'BranchID, ItemID, and Price are required.' });
     }
 
     try {
-        const result = await pricelistitemService.updateOrCreatePricelistItemForBranch(branchId, itemId, price);
+        const result = await pricelistitemService.updateOrCreatePricelistItemForBranch(userId, branchId, itemId, price);
         res.json(result);
     } catch (error) {
         console.error('Error in updateOrCreatePricelistItem:', error);
@@ -102,20 +103,45 @@ async function updateOrCreatePricelistItemForBranch(req, res) {
 }
 
 async function updateOrCreatePricelistItemForBuyer(req, res) {
-    const { buyerId, itemId, price } = req.body;
+    const { userId, buyerId, itemId, price } = req.body;
+    console.log('Received data:', { userId, buyerId, itemId, price });
 
     if (!buyerId || !itemId || price === undefined) {
         return res.status(400).json({ error: 'BuyerID, ItemID, and Price are required.' });
     }
 
     try {
-        const result = await pricelistitemService.updateOrCreatePricelistItemForBuyer(buyerId, itemId, price);
+        const result = await pricelistitemService.updateOrCreatePricelistItemForBuyer(userId, buyerId, itemId, price);
         res.json(result);
     } catch (error) {
         console.error('Error in updateOrCreatePricelistItem:', error);
         res.status(500).json({ error: error.message });
     }
 }
+
+async function uploadHistoricalPrices(req, res) {
+    const { userId, entityId, entityType, dateEffective, prices } = req.body;
+
+    if (!entityId || !entityType || !dateEffective || !prices || prices.length === 0) {
+        return res.status(400).json({ message: 'Missing required price data.' });
+    }
+
+    // IMPORTANT: Check if the dateEffective is NOT today/future.
+    const today = moment().tz('Asia/Manila').format('YYYY-MM-DD');
+
+    if (moment(dateEffective).isAfter(today)) {
+        return res.status(400).json({ message: 'Historical date cannot be in the future.' });
+    }
+
+    try {
+        await pricelistitemService.processHistoricalUpload(userId, entityId, entityType, dateEffective, prices);
+        res.status(200).json({ message: 'Historical price list created successfully.' });
+    } catch (error) {
+        console.error('Historical upload failed:', error);
+        res.status(500).json({ message: 'Failed to process historical price data.' });
+    }
+};
+
 
 module.exports = {
     getAll,
@@ -124,5 +150,6 @@ module.exports = {
     // update,
     getItemsWithPricesForBranch,
     updateOrCreatePricelistItemForBranch,
-    updateOrCreatePricelistItemForBuyer
+    updateOrCreatePricelistItemForBuyer,
+    uploadHistoricalPrices
 };

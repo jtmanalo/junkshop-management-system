@@ -118,10 +118,58 @@ async function remove(sellerId) {
     }
 }
 
+async function createActivityLog(data) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Convert LoggedAt to UTC+8 before inserting
+        const loggedAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+
+        const result = await conn.query(
+            'INSERT INTO activity_log (UserID,' + (data.branchId ? ' BranchID,' : '') + ' ActivityType, Description, LoggedAt) VALUES (?,' + (data.branchId ? '?, ' : '') + '?, ?, ?)',
+            data.branchId ?
+                [
+                    data.userId,
+                    data.branchId,
+                    data.activityType,
+                    data.description,
+                    loggedAt,
+                ] : [
+                    data.userId,
+                    data.activityType,
+                    data.description,
+                    loggedAt,
+                ]
+        );
+        return { id: result.insertId, ...data, loggedAt };
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getUsernameById(userId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query('SELECT Username FROM user WHERE UserID = ?', [userId]);
+        return rows[0]?.Username || 'Unknown User';
+    } catch (error) {
+        console.error('Error fetching username:', error);
+        return 'Unknown User';
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
     getById,
     update,
-    remove
+    remove,
+    createActivityLog,
+    getUsernameById
 };
