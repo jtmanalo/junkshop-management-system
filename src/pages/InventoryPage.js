@@ -19,6 +19,28 @@ function InventoryPage() {
     const [modalItems, setModalItems] = useState([]);
     const [yearsOptions, setYearsOptions] = useState([]);
     const [updatedStatus, setUpdatedStatus] = useState({}); // { [itemId]: true }
+    const [itemPrices, setItemPrices] = useState({});
+
+    const fetchPricesForBranch = async (branchId) => {
+        if (!branchId) return;
+
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pricelist-items/branch`, {
+                params: { branchId }
+            });
+
+            const priceMap = {};
+            (response.data || []).forEach(item => {
+                priceMap[item.ItemID] = parseFloat(item.ItemPrice) || 0;
+            });
+
+            setItemPrices(priceMap);
+            console.log('Prices fetched for branch:', branchId, priceMap);
+        } catch (error) {
+            console.error('Error fetching prices for branch:', error);
+            // Keep default prices if fetch fails
+        }
+    };
 
     useEffect(() => {
         const fetchBranches = async () => {
@@ -48,6 +70,15 @@ function InventoryPage() {
                 }));
                 setAllItems(allItemsData);
                 setFilteredItems(allItemsData); // Initially populate with all items
+
+                // Initialize prices as empty, will be fetched when branch changes
+                const initialPrices = {};
+                allItemsData.forEach(item => {
+                    // TODO: Replace 100 with a value fetched from the database (e.g., pricelist_item.GuidePrice)
+                    initialPrices[item.ItemID] = 0;
+                });
+                setItemPrices(initialPrices);
+
             } catch (error) {
                 console.error('Error fetching all items:', error);
             }
@@ -106,6 +137,11 @@ function InventoryPage() {
         fetchAllItems();
         fetchItems();
     }, []);
+
+    useEffect(() => {
+        // Fetch prices whenever branch changes
+        fetchPricesForBranch(branchFilter);
+    }, [branchFilter]);
 
     useEffect(() => {
         const fetchAndFilter = async () => {
@@ -307,6 +343,13 @@ function InventoryPage() {
 
     const prevMonthName = getHeaderMonthName();
 
+    const handlePriceChange = (itemId, price) => {
+        setItemPrices(prevPrices => ({
+            ...prevPrices,
+            [itemId]: price,
+        }));
+    };
+
     return (
         <div>
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -375,6 +418,9 @@ function InventoryPage() {
                 filteredItems={filteredItems}
                 monthFilter={monthFilter}
                 yearFilter={yearFilter}
+                itemPrices={itemPrices}
+                handlePriceChange={handlePriceChange}
+            // fetchBestSellDetails={fetchBestSellDetails}
             />
 
             <Modal show={showModal} onHide={() => setShowModal(false)}>

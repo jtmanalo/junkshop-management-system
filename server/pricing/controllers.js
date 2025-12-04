@@ -117,6 +117,29 @@ async function getDailyMetrics(req, res) {
     }
 }
 
+async function getBestSellPrice(req, res) {
+    const { itemId } = req.query;
+
+    if (!itemId) {
+        return res.status(400).json({ error: 'itemId is a required query parameter.' });
+    }
+
+    try {
+        const bestPrice = await pricelistService.fetchBestSellPrice(itemId);
+        if (!bestPrice) {
+            return res.json({
+                ItemID: itemId,
+                BestBuyerName: 'No Price List Found',
+                BestBuyerPrice: 0.00
+            });
+        }
+        res.json({ bestSellPrice: bestPrice });
+    } catch (error) {
+        console.error('Error in getBestSellPrice:', error);
+        res.status(500).json({ error: 'Failed to retrieve best sell price due to server error.' });
+    }
+}
+
 
 module.exports = {
     getAll,
@@ -125,6 +148,7 @@ module.exports = {
     update,
     getPriceTrendController,
     getNetIncomeTrendController,
-    getDailyMetrics
+    getDailyMetrics,
+    getBestSellPrice
 };
 

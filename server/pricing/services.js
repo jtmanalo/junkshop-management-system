@@ -1,5 +1,6 @@
 const pool = require('../db');
 const moment = require('moment-timezone');
+const { get } = require('./routes');
 
 async function getAll() {
     let conn;
@@ -327,6 +328,73 @@ async function fetchDailyMetrics() {
     }
 }
 
+async function fetchBestSellPrice(itemId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // 1. Find the MAX DateEffective for each Buyer
+        // 2. Filter the pricelist_item based on that most recent, active pricelist
+        // 3. Select the TOP price.
+        const sql = `
+            SELECT 
+                pli.ItemID,
+                b.CompanyName AS BestBuyerName,
+                pli.Price AS BestBuyerPrice
+            FROM 
+                pricelist_item pli
+            JOIN 
+                item i ON pli.ItemID = i.ItemID
+            JOIN 
+                pricelist pl ON pli.PriceListID = pl.PriceListID
+            JOIN 
+                buyer b ON pl.BuyerID = b.BuyerID
+            WHERE 
+                -- 1. Filter by the specific Item
+                pli.ItemID = ?
+                -- 2. Filter by Active Buyers
+                AND b.Status = 'active'
+                -- 3. Ensure we only use the most recent PriceList for each Buyer
+                AND pl.PriceListID = (
+                    SELECT 
+                        pl_sub.PriceListID 
+                    FROM 
+                        pricelist pl_sub
+                    WHERE 
+                        pl_sub.BuyerID = pl.BuyerID
+                        AND pl_sub.BranchID IS NULL -- Only consider Buyer PriceLists (where BranchID is NULL)
+                    ORDER BY 
+                        pl_sub.DateEffective DESC, 
+                        pl_sub.CreatedAt DESC
+                    LIMIT 1
+                )
+            ORDER BY 
+                pli.Price DESC  -- Order by price descending
+            LIMIT 1;            -- Get the single highest price
+        `;
+
+        const rows = await conn.query(sql, [itemId]);
+
+        if (rows && rows.length > 0) {
+            return {
+                ItemID: rows[0].ItemID,
+                BestBuyerName: rows[0].BestBuyerName,
+                // Ensure the price is returned as a float
+                BestBuyerPrice: parseFloat(rows[0].BestBuyerPrice)
+            };
+        } else {
+            // No valid price found (item not in any active price list)
+            return null;
+        }
+
+    } catch (error) {
+        console.error("SQL Error fetching best sell price:", error);
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -335,5 +403,6 @@ module.exports = {
     createActivityLog,
     getPriceTrend,
     fetchNetIncomeTrend,
-    fetchDailyMetrics
+    fetchDailyMetrics,
+    fetchBestSellPrice
 };
