@@ -311,6 +311,57 @@ async function processHistoricalUpload(userId, entityId, entityType, dateEffecti
     }
 };
 
+async function fetchHistoricalCost(itemId, branchId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const sql = `
+            SELECT
+                ti.ItemID,
+                SUM(ti.Quantity * ti.Price) AS TotalHistoricalCost,
+                SUM(ti.Quantity) AS TotalPurchasedQuantity
+            FROM
+                transaction_item ti
+            JOIN
+                transaction t ON ti.TransactionID = t.TransactionID
+            WHERE
+                ti.ItemID = ?
+                AND t.TransactionType = 'purchase'
+                AND t.BranchID = ?  
+            GROUP BY
+                ti.ItemID;
+        `;
+
+        const rows = await conn.query(sql, [itemId, branchId]);
+
+        if (rows && rows.length > 0) {
+            const row = rows[0];
+            const totalCost = parseFloat(row.TotalHistoricalCost) || 0;
+            const totalQuantity = parseFloat(row.TotalPurchasedQuantity) || 0;
+
+            // Calculate the weighted average cost per unit
+            const WAC = totalQuantity > 0 ? (totalCost / totalQuantity) : 0;
+
+            return {
+                ItemID: itemId,
+                BranchID: branchId,
+                TotalCostPurchased: totalCost.toFixed(2),
+                TotalQuantityPurchased: totalQuantity,
+                WeightedAverageCost: WAC.toFixed(2) // Average cost paid per unit
+            };
+        } else {
+            return null; // Item not found in any purchase transactions
+        }
+
+    } catch (error) {
+        console.error("SQL Error fetching historical cost:", error);
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -319,5 +370,6 @@ module.exports = {
     getItemsWithPricesForBranch,
     updateOrCreatePricelistItemForBranch,
     updateOrCreatePricelistItemForBuyer,
-    processHistoricalUpload
+    processHistoricalUpload,
+    fetchHistoricalCost
 };

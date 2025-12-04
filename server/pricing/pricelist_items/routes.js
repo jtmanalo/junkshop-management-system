@@ -10,6 +10,8 @@ router.post('/pricelist-items', pricelistitemController.create);
 
 router.post('/pricelist/upload-historical', pricelistitemController.uploadHistoricalPrices);
 
+router.get('/historical-cost/:itemId', pricelistitemController.getHistoricalCost);
+
 // Get pricelist item by ID
 // router.get('/pricelist-items/:id', pricelistitemController.getById);
 

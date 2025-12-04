@@ -142,6 +142,34 @@ async function uploadHistoricalPrices(req, res) {
     }
 };
 
+async function getHistoricalCost(req, res) {
+    const itemId = req.params.itemId;
+    const branchId = req.query.branchId;
+
+    if (!itemId || !branchId) {
+        return res.status(400).json({ error: "Item ID and Branch ID are required." });
+    }
+
+    try {
+        const result = await pricelistitemService.fetchHistoricalCost(itemId, branchId);
+
+        if (!result) {
+            return res.json({
+                ItemID: itemId,
+                BranchID: branchId,
+                TotalCostPurchased: '0.00',
+                TotalQuantityPurchased: 0,
+                WeightedAverageCost: '0.00'
+            });
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error(`Error fetching historical cost for item ${itemId}:`, error);
+        res.status(500).json({ error: "Failed to retrieve historical cost data." });
+    }
+};
+
 
 module.exports = {
     getAll,
@@ -151,5 +179,6 @@ module.exports = {
     getItemsWithPricesForBranch,
     updateOrCreatePricelistItemForBranch,
     updateOrCreatePricelistItemForBuyer,
-    uploadHistoricalPrices
+    uploadHistoricalPrices,
+    getHistoricalCost
 };

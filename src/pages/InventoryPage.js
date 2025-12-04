@@ -420,6 +420,7 @@ function InventoryPage() {
                 yearFilter={yearFilter}
                 itemPrices={itemPrices}
                 handlePriceChange={handlePriceChange}
+                branchFilter={branchFilter}
             // fetchBestSellDetails={fetchBestSellDetails}
             />
 

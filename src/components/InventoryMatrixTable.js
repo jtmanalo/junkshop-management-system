@@ -4,9 +4,9 @@ import moment from 'moment-timezone';
 import axios from 'axios';
 
 // Component to render the final table structure based on filteredItems
-function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPrices, handlePriceChange }) {
+function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPrices, handlePriceChange, branchFilter }) {
+    const [historicalCostData, setHistoricalCostData] = useState({}); // { [itemId]: { ...data } }
 
-    // --- Utility Functions (Adapted from your existing code) ---
 
     // 1. Determines the number of days in the selected month
     const generateDailyColumns = () => {
@@ -96,6 +96,116 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
         { title: `${prevMonthName}` }, // Previous month stock (initial balance)
         ...days.map(day => ({ title: `${day}` })), // Daily columns
     ];
+
+    const fetchHistoricalCostDetails = async (itemId, totalStock, lastMonthStock) => {
+        if (historicalCostData[itemId]) {
+            return; // Already fetched
+        }
+
+        // Validate that branchFilter exists before making the API call
+        if (!branchFilter) {
+            console.warn(`Cannot fetch historical cost: branchFilter is empty for ItemID: ${itemId}`);
+            return;
+        }
+
+        // 1. Calculate the imputed cost of the previous month's stock (for data migration)
+        const currentPrice = parseFloat(itemPrices[itemId]) || 0;
+        const initialStock = parseFloat(lastMonthStock) || 0;
+        // Cost of initial stock is [Initial Stock] * [Current Editable Price]
+        // Multiply lastMonthStock by the price in the price column
+        const initialCostImputed = initialStock * currentPrice;
+
+        try {
+            // 2. Fetch the Historical Cost of tracked stock (Filtered by Branch)
+            console.log(`Fetching historical cost for ItemID: ${itemId} at BranchID: ${branchFilter}`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/historical-cost/${itemId}`, {
+                params: {
+                    // Pass the branch filter to the backend
+                    branchId: branchFilter
+                }
+            });
+            const data = response.data;
+
+            console.log('Fetched historical cost data:', data);
+
+            // 3. Calculate the total value and total quantity, including the initial stock
+
+            const historicalCostPurchased = parseFloat(data.TotalCostPurchased) || 0;
+            const quantityPurchased = parseFloat(data.TotalQuantityPurchased) || 0;
+
+            // Total Cost = Tracked Purchase Cost + Imputed Initial Stock Cost
+            const combinedTotalCost = historicalCostPurchased + initialCostImputed;
+            // Total Quantity = Tracked Purchase Quantity + Initial Stock Quantity
+            const combinedTotalQuantity = quantityPurchased + initialStock;
+
+            // Re-calculate the Weighted Average Cost (WAC) with the initial stock included
+            const combinedWAC = combinedTotalQuantity > 0 ? (combinedTotalCost / combinedTotalQuantity) : 0;
+
+            // Final Stock Value = Total Current Stock * Combined WAC
+            const currentStockValue = combinedWAC * totalStock;
+
+            setHistoricalCostData(prev => ({
+                ...prev,
+                [itemId]: {
+                    ...data,
+                    InitialStock: initialStock.toFixed(2),
+                    InitialCostImputed: initialCostImputed.toFixed(2),
+                    CombinedWAC: combinedWAC.toFixed(2),
+                    CurrentStockValue: currentStockValue.toFixed(2),
+                    // Add a note showing that the Imputed Cost was used
+                    WACNote: `Combined Unit Cost includes ${initialStock.toFixed(2)} units of initial stock valued at the editable price of ₱${currentPrice.toFixed(2)}.`
+                }
+            }));
+
+        } catch (error) {
+            console.error('Error fetching historical cost details:', error);
+            setHistoricalCostData(prev => ({
+                ...prev,
+                [itemId]: {
+                    TotalCostPurchased: '0.00',
+                    TotalQuantityPurchased: 0,
+                    WeightedAverageCost: '0.00',
+                    InitialStock: initialStock.toFixed(2),
+                    InitialCostImputed: initialCostImputed.toFixed(2),
+                    CombinedWAC: '0.00',
+                    CurrentStockValue: (currentPrice * totalStock).toFixed(2),
+                    WACNote: `Failed to fetch historical data. Imputed cost used for initial stock of ${initialStock.toFixed(2)} units.`
+                }
+            }));
+        }
+    };
+
+    const renderHistoricalCostPopover = (itemData) => {
+        const data = historicalCostData[itemData.ItemID];
+
+        return (
+            <Popover id={`popover-cost-${itemData.ItemID}`} style={{ maxWidth: '350px' }}>
+                <Popover.Header as="h3">Historical Stock Cost Analysis</Popover.Header>
+                <Popover.Body>
+                    {data ? (
+                        <>
+                            <p>
+                                <strong>Tracked Purchase Cost:</strong> ₱{data.TotalCostPurchased} (for {data.TotalQuantityPurchased} units)<br />
+                                <strong>Initial Stock Imputed Cost:</strong> ₱{data.InitialCostImputed} (for {data.InitialStock} units @ editable price)
+                            </p>
+                            <hr />
+                            <p>
+                                <strong>Combined Unit Cost:</strong> <span style={{ fontSize: '1.1em', fontWeight: 'bold' }}>₱{data.CombinedWAC}</span> per unit
+                            </p>
+                            <p>
+                                <strong>Total Historical Stock Value:</strong>
+                                <br />
+                                <span style={{ fontSize: '1.2em', fontWeight: 'bold', color: '#007bff' }}>₱{data.CurrentStockValue}</span>
+                            </p>
+                            <small className="text-muted">{data.WACNote}</small>
+                        </>
+                    ) : (
+                        <div className="text-center"><Spinner animation="border" size="sm" /> Loading Cost Data...</div>
+                    )}
+                </Popover.Body>
+            </Popover>
+        );
+    };
 
     const renderPopover = (itemData) => {
         const data = hoverData[itemData.ItemID];
@@ -202,9 +312,19 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
                                 </td>
 
                                 {/* 2. Total Stock */}
-                                <td className="text-center table-dark font-weight-bold">
-                                    {finalTotalStock.toFixed(2)}
+                                <td className="text-right table-dark font-weight-bold">
+                                    <OverlayTrigger
+                                        placement="right"
+                                        delay={{ show: 100, hide: 400 }}
+                                        overlay={renderHistoricalCostPopover(itemHoverData)}
+                                        onEnter={() => fetchHistoricalCostDetails(row.ItemID, finalTotalStock)}
+                                    >
+                                        <span className="text-right table-dark font-weight-bold" style={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                                            {finalTotalStock.toFixed(2)}
+                                        </span>
+                                    </OverlayTrigger>
                                 </td>
+
 
                                 {/* 3. Editable Price Column */}
                                 <td>
