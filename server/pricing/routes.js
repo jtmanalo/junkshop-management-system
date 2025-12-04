@@ -18,6 +18,8 @@ router.get('/pricelist/trend', pricelistController.getPriceTrendController);
 
 router.get('/net-income', pricelistController.getNetIncomeTrendController);
 
+router.get('/daily-metrics', pricelistController.getDailyMetrics);
+
 // Delete a pricelist
 // router.delete('/pricelists/:id', pricelistController.remove);
 

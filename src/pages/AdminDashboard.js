@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Card, Row, Col, Form } from 'react-bootstrap';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { TopNav, SideNav } from '../components/NavBar';
@@ -22,146 +22,114 @@ import NetIncomeChart from '../components/NetIncomeChart';
 
 function AdminDashboard() {
     const currentYear = String(moment().year());
+    const [incomeBranchFilter, setIncomeBranchFilter] = useState('2');
     const [incomeYearFilter, setIncomeYearFilter] = useState(currentYear);
     const [incomeChartData, setIncomeChartData] = useState([]);
     const [incomeLoading, setIncomeLoading] = useState(false);
+    const [dynamicMetrics, setDynamicMetrics] = useState(null);
+    const [branches, setBranches] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Example Net Income chart data for current month
-    // const netIncomeChartData = {
-    //     labels: Array.from({ length: 31 }, (_, i) => (i + 1).toString()), // Days 1-31
-    //     datasets: [
-    //         {
-    //             label: 'Net Income (₱)',
-    //             data: [1200, 1500, 1100, 1800, 1700, 1600, 2000, 2100, 1900, 2200, 2300, 2100, 2000, 2500, 2400, 2300, 2200, 2100, 2000, 1900, 1800, 1700, 1600, 1500, 1400, 1300, 1200, 1100, 1000, 900, 800],
-    //             fill: true,
-    //             backgroundColor: 'rgba(33, 150, 243, 0.08)',
-    //             borderColor: '#2979FF',
-    //             pointBackgroundColor: '#2979FF',
-    //             pointBorderColor: '#fff',
-    //             pointRadius: 4,
-    //             tension: 0.3,
-    //         },
-    //     ],
-    // };
-    // const netIncomeChartOptions = {
-    //     responsive: true,
-    //     plugins: {
-    //         legend: { display: false },
-    //         title: { display: false },
-    //         tooltip: { enabled: true },
-    //     },
-    //     scales: {
-    //         x: {
-    //             grid: { display: false },
-    //             title: { display: true, text: 'Day of Month' },
-    //             ticks: { color: '#B0B7C3', font: { size: 14 } },
-    //         },
-    //         y: {
-    //             grid: { color: '#F0F0F0' },
-    //             title: { display: true, text: 'Net Income (₱)' },
-    //             min: 0,
-    //             ticks: { color: '#B0B7C3', font: { size: 14 } },
-    //         },
-    //     },
-    // };
-    // const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    // const years = ['2024', '2025'];
-    // const [selectedMonth, setSelectedMonth] = useState('October');
-    // const [selectedYear, setSelectedYear] = useState('2025');
-    // const handleMonthChange = (e) => setSelectedMonth(e.target.value);
-    // const handleYearChange = (e) => setSelectedYear(e.target.value);
-    // Example: Fetch metric data from backend/database
-    // Replace with your actual data fetching logic (API, Redux, etc.)
-    const [metrics, setMetrics] = useState({
-        revenue: {
-            value: '₱89,000',
-            subtitle: '4.3% Down from yesterday',
-            trend: '-4.3%',
-        },
-        totalPurchase: {
-            value: '10,293',
-            subtitle: '1.3% Up from past week',
-            trend: '+1.3%',
-        },
-        grossProfit: {
-            value: '₱40,689',
-            subtitle: '8.5% Up from yesterday',
-            trend: '+8.5%',
-        },
-        expenses: {
-            value: '₱12,400',
-            subtitle: '2.1% Up from yesterday',
-            trend: '+2.1%',
-        },
-        netIncome: {
-            value: '₱28,289',
-            subtitle: '1.8% Up from yesterday',
-            trend: '+1.8%',
-        },
-    });
+    const fetchMetrics = useCallback(async () => {
+        setLoading(true);
+        try {
+            // Adjust this URL to your new backend route
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/daily-metrics`);
+            setDynamicMetrics(response.data); // Data structure from Node.js service
+        } catch (error) {
+            console.error('Error fetching dashboard metrics:', error);
+            setDynamicMetrics(null);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    // Example: useEffect(() => { fetch('/api/metrics').then(...).then(data => setMetrics(data)); }, []);
+    useEffect(() => {
+        fetchMetrics();
+    }, [fetchMetrics]);
 
-    const metricCards = [
+    // Function to calculate percentage change
+    const calculateTrend = (current, previous) => {
+        // Ensure both values are treated as numbers and handle division by zero
+        current = parseFloat(current);
+        previous = parseFloat(previous);
+
+        if (previous === 0) {
+            return current > 0 ? '+100%' : 'N/A';
+        }
+        const change = ((current - previous) / previous) * 100;
+        return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+    };
+
+    // Function to format currency (Philippine Peso)
+    const formatPeso = (value) => {
+        return `₱${new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`;
+    };
+
+    // --- Data Mapping and Rendering ---
+
+    // Only map the data if it has been fetched
+    const metricCards = dynamicMetrics ? [
         {
             title: 'Revenue',
-            value: metrics.revenue.value,
+            value: formatPeso(dynamicMetrics.revenue.today),
             icon: <FaChartLine size={24} color="#4CAF50" />,
-            subtitle: metrics.revenue.subtitle,
-            trend: metrics.revenue.trend,
-            trendColor: '#E57373',
+            trend: calculateTrend(dynamicMetrics.revenue.today, dynamicMetrics.revenue.prev),
+            subtitle: `${calculateTrend(dynamicMetrics.revenue.today, dynamicMetrics.revenue.prev)} from yesterday`,
+            trendColor: dynamicMetrics.revenue.today >= dynamicMetrics.revenue.prev ? '#4CAF50' : '#E57373',
             iconBg: '#E8F5E9',
         },
         {
             title: 'Total Purchase',
-            value: metrics.totalPurchase.value,
+            value: formatPeso(dynamicMetrics.totalPurchase.today),
             icon: <FaShoppingCart size={24} color="#FFC107" />,
-            subtitle: metrics.totalPurchase.subtitle,
-            trend: metrics.totalPurchase.trend,
-            trendColor: '#4CAF50',
+            trend: calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev),
+            subtitle: `${calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev)} from yesterday`,
+            trendColor: calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev).includes('-') ? '#4CAF50' : '#E57373',
             iconBg: '#FFF8E1',
         },
         {
             title: 'Gross Profit',
-            value: metrics.grossProfit.value,
+            value: formatPeso(dynamicMetrics.grossProfit.today),
             icon: <FaMoneyBillWave size={24} color="#00BCD4" />,
-            subtitle: metrics.grossProfit.subtitle,
-            trend: metrics.grossProfit.trend,
-            trendColor: '#4CAF50',
+            trend: calculateTrend(dynamicMetrics.grossProfit.today, dynamicMetrics.grossProfit.prev),
+            subtitle: `${calculateTrend(dynamicMetrics.grossProfit.today, dynamicMetrics.grossProfit.prev)} from yesterday`,
+            trendColor: dynamicMetrics.grossProfit.today >= dynamicMetrics.grossProfit.prev ? '#4CAF50' : '#E57373',
             iconBg: '#E0F7FA',
         },
         {
             title: 'Expenses',
-            value: metrics.expenses.value,
+            value: formatPeso(dynamicMetrics.expenses.today),
             icon: <FaReceipt size={24} color="#FF7043" />,
-            subtitle: metrics.expenses.subtitle,
-            trend: metrics.expenses.trend,
-            trendColor: '#4CAF50',
+            trend: calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev),
+            subtitle: `${calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev)} from yesterday`,
+            trendColor: calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev).includes('-') ? '#4CAF50' : '#E57373',
             iconBg: '#FFEBEE',
         },
         {
             title: 'Net Income',
-            value: metrics.netIncome.value,
+            value: formatPeso(dynamicMetrics.netIncome.today),
             icon: <FaWallet size={24} color="#8BC34A" />,
-            subtitle: metrics.netIncome.subtitle,
-            trend: metrics.netIncome.trend,
-            trendColor: '#4CAF50',
+            trend: calculateTrend(dynamicMetrics.netIncome.today, dynamicMetrics.netIncome.prev),
+            subtitle: `${calculateTrend(dynamicMetrics.netIncome.today, dynamicMetrics.netIncome.prev)} from yesterday`,
+            trendColor: dynamicMetrics.netIncome.today >= dynamicMetrics.netIncome.prev ? '#4CAF50' : '#E57373',
             iconBg: '#F1F8E9',
         },
-    ];
-
-
+    ] : [];
 
     // Generate year options (e.g., last 5 years)
     const yearsOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-    // Fetch data when year changes
+    // Fetch data when year or branch changes
     useEffect(() => {
         const fetchIncomeData = async () => {
             setIncomeLoading(true);
             try {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/net-income`, {
-                    params: { year: incomeYearFilter }
+                    params: {
+                        year: incomeYearFilter,
+                        branchId: incomeBranchFilter
+                    }
                 });
                 // The data is already aggregated by month in the backend
                 setIncomeChartData(response.data);
@@ -172,20 +140,47 @@ function AdminDashboard() {
                 setIncomeLoading(false);
             }
         };
-        if (incomeYearFilter) {
+        if (incomeYearFilter && incomeBranchFilter) {
             fetchIncomeData();
         }
-    }, [incomeYearFilter]);
+    }, [incomeYearFilter, incomeBranchFilter]);
+
+    const fetchBranches = useCallback(async () => {
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches`);
+
+            const branchesData = response.data.map(e => ({
+                id: e.BranchID,
+                name: `${e.Name} - ${e.Location}`,
+            }));
+
+            setBranches(branchesData);
+            // Set the first branch as default if available
+            if (branchesData.length > 0 && !incomeBranchFilter) {
+                setIncomeBranchFilter(branchesData[0].id.toString());
+            }
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+        }
+    }, [incomeBranchFilter]);
+
+    useEffect(() => {
+        fetchBranches();
+    }, [fetchBranches]);
 
 
     return (
         <>
             <h1 className="mb-4">Dashboard</h1>
-            <div className="d-flex flex-wrap gap-4 mb-4">
-                {metricCards.map((props, idx) => (
-                    <MetricCard key={props.title} {...props} />
-                ))}
-            </div>
+            {/* {loading && <div>Loading metrics...</div>}
+
+            {!loading && (
+                <div className="d-flex flex-wrap gap-4 mb-4">
+                    {metricCards.map((props, idx) => (
+                        <MetricCard key={props.title} {...props} />
+                    ))}
+                </div>
+            )} */}
             {/* Net Income Chart Card Example */}
             <div className="mt-4">
                 {/* <MetricChartCard
@@ -202,6 +197,19 @@ function AdminDashboard() {
                 <Card className="mb-4 p-3">
                     <h5 className="mb-3">Net Income Trend (Revenue - Expenses)</h5>
                     <Row className="g-3 mb-3">
+                        <Col xs={12} md={3}>
+                            <Form.Group controlId="incomeBranchFilter">
+                                <Form.Label>Select Branch</Form.Label>
+                                <Form.Select
+                                    value={incomeBranchFilter}
+                                    onChange={(e) => setIncomeBranchFilter(e.target.value)}
+                                >
+                                    {branches.map(b => (
+                                        <option key={b.id} value={b.id}>{b.name}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
                         <Col xs={12} md={3}>
                             <Form.Group controlId="incomeYearFilter">
                                 <Form.Label>Select Year</Form.Label>

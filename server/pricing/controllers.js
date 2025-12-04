@@ -92,17 +92,28 @@ async function getPriceTrendController(req, res) { // Renamed to avoid confusion
 }
 
 async function getNetIncomeTrendController(req, res) {
-    const { year } = req.query;
+    const { year, branchId } = req.query;
+    console.log('Received parameters for net income trend:', { year, branchId });
 
-    if (!year) {
-        return res.status(400).json({ error: 'Year is required for the net income trend report.' });
+    if (!year || !branchId) {
+        return res.status(400).json({ error: 'Year and Branch ID are required for the net income trend report.' });
     }
 
     try {
-        const data = await pricelistService.fetchNetIncomeTrend(year);
+        const data = await pricelistService.fetchNetIncomeTrend(year, Number(branchId));
         res.json(data); // Send monthly summary data
     } catch (error) {
         res.status(500).json({ error: 'Server error while fetching income trend.' });
+    }
+}
+
+async function getDailyMetrics(req, res) {
+    try {
+        const metrics = await pricelistService.fetchDailyMetrics();
+        res.status(200).json(metrics);
+    } catch (error) {
+        console.error('Error fetching dashboard metrics:', error);
+        res.status(500).json({ message: 'Failed to retrieve dynamic dashboard metrics.' });
     }
 }
 
@@ -113,6 +124,7 @@ module.exports = {
     getById,
     update,
     getPriceTrendController,
-    getNetIncomeTrendController
+    getNetIncomeTrendController,
+    getDailyMetrics
 };
 

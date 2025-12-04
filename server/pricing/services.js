@@ -200,9 +200,13 @@ async function getPriceTrend(itemId, entityId, entityType) {
     }
 }
 
-async function fetchNetIncomeTrend(year) {
+async function fetchNetIncomeTrend(year, branchId) {
     let conn;
     try {
+        if (!branchId) {
+            throw new Error("Branch ID is required.");
+        }
+
         conn = await pool.getConnection();
 
         // Use the SQL query defined above
@@ -235,6 +239,7 @@ async function fetchNetIncomeTrend(year) {
                 WHERE
                     t.Status = 'completed'
                     AND YEAR(t.TransactionDate) = ?
+                    AND t.BranchID = ?
                 GROUP BY
                     report_period
                 ORDER BY
@@ -242,12 +247,81 @@ async function fetchNetIncomeTrend(year) {
     `;
 
         // Ensure the year parameter is a number for the SQL filter
-        const rows = await conn.query(sql, [year]);
+        const rows = await conn.query(sql, [year, branchId]);
 
         return rows;
     } catch (error) {
         console.error("SQL Error fetching net income trend:", error);
         throw new Error("Failed to retrieve net income data.");
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+// Example: services/analytics.service.js
+
+async function fetchDailyMetrics() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // 1. Define Dates (Manila Time is CRITICAL here)
+        const manilaNow = moment().tz('Asia/Manila');
+
+        const today = manilaNow.format('YYYY-MM-DD');
+        const yesterday = manilaNow.subtract(1, 'day').format('YYYY-MM-DD');
+        const lastWeek = manilaNow.subtract(7, 'days').format('YYYY-MM-DD'); // Example for Total Purchase trend
+
+        // 2. Query: Fetch consolidated amounts for TODAY and YESTERDAY (simplified)
+        const sql = `
+            SELECT
+                t.TransactionType,
+                SUM(CASE WHEN DATE(t.TransactionDate) = ? THEN t.TotalAmount ELSE 0 END) AS today_amount,
+                SUM(CASE WHEN DATE(t.TransactionDate) = ? THEN t.TotalAmount ELSE 0 END) AS prev_amount
+            FROM
+                transaction t
+            WHERE
+                t.Status = 'completed'
+                AND t.TransactionType IN ('sale', 'purchase', 'expense')
+            GROUP BY
+                t.TransactionType;
+        `;
+
+        // Use yesterday's date as the "previous period" comparison
+        const rows = await conn.query(sql, [today, yesterday]);
+
+        // 3. Process Data into a Clean Object (Node.js)
+        const dataMap = rows.reduce((acc, row) => {
+            acc[row.TransactionType] = { today: row.today_amount, prev: row.prev_amount };
+            return acc;
+        }, {});
+
+        // 4. Calculate Gross Profit and Net Income in Node.js
+        const revenue = dataMap.sale?.today || 0;
+        const purchase = dataMap.purchase?.today || 0;
+        const expenses = dataMap.expense?.today || 0;
+
+        return {
+            revenue: { today: revenue, prev: dataMap.sale?.prev || 0 },
+            totalPurchase: { today: purchase, prev: dataMap.purchase?.prev || 0 },
+            expenses: { today: expenses, prev: dataMap.expense?.prev || 0 },
+
+            // Calculated Metrics (Gross Profit = Revenue - Cost of Goods Sold/Purchases)
+            grossProfit: {
+                today: revenue - purchase,
+                prev: (dataMap.sale?.prev || 0) - (dataMap.purchase?.prev || 0),
+            },
+
+            // Calculated Metrics (Net Income = Revenue - Expenses - Purchases)
+            netIncome: {
+                today: revenue - expenses - purchase,
+                prev: (dataMap.sale?.prev || 0) - (dataMap.expense?.prev || 0) - (dataMap.purchase?.prev || 0),
+            }
+        };
+
+    } catch (error) {
+        console.error("Error fetching daily metrics:", error);
+        throw error;
     } finally {
         if (conn) conn.release();
     }
@@ -260,5 +334,6 @@ module.exports = {
     update,
     createActivityLog,
     getPriceTrend,
-    fetchNetIncomeTrend
+    fetchNetIncomeTrend,
+    fetchDailyMetrics
 };
