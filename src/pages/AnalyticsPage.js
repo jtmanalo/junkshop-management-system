@@ -126,6 +126,8 @@ function AnalyticsPage() {
                             >
                                 {isLoading ? (
                                     <option>Loading...</option>
+                                ) : entities.length === 0 ? (
+                                    <option value="">No {entityTypeFilter === 'buyer' ? 'Buyer' : 'Branch'} Enrolled</option>
                                 ) : (
                                     entities.map(entity => (
                                         <option key={entity.id} value={entity.id}>{entity.name}</option>
@@ -146,6 +148,8 @@ function AnalyticsPage() {
                             >
                                 {isLoading ? (
                                     <option>Loading...</option>
+                                ) : items.length === 0 ? (
+                                    <option value="">No Item Found</option>
                                 ) : (
                                     items.map(item => (
                                         <option key={item.id} value={item.id}>{item.name}</option>

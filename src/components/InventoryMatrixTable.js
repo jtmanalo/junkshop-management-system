@@ -251,7 +251,7 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
     };
 
     return (
-        <div style={{ maxHeight: '90vh', maxWidth: '80%', overflowY: 'auto' }}>
+        <div style={{ maxHeight: '90vh', maxWidth: '90%', overflowY: 'auto' }}>
             <Table striped bordered hover responsive>
                 <thead>
                     <tr>

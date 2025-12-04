@@ -59,7 +59,7 @@ function BuyersPage() {
 
     const fetchBuyers = async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers-with-prices`);
             console.log('Buyers:', response.data);
             const formattedBuyers = [...new Set(response.data.map(buyer => buyer.CompanyName))];
             const buyerPricelist = Array.from(

@@ -5,7 +5,11 @@ const router = express.Router();
 // Get all items of a branch with pricing
 router.get('/items', itemController.getAllItemsWithPricing);
 
+router.get('/items/active-prices', itemController.getAllItemsWithActivePricing);
+
 router.get('/items/branch/:branchId', itemController.getItemsWithPrice);
+
+router.get('/items/branch/active-prices/:branchId', itemController.getActivePriceItems);
 
 router.get('/items/buyer/:buyerId', itemController.getItemsOfBuyerWithPrice);
 
@@ -24,7 +28,7 @@ router.get('/items/:id', itemController.getById);
 
 // Update an item
 router.put('/items/:id', itemController.update);
- 
+
 // New: daily accumulation per item for a given branch/month/year
 router.get('/items/daily-accumulation', itemController.getDailyAccumulation);
 

@@ -77,7 +77,7 @@ function SalePage() {
             fetchBuyers();
         } else if (type === 'Extra') {
             const fetchExtraItems = async () => {
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/branch/${actualBranchId}`);
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/branch/active-prices/${actualBranchId}`);
                 setAllItems(response.data);
             };
             fetchExtraItems();

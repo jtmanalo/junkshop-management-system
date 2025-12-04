@@ -50,6 +50,67 @@ async function getAllItemsWithPricing() {
     }
 }
 
+async function getAllItemsWithActivePricing() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const query = `
+            SELECT 
+                b.BranchID,
+                b.Name AS BranchName,
+                b.Location AS BranchLocation,
+                i.ItemID,
+                i.Name,  
+                i.Classification,
+                i.UnitOfMeasurement,
+                i.Description,
+                pli.Price AS ItemPrice
+            FROM 
+                branch b
+            JOIN 
+                pricelist pl ON b.BranchID = pl.BranchID
+            JOIN 
+                pricelist_item pli ON pl.PriceListID = pli.PriceListID
+            JOIN 
+                item i ON pli.ItemID = i.ItemID
+            WHERE 
+                b.Status = 'active'
+                AND pl.BuyerID IS NULL
+                AND pl.PriceListID = (
+                    SELECT
+                        pl_sub.PriceListID
+                    FROM
+                        pricelist pl_sub
+                    WHERE
+                        pl_sub.BranchID = b.BranchID
+                        AND pl_sub.BuyerID IS NULL
+                    ORDER BY
+                        pl_sub.DateEffective DESC, 
+                        pl_sub.CreatedAt DESC      
+                    LIMIT 1
+                )
+            ORDER BY 
+                b.BranchID, i.ItemID;
+        `;
+
+        const rows = await conn.query(query);
+
+        // Ensures timestamps are in UTC+8 if applicable
+        rows.forEach(row => {
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
+
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 async function getItemsWithPrice(branchId) {
     let conn;
     try {
@@ -70,6 +131,68 @@ async function getItemsWithPrice(branchId) {
                 branch b
             JOIN 
                 pricelist pl ON b.BranchID = pl.BranchID
+            JOIN 
+                pricelist_item pli ON pl.PriceListID = pli.PriceListID
+            JOIN 
+                item i ON pli.ItemID = i.ItemID
+            WHERE 
+                b.Status = 'active'
+                AND pl.BuyerID IS NULL
+                AND b.BranchID = ?
+            ORDER BY 
+                i.ItemID;
+        `;
+
+        const rows = await conn.query(query, [branchId]);
+
+        // Ensures timestamps are in UTC+8 if applicable
+        rows.forEach(row => {
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
+
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getActivePriceItems(branchId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const query = `
+            SELECT 
+                b.BranchID,
+                b.Name AS BranchName,
+                b.Location AS BranchLocation,
+                i.ItemID,
+                i.Name,  
+                i.Classification,
+                i.UnitOfMeasurement,
+                i.Description,
+                pli.Price AS ItemPrice
+            FROM 
+                branch b
+            JOIN 
+                pricelist pl ON b.BranchID = pl.BranchID
+                AND pl.PriceListID = (
+                    SELECT 
+                        pl_sub.PriceListID 
+                    FROM 
+                        pricelist pl_sub
+                    WHERE 
+                        pl_sub.BranchID = b.BranchID 
+                        AND pl_sub.BuyerID IS NULL     
+                    ORDER BY 
+                        pl_sub.DateEffective DESC, 
+                        pl_sub.CreatedAt DESC    
+                    LIMIT 1                       
+                )
             JOIN 
                 pricelist_item pli ON pl.PriceListID = pli.PriceListID
             JOIN 
@@ -127,11 +250,28 @@ async function getItemsOfBuyerWithPrice(buyerId) {
                 b.Status = 'active'
                 AND b.BuyerID = ?
                 AND pl.BranchID IS NULL
+                AND pl.PriceListID IN (
+                    SELECT
+                        PriceListID
+                    FROM (
+                        SELECT
+                            PriceListID,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY BuyerID
+                                ORDER BY DateEffective DESC, PriceListID DESC 
+                            ) as rn
+                        FROM
+                            pricelist
+                        WHERE
+                            BuyerID = ?
+                    ) AS RankedPriceLists
+                    WHERE rn = 1
+                )
             ORDER BY
                 i.ItemID;
         `;
 
-        const rows = await conn.query(query, [buyerId]);
+        const rows = await conn.query(query, [buyerId, buyerId]);
 
         // Ensures timestamps are in UTC+8 if applicable
         rows.forEach(row => {
@@ -186,8 +326,16 @@ async function getItemsWithPricesForBranch(branchId) {
                 pi.PriceListID = p.PriceListID
             WHERE 
                 p.BranchID = ? 
+            AND 
+                p.PriceListID = (
+                    SELECT PriceListID 
+                    FROM pricelist 
+                    WHERE BranchID = ? 
+                    ORDER BY DateEffective DESC 
+                    LIMIT 1
+                )
     `;
-        return await conn.query(query, [branchId]);
+        return await conn.query(query, [branchId, branchId]);
     } catch (error) {
         throw error;
     } finally {
@@ -218,8 +366,16 @@ async function getItemsWithPricesForBuyer(buyerId) {
                 pi.PriceListID = p.PriceListID
             WHERE 
                 p.BuyerID = ? 
+            AND 
+                p.PriceListID = (
+                    SELECT PriceListID 
+                    FROM pricelist 
+                    WHERE BuyerID = ? 
+                    ORDER BY DateEffective DESC 
+                    LIMIT 1
+                )
     `;
-        return await conn.query(query, [buyerId]);
+        return await conn.query(query, [buyerId, buyerId]);
     } catch (error) {
         throw error;
     } finally {
@@ -581,5 +737,7 @@ module.exports = {
     getItemsOfBuyerWithPrice,
     getDailyAccumulation,
     createActivityLog,
-    getUsernameById
+    getUsernameById,
+    getAllItemsWithActivePricing,
+    getActivePriceItems
 };

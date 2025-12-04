@@ -63,7 +63,7 @@ function EmployeesTable() {
     };
 
     // Update the filteredUsers logic to exclude users with AccountStatus = 'rejected' when filtering for registered employees
-    const filteredUsers = users.filter((user) => {
+    const filteredUsers = Array.isArray(users) ? users.filter((user) => {
         const matchesAccountStatus =
             filter.AccountStatus === 'all' || user.AccountStatus?.toLowerCase() === filter.AccountStatus.toLowerCase();
         const matchesEmployeeStatus =
@@ -77,7 +77,7 @@ function EmployeesTable() {
         const isNotCurrentUser = user.Username !== currentUsername;
 
         return matchesAccountStatus && matchesEmployeeStatus && matchesUserType && isNotCurrentUser;
-    });
+    }) : [];
 
     // FIX SORTING FOR ACCOUNT STATUS
     const sortedUsers = [...filteredUsers].sort((a, b) => {

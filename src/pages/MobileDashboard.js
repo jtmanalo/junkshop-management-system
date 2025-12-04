@@ -28,6 +28,9 @@ import PendingPurchase from './PendingPurchase';
 
 function SetBranchModal({ show, branchOptions, onSetBranch }) {
   const [selectedBranch, setSelectedBranch] = useState(branchOptions[0] || ''); // Default to the first branch
+  const navigate = useNavigate();
+
+  const { user } = useAuth();
 
   useEffect(() => {
     if (branchOptions.length > 0 && !selectedBranch) {
@@ -36,6 +39,11 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
   }, [branchOptions, selectedBranch]);
 
   const handleSetBranch = () => {
+    if (branchOptions.length === 0) {
+      alert('No branches enrolled. Please go to the admin dashboard and enroll a branch first.');
+      return;
+    }
+
     if (selectedBranch) {
       onSetBranch(selectedBranch); // Save the selected branch
     } else {
@@ -49,23 +57,33 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
         <Modal.Title>Select Branch Location</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <Form>
-          <Form.Group>
-            <Form.Label>Branch Location</Form.Label>
-            <Form.Control
-              as="select"
-              value={selectedBranch?.display || ''}
-              onChange={(e) => setSelectedBranch(branchOptions.find(branch => branch.display === e.target.value))}
-            >
-              {branchOptions.map((branch, index) => (
-                <option key={index} value={branch.display}>{branch.display}</option>
-              ))}
-            </Form.Control>
-          </Form.Group>
-        </Form>
+        {branchOptions.length === 0 ? (
+          <div className="text-center">
+            <p style={{ color: '#dc3545', fontWeight: 'bold' }}>No branches enrolled yet.</p>
+            <p>Please go to the admin dashboard and enroll a branch first before you can start a shift.</p>
+          </div>
+        ) : (
+          <Form>
+            <Form.Group>
+              <Form.Label>Branch Location</Form.Label>
+              <Form.Control
+                as="select"
+                value={selectedBranch?.display || ''}
+                onChange={(e) => setSelectedBranch(branchOptions.find(branch => branch.display === e.target.value))}
+              >
+                {branchOptions.map((branch, index) => (
+                  <option key={index} value={branch.display}>{branch.display}</option>
+                ))}
+              </Form.Control>
+            </Form.Group>
+          </Form>
+        )}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="primary" onClick={handleSetBranch}>
+        <Button variant="secondary" onClick={() => navigate(`/admin-dashboard/${user?.username}/branches`)}>
+          Go to Admin Dashboard
+        </Button>
+        <Button variant="primary" onClick={handleSetBranch} disabled={branchOptions.length === 0}>
           Set Location
         </Button>
       </Modal.Footer>
@@ -832,7 +850,7 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
               onChange={(e) => setSelectedEmployee(e.target.value)}
             >
               <option value="">Select an Employee</option>
-              {employees.map((employee) => (
+              {Array.isArray(employees) && employees.map((employee) => (
                 <option key={employee.id} value={employee.id}>
                   {`${employee.FirstName} ${employee.LastName}`}
                 </option>

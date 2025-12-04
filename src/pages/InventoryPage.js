@@ -261,22 +261,22 @@ function InventoryPage() {
 
             // Create a map of existing inventory items
             const existingInventoryMap = new Map();
-            response.data.forEach(inv => {
+            (response.data || []).forEach(inv => {
                 existingInventoryMap.set(inv.ItemID, inv.TotalQuantity);
             });
 
-            // Map all items with existing quantities
+            // Map all items with existing quantities or 0 as placeholder if not found
             const itemsForModal = allItems.map(item => ({
                 ItemID: item.ItemID,
                 Name: item.Name,
                 Classification: item.Classification,
                 name: item.name,
-                totalQuantity: existingInventoryMap.get(item.ItemID) || 0
+                totalQuantity: existingInventoryMap.has(item.ItemID) ? existingInventoryMap.get(item.ItemID) : 0
             }));
             setModalItems(itemsForModal);
         } catch (error) {
             console.error('Error fetching previous inventory:', error);
-            // Fallback to default quantities if API fails
+            // Fallback to 0 for all items if API fails
             const itemsForModal = allItems.map(item => ({
                 ItemID: item.ItemID,
                 Name: item.Name,
@@ -364,9 +364,13 @@ function InventoryPage() {
                             value={branchFilter}
                             onChange={(e) => setBranchFilter(e.target.value)}
                         >
-                            {branches.map(branch => (
-                                <option key={uuidv4()} value={branch.BranchID}>{branch.Name} - {branch.Location}</option>
-                            ))}
+                            {branches.length === 0 ? (
+                                <option value="">No Branch Enrolled</option>
+                            ) : (
+                                branches.map(branch => (
+                                    <option key={uuidv4()} value={branch.BranchID}>{branch.Name} - {branch.Location}</option>
+                                ))
+                            )}
                         </Form.Control>
                     </Form.Group>
 

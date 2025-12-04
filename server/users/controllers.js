@@ -138,6 +138,17 @@ async function register(req, res) {
                 }
             });
         }
+        return res.status(201).json({
+            message: 'Registration successful. You can now log in.',
+            user: {
+                id: user.id,
+                name: user.name,
+                username: user.username,
+                email: user.email,
+                userType: user.userType,
+                status: user.status
+            }
+        });
     } catch (error) {
         console.error('Error in registerUser:', error);
         res.status(500).json({ error: error.message });
@@ -387,6 +398,19 @@ async function logout(req, res) {
     }
 }
 
+async function getActivityLogs(req, res) {
+    try {
+        const logs = await userService.getActivityLogs();
+        if (logs.length === 0) {
+            return res.status(204).send("No activity logs found");
+        }
+        res.json(logs);
+    } catch (error) {
+        console.error('Error in getActivityLogs:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     register,
@@ -400,5 +424,6 @@ module.exports = {
     getDetails,
     updateUser,
     approveReject,
-    logout
+    logout,
+    getActivityLogs,
 };

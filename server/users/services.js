@@ -393,6 +393,41 @@ async function createActivityLog(data) {
     }
 }
 
+async function getActivityLogs() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        const rows = await conn.query(`
+            SELECT 
+                al.ActivityID,
+                u.Username AS User,
+                al.ActivityType AS Action,
+                al.Description AS Details,
+                al.LoggedAt AS Timestamp
+            FROM 
+                activity_log al
+            JOIN 
+                user u ON al.UserID = u.UserID
+            ORDER BY 
+                al.LoggedAt DESC
+        `);
+
+        // Format timestamps to UTC+8
+        rows.forEach(row => {
+            if (row.Timestamp) {
+                row.Timestamp = moment(row.Timestamp).tz('Asia/Manila').format();
+            }
+        });
+
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     createUser,
@@ -406,5 +441,6 @@ module.exports = {
     getDetails,
     getUserAndEmployeeDetailsByUsername,
     approveReject,
-    createActivityLog
+    createActivityLog,
+    getActivityLogs,
 };

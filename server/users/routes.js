@@ -28,6 +28,8 @@ router.put('/users/:id', userController.update);
 
 router.put('/users-update/:id', userController.updateUser);
 
+router.get('/activity-logs', userController.getActivityLogs);
+
 router.get('/protected-route', userController.authenticateToken, (req, res) => {
     res.json({ message: 'Access granted', user: req.user });
 });

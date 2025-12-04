@@ -12,6 +12,7 @@ import ShiftsPage from './ShiftsPage';
 import BuyersPage from './BuyersPage';
 import HelpPage from './HelpPage';
 import ItemsPage from './ItemsPage';
+import ActivityLogs from './ActivityLogs';
 import { useAuth } from '../services/AuthContext';
 import { MetricCard, MetricChartCard } from '../components/Card';
 import { FaChartLine, FaShoppingCart, FaMoneyBillWave, FaReceipt, FaWallet } from 'react-icons/fa';
@@ -204,9 +205,13 @@ function AdminDashboard() {
                                     value={incomeBranchFilter}
                                     onChange={(e) => setIncomeBranchFilter(e.target.value)}
                                 >
-                                    {branches.map(b => (
-                                        <option key={b.id} value={b.id}>{b.name}</option>
-                                    ))}
+                                    {branches.length === 0 ? (
+                                        <option value="">No Branch Enrolled</option>
+                                    ) : (
+                                        branches.map(b => (
+                                            <option key={b.id} value={b.id}>{b.name}</option>
+                                        ))
+                                    )}
                                 </Form.Select>
                             </Form.Group>
                         </Col>
@@ -332,6 +337,7 @@ export default function DesktopRoutes() {
                 <Route path=":username/branches" element={<BranchPage />} />
                 <Route path=":username/settings" element={<SettingsPage />} />
                 <Route path=":username/help" element={<HelpPage />} />
+                <Route path=":username/user-logs" element={<ActivityLogs />} />
                 <Route path=":username" element={<AdminDashboard />} />
                 <Route path="*" element={
                     <Card className="shadow-sm">

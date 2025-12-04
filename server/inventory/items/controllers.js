@@ -14,6 +14,19 @@ async function getAllItemsWithPricing(req, res) {
     }
 }
 
+async function getAllItemsWithActivePricing(req, res) {
+    try {
+        const items = await itemService.getAllItemsWithActivePricing();
+        if (items.length === 0) {
+            return res.status(204).send("No items found");
+        }
+        res.status(200).json(items);
+    } catch (error) {
+        console.error('Error in getAllItemsWithPricing:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 async function getItemsWithPrice(req, res) {
     const { branchId } = req.params;
 
@@ -23,6 +36,25 @@ async function getItemsWithPrice(req, res) {
 
     try {
         const items = await itemService.getItemsWithPrice(branchId);
+        if (!items) {
+            return res.status(404).send("Item not found");
+        }
+        res.status(200).json(items);
+    } catch (error) {
+        console.error('Error in getItemsWithPrice:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getActivePriceItems(req, res) {
+    const { branchId } = req.params;
+
+    if (!branchId) {
+        return res.status(400).json({ error: 'BranchID is required' });
+    }
+
+    try {
+        const items = await itemService.getActivePriceItems(branchId);
         if (!items) {
             return res.status(404).send("Item not found");
         }
@@ -266,6 +298,8 @@ module.exports = {
     updateItemPriceForBuyer,
     getItemsWithPrice,
     getItemsOfBuyerWithPrice,
-    getDailyAccumulation
+    getDailyAccumulation,
+    getAllItemsWithActivePricing,
+    getActivePriceItems
     // remove
 };

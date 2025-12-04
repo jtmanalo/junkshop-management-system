@@ -217,7 +217,12 @@ function LoginPage() {
 
                 if (user.userType === 'employee') {
                     alert('Your account is pending approval. Please wait for the owner to activate your account.');
+                } else if (user.userType === 'owner') {
+                    alert('Registration successful! Your account has been created.');
                 }
+
+                // Switch to login tab upon successful registration
+                setActiveTab('login');
             } else {
                 console.error('User registration failed:', userResponse.data?.error || 'Unknown error');
                 setErrors({ general: userResponse.data?.error || 'Registration failed. Please try again.' });

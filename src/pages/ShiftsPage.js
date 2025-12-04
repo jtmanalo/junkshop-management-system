@@ -184,16 +184,20 @@ function ShiftsPage() {
                         <Form.Group controlId="branchSelect" className="d-inline-block me-2">
                             <Form.Label>Branch</Form.Label>
                             <Form.Select value={selectedBranch} onChange={handleBranchChange}>
-                                {branches.map((branch, index) => (
-                                    <option key={branch.id || index} value={branch.id}>{branch.displayName}</option>
-                                ))}
+                                {branches.length === 0 ? (
+                                    <option value="all">No Branch Enrolled</option>
+                                ) : (
+                                    branches.map((branch, index) => (
+                                        <option key={branch.id || index} value={branch.id}>{branch.displayName}</option>
+                                    ))
+                                )}
                             </Form.Select>
                         </Form.Group>
                         <Form.Group controlId="employeeSelect" className="d-inline-block me-2">
                             <Form.Label>Employee</Form.Label>
                             <Form.Select value={selectedSeller} onChange={handleEmployeeChange}>
                                 <option value="all">All Employees</option>
-                                {employees.map((employee, index) => (
+                                {Array.isArray(employees) && employees.map((employee, index) => (
                                     <option key={employee.id || index} value={employee.FirstName + ' ' + employee.LastName}>
                                         {employee.FirstName} {employee.LastName}
                                     </option>

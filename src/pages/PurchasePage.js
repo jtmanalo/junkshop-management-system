@@ -36,6 +36,7 @@ function PurchasePage() {
         { name: '', quantity: '', pricing: '', subtotal: '' },
     ]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showBackModal, setShowBackModal] = useState(false);
 
     // Show modal when trash is clicked
     const handleTrashClick = (idx) => {
@@ -70,9 +71,9 @@ function PurchasePage() {
 
     const fetchItems = async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/branch/${actualBranchId}`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/branch/active-prices/${actualBranchId}`);
             setAllItems(response.data);
-            // console.log('Fetched items:', response.data);
+            console.log('Fetched items:', response.data);
         } catch (error) {
             console.error('Error fetching items:', error);
         }
@@ -293,79 +294,69 @@ function PurchasePage() {
         }
     };
 
-    const handleMinimize = async () => {
-        try {
-            const totalAmount = items.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
-            const sellerId = allSellers.find(s => s.Name === seller)?.SellerID || null;
-            // console.log('Minimizing transaction with items:', state?.status, state?.sellerName, state?.partyType, items);
-            // console.log('State:', state);
+    // const handleMinimize = async () => {
+    //     try {
+    //         const totalAmount = items.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
+    //         const sellerId = allSellers.find(s => s.Name === seller)?.SellerID || null;
 
-            // // Check if the transaction is already saved as pending and no changes were made
-            // if (state?.status === 'pending' && state?.transactionData?.items?.length === items.length && state?.transactionData?.items.every((item, idx) => {
-            //     const currentItem = items[idx];
-            //     return (
-            //         item.itemId === allItems.find(i => i.Name === currentItem.name)?.ItemID &&
-            //         item.quantity === currentItem.quantity &&
-            //         item.itemPrice === currentItem.pricing &&
-            //         item.subtotal === currentItem.subtotal
-            //     );
-            // }) && seller === state?.transactionData?.sellerName && type === state?.transactionData?.partyType && transactionNotes === state?.transactionData?.notes) {
-            //     console.log('No changes detected, skipping minimize operation.');
-            //     alert('No changes detected, transaction remains as pending.');
-            //     return;
-            // }
+    //         const transactionData = {
+    //             branchId: actualBranchId,
+    //             sellerId: sellerId,
+    //             userId: user?.userID,
+    //             partyType: type,
+    //             paymentMethod: selectedPaymentMethod,
+    //             status: 'pending',
+    //             notes: transactionNotes || '',
+    //             totalAmount,
+    //             items: items.map(item => ({
+    //                 itemId: allItems.find(i => i.Name === item.name).ItemID,
+    //                 quantity: item.quantity,
+    //                 itemPrice: item.pricing,
+    //                 subtotal: item.subtotal,
+    //             })),
+    //         };
 
-            const transactionData = {
-                branchId: actualBranchId,
-                sellerId: sellerId,
-                userId: user?.userID,
-                partyType: type,
-                paymentMethod: selectedPaymentMethod,
-                status: 'pending',
-                notes: transactionNotes || '',
-                totalAmount,
-                items: items.map(item => ({
-                    itemId: allItems.find(i => i.Name === item.name).ItemID,
-                    quantity: item.quantity,
-                    itemPrice: item.pricing,
-                    subtotal: item.subtotal,
-                })),
-            };
+    //         console.log('Transaction Data (Pending):', transactionData);
 
-            console.log('Transaction Data (Pending):', transactionData);
+    //         const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/purchases`, transactionData);
 
-            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/purchases`, transactionData);
+    //         const transactionDate = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
-            const transactionDate = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+    //         const pendingTransaction = {
+    //             branchName: branchName,
+    //             branchLocation: branchLocation,
+    //             transactionDate: transactionDate,
+    //             sellerName: seller,
+    //             paymentMethod: selectedPaymentMethod,
+    //             employeeName: user?.username,
+    //             items: items,
+    //             total: totalAmount,
+    //             transactionType: 'Purchase',
+    //             partyType: type,
+    //         };
 
-            // Pending transaction details
-            const pendingTransaction = {
-                branchName: branchName,
-                branchLocation: branchLocation,
-                transactionDate: transactionDate,
-                sellerName: seller,
-                paymentMethod: selectedPaymentMethod,
-                employeeName: user?.username,
-                items: items,
-                total: totalAmount,
-                transactionType: 'Purchase',
-                partyType: type,
-            };
+    //         console.log('Pending Transaction Data:', pendingTransaction);
+    //         alert('Transaction saved as pending.');
 
-            console.log('Pending Transaction Data:', pendingTransaction);
-            alert('Transaction saved as pending.');
+    //         setSeller('');
+    //         setType('');
+    //         setItems([{ name: '', quantity: '', pricing: '', subtotal: '' }]);
+    //         setSelectedPaymentMethod('cash');
+    //         setTransactionNotes('');
+    //         navigate(-1);
+    //     } catch (error) {
+    //         console.error('Error saving transaction as pending:', error);
+    //         alert('Failed to save transaction as pending.');
+    //     }
+    // };
 
-            // Clear fields
-            setSeller('');
-            setType('');
-            setItems([{ name: '', quantity: '', pricing: '', subtotal: '' }]);
-            setSelectedPaymentMethod('cash');
-            setTransactionNotes('');
-            navigate(-1);
-        } catch (error) {
-            console.error('Error saving transaction as pending:', error);
-            alert('Failed to save transaction as pending.');
-        }
+    const cancelBackNavigation = () => {
+        setShowBackModal(false);
+    };
+
+    const confirmBackNavigation = () => {
+        setShowBackModal(false);
+        navigate(-1);
     };
 
     const BackHeader = ({ text, onBack }) => {
@@ -375,8 +366,7 @@ function PurchasePage() {
             if (items.every(item => !item.name && !item.quantity && !item.pricing && !item.subtotal)) {
                 navigate(-1);
             } else {
-                // alert('Transaction minimized.');
-                handleMinimize();
+                setShowBackModal(true);
             }
         };
 
@@ -533,6 +523,22 @@ function PurchasePage() {
                 </Card.Body>
             </Card>
             <DeleteConfirmModal show={showDeleteModal} onCancel={cancelRemoveItem} onConfirm={confirmRemoveItem} />
+            <Modal show={showBackModal} onHide={cancelBackNavigation} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirm Cancel</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Are you sure you want to leave this page? Unsaved changes will be lost.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={cancelBackNavigation}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={confirmBackNavigation}>
+                        Leave Page
+                    </Button>
+                </Modal.Footer>
+            </Modal>
             <Modal show={showPaymentModal} centered onHide={() => setShowPaymentModal(false)}>
                 <Modal.Header closeButton>
                     <Modal.Title>Confirm Payment</Modal.Title>

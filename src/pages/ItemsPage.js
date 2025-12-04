@@ -24,7 +24,7 @@ function ItemsPage() {
     const [successMessage, setSuccessMessage] = useState('');
     const [newItem, setNewItem] = useState({
         name: '',
-        unitOfMeasurement: 'per piece',
+        unitOfMeasurement: 'per kg',
         classification: '',
         description: ''
     });
@@ -84,10 +84,9 @@ function ItemsPage() {
         }
     }, [user?.username]);
 
-    // gets all items of the branch using username
     const fetchItems = useCallback(() => {
         if (!user?.username) return;
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/items?username=${user.username}`)
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/active-prices`)
             .then(response => {
                 setItems(Array.isArray(response.data) ? response.data : []); // Ensure items is an array
             })
@@ -206,7 +205,7 @@ function ItemsPage() {
                 setTimeout(() => setShowSuccessAlert(false), 5000); // Auto-hide after 3 seconds
 
                 // Reset form and close modal
-                setNewItem({ name: '', unitOfMeasurement: 'per piece', classification: '', description: '' });
+                setNewItem({ name: '', unitOfMeasurement: 'per kg', classification: '', description: '' });
                 setErrors({});
                 setShowAddItemModal(false);
 
@@ -547,9 +546,13 @@ function ItemsPage() {
                                                     value={selectedBranch}
                                                     onChange={e => setSelectedBranch(e.target.value)}
                                                 >
-                                                    {branches.map(branch => (
-                                                        <option key={`${branch.id}-${branch.displayName}`} value={branch.id}>{branch.displayName}</option>
-                                                    ))}
+                                                    {branches.length === 0 ? (
+                                                        <option value="">No Branch Enrolled</option>
+                                                    ) : (
+                                                        branches.map(branch => (
+                                                            <option key={`${branch.id}-${branch.displayName}`} value={branch.id}>{branch.displayName}</option>
+                                                        ))
+                                                    )}
                                                 </Form.Select>
                                             </Form.Group>
 
@@ -560,9 +563,12 @@ function ItemsPage() {
                                                     onChange={e => setSearchTerm(e.target.value)}
                                                 >
                                                     <option value="">All Items</option>
-                                                    {filteredItems.map(item => (
-                                                        <option key={uuidv4()} value={item.Name}>{item.Name}</option>
-                                                    ))}
+                                                    {Array.from(new Set(filteredItems.map(item => item.Name))).map(itemName => {
+                                                        const item = filteredItems.find(i => i.Name === itemName);
+                                                        return (
+                                                            <option key={itemName} value={itemName}>{itemName}</option>
+                                                        );
+                                                    })}
                                                 </Form.Select>
                                             </Form.Group>
                                         </Form>
@@ -650,8 +656,8 @@ function ItemsPage() {
                                 onChange={handleAddItemChange}
                                 isInvalid={!!errors.unitOfMeasurement}
                             >
-                                <option value="per piece">Per Piece</option>
                                 <option value="per kg">Per Kg</option>
+                                <option value="per piece">Per Piece</option>
                                 <option value="others">Others</option>
                             </Form.Select>
                             <Form.Control.Feedback type="invalid">
@@ -835,8 +841,8 @@ function ItemsPage() {
                                 value={editItemDetails.unitOfMeasurement}
                                 onChange={(e) => setEditItemDetails({ ...editItemDetails, unitOfMeasurement: e.target.value })}
                             >
-                                <option value="per piece">Per Piece</option>
                                 <option value="per kg">Per Kg</option>
+                                <option value="per piece">Per Piece</option>
                                 <option value="others">Others</option>
                             </Form.Select>
                         </Form.Group>

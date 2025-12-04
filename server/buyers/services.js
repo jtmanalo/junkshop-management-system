@@ -49,6 +49,75 @@ async function getAll() {
     }
 }
 
+async function getAllWithPrices() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        // Perform the SELECT query
+        const rows = await conn.query(`
+            WITH RankedPriceLists AS (
+            SELECT
+                p.BuyerID,
+                p.PriceListID,
+                p.DateEffective,
+                ROW_NUMBER() OVER (
+                    PARTITION BY p.BuyerID 
+                    ORDER BY p.DateEffective DESC, p.CreatedAt DESC
+                ) AS rn
+            FROM
+                pricelist p
+            JOIN
+                buyer b ON p.BuyerID = b.BuyerID
+            WHERE
+                b.Status = 'active'
+        )
+        SELECT 
+            b.BuyerID, 
+            b.CompanyName, 
+            b.ContactPerson, 
+            b.Notes, 
+            b.Status,
+            rpl.PriceListID, 
+            rpl.DateEffective,
+            i.ItemID, 
+            i.Name, 
+            i.UnitOfMeasurement, 
+            i.Classification, 
+            i.Description,
+            pi.PriceListItemID,
+            pi.Price
+        FROM 
+            buyer b
+        LEFT JOIN 
+            RankedPriceLists rpl ON b.BuyerID = rpl.BuyerID AND rpl.rn = 1 
+        INNER JOIN 
+            pricelist_item pi ON rpl.PriceListID = pi.PriceListID
+        INNER JOIN 
+            item i ON pi.ItemID = i.ItemID
+        WHERE 
+            b.Status = 'active'
+        ORDER BY
+            b.CompanyName, i.ItemID;
+    `);
+
+        // Ensures timestamps are in UTC+8
+        rows.forEach(row => {
+            if (row.CreatedAt) {
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+            }
+        });
+
+        // Return all rows
+        return rows;
+    } catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+
 async function getBuyersList() {
     let conn;
     try {
@@ -236,4 +305,5 @@ module.exports = {
     update,
     createActivityLog,
     getBuyersList,
+    getAllWithPrices
 };

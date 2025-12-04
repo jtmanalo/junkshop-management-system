@@ -58,7 +58,7 @@ function UserProfileDropdown() {
     {
       label: 'Activity Log',
       icon: FaListAlt,
-      onClick: () => { },
+      onClick: () => navigate(`/admin-dashboard/${user?.username}/user-logs`), // Navigate to LogsPage
     },
     {
       label: 'Log out',
@@ -164,7 +164,7 @@ export function MobileNav({ activePage, setActivePage }) {
     { name: 'Home', icon: FaHome, key: 'home' },
     { name: 'Pricelist', icon: FaClipboardList, key: 'pricelist' },
     { name: 'Logs', icon: FaFileInvoice, key: 'logs' },
-    { name: 'Ongoing', icon: FaSpinner, key: 'ongoing' },
+    // { name: 'Ongoing', icon: FaSpinner, key: 'ongoing' },
     { name: 'Profile', icon: FaUser, key: 'profile' },
   ];
 

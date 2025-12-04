@@ -517,6 +517,7 @@ async function getSaleBalance(branchId, userID) {
             `SELECT SUM(TotalAmount) AS TotalSales
                 FROM transaction
                 WHERE TransactionType = 'sale'
+                AND Status = 'completed'
                 AND BranchID = ?
                 AND UserID = ?
                 AND ShiftID = ?`,
@@ -552,6 +553,7 @@ async function getPurchaseBalance(branchId, userID) {
             `SELECT SUM(TotalAmount) AS TotalPurchases
                 FROM transaction
                 WHERE TransactionType = 'purchase'
+                AND Status = 'completed'
                 AND BranchID = ?
                 AND UserID = ?
                 AND ShiftID = ?`,
