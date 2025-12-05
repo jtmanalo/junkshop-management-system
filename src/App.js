@@ -27,6 +27,7 @@ const App = () => {
             />
           </Route>
           {/* Routes with desktop layout */}
+          <Route element={<PrivateRoute />} />
           <Route
             path="/admin-dashboard/*"
             element={
