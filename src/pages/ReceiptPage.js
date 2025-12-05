@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Table } from 'react-bootstrap';
 import { useAuth } from '../services/AuthContext';
@@ -19,10 +18,10 @@ function ReceiptPage() {
     const saveAsImage = () => {
         const receiptElement = document.getElementById('receipt-content');
         html2canvas(receiptElement, {
-            scale: 2, // Increase resolution
-            useCORS: true, // Handle external resources
-            width: receiptElement.scrollWidth, // Ensure full width is captured
-            height: receiptElement.scrollHeight, // Ensure full height is captured
+            scale: 2,
+            useCORS: true,
+            width: receiptElement.scrollWidth,
+            height: receiptElement.scrollHeight,
         }).then((canvas) => {
             const link = document.createElement('a');
             link.download = `${receiptData.transactionType}_${receiptData.transactionDate}_receipt.png`;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Form, Row, Col, InputGroup, Modal, Table, Spinner } from 'react-bootstrap';
+import { Container, Card, Button, Form, Row, Col, InputGroup, Modal, Spinner } from 'react-bootstrap';
 import { FaPlus, FaTrash, FaMinus, FaChevronLeft } from 'react-icons/fa';
 import { DeleteConfirmModal } from '../components/Modal';
 import { useDashboard } from '../services/DashboardContext';
@@ -11,8 +11,6 @@ import moment from 'moment-timezone';
 function PurchasePage() {
     const location = useLocation();
     // const { state } = location || {};
-
-    // Modal state for delete confirmation
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteIdx, setDeleteIdx] = useState(null);
     const { actualBranchId, shiftId, branchName, branchLocation } = useDashboard();
@@ -38,13 +36,11 @@ function PurchasePage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [showBackModal, setShowBackModal] = useState(false);
 
-    // Show modal when trash is clicked
     const handleTrashClick = (idx) => {
         setDeleteIdx(idx);
         setShowDeleteModal(true);
     };
 
-    // Confirm deletion
     const confirmRemoveItem = () => {
         if (deleteIdx !== null) {
             setItems(items.filter((_, i) => i !== deleteIdx));
@@ -53,7 +49,6 @@ function PurchasePage() {
         setShowDeleteModal(false);
     };
 
-    // Cancel deletion
     const cancelRemoveItem = () => {
         setDeleteIdx(null);
         setShowDeleteModal(false);
@@ -73,7 +68,7 @@ function PurchasePage() {
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/branch/active-prices/${actualBranchId}`);
             setAllItems(response.data);
-            console.log('Fetched items:', response.data);
+            // console.log('Fetched items:', response.data);
         } catch (error) {
             console.error('Error fetching items:', error);
         }
@@ -88,7 +83,7 @@ function PurchasePage() {
 
     useEffect(() => {
         if (actualBranchId && shiftId) {
-            fetchItems(); // Fetch items only after actualBranchId and shiftId are set
+            fetchItems();
         }
     }, [actualBranchId, shiftId]);
 
@@ -162,7 +157,7 @@ function PurchasePage() {
                 ...updatedItems[idx],
                 name: selectedItem,
                 classification: selected.Classification || '',
-                pricing: Math.max(selected.ItemPrice || 0, 0.01), // Ensure price is never 0 or negative
+                pricing: Math.max(selected.ItemPrice || 0, 0.01),
                 subtotal: (updatedItems[idx].quantity || 0) * Math.max(selected.ItemPrice || 0, 0.01),
             };
             setItems(updatedItems);
@@ -171,22 +166,22 @@ function PurchasePage() {
     };
 
     const handleQuantityChange = (idx, newQuantity) => {
-        if (isNaN(newQuantity)) return; // Prevent non-numeric values
+        if (isNaN(newQuantity)) return;
         const updatedItems = [...items];
         updatedItems[idx] = {
             ...updatedItems[idx],
-            quantity: Math.max(newQuantity || 0, 1), // Ensure quantity is never 0 or negative
+            quantity: Math.max(newQuantity || 0, 1),
             subtotal: Math.max(newQuantity || 0, 1) * (updatedItems[idx].pricing || 0.01),
         };
         setItems(updatedItems);
     };
 
     const handlePricingChange = (idx, newPricing) => {
-        if (isNaN(newPricing)) return; // Prevent non-numeric values
+        if (isNaN(newPricing)) return;
         const updatedItems = [...items];
         updatedItems[idx] = {
             ...updatedItems[idx],
-            pricing: Math.max(newPricing || 0, 0.01), // Ensure price is never 0 or negative
+            pricing: Math.max(newPricing || 0, 0.01),
             subtotal: (updatedItems[idx].quantity || 0) * Math.max(newPricing || 0, 0.01),
         };
         setItems(updatedItems);
@@ -199,7 +194,7 @@ function PurchasePage() {
 
             if (!item.name || item.quantity <= 0 || item.pricing <= 0) {
                 isValid = false;
-                updatedItem.isInvalid = true; // Mark invalid fields
+                updatedItem.isInvalid = true;
             } else {
                 updatedItem.isInvalid = false;
             }
@@ -241,7 +236,7 @@ function PurchasePage() {
                 totalAmount,
                 items: items.map(item => ({
                     itemId: allItems.find(i => i.Name === item.name).ItemID,
-                    classification: item.classification, // Include classification in transaction data
+                    classification: item.classification,
                     quantity: item.quantity,
                     itemPrice: item.pricing,
                     subtotal: item.subtotal,
@@ -254,7 +249,6 @@ function PurchasePage() {
 
             const transactionDate = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
-            // Prepare receipt data
             const receipt = {
                 branchName: branchName,
                 branchLocation: branchLocation,

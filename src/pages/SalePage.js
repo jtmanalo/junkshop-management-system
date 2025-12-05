@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Card, Button, Form, Row, Col, InputGroup, Modal, Spinner } from 'react-bootstrap';
 import { FaPlus, FaTrash, FaMinus } from 'react-icons/fa';
 import { BackHeader } from '../components/Header';
@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 
 function SalePage() {
-    // Modal state for delete confirmation
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [transactionNotes, setTransactionNotes] = useState('');
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
@@ -37,10 +36,10 @@ function SalePage() {
 
     const fetchItems = async (buyerId) => {
         try {
-            console.log('Fetching items for buyerId:', buyerId);
+            // console.log('Fetching items for buyerId:', buyerId);
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/buyer/${buyerId}`);
             setAllItems(response.data);
-            console.log('Fetched items:', response.data);
+            // console.log('Fetched items:', response.data);
         } catch (error) {
             if (error.response && error.response.status === 404) {
                 console.error('Items not found for the selected buyer:', error);
@@ -56,7 +55,6 @@ function SalePage() {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers`);
             const fetchedBuyers = response.data;
 
-            // Filter active buyers and remove duplicates
             const activeBuyers = fetchedBuyers.filter(buyer => buyer.Status === 'active');
             const uniqueBuyers = Array.from(new Set(activeBuyers.map(buyer => buyer.CompanyName)))
                 .map(name => activeBuyers.find(buyer => buyer.CompanyName === name));
@@ -84,13 +82,11 @@ function SalePage() {
         }
     }, [type]);
 
-    // Show modal when trash is clicked
     const handleTrashClick = (idx) => {
         setDeleteIdx(idx);
         setShowDeleteModal(true);
     };
 
-    // Confirm deletion
     const confirmRemoveItem = () => {
         if (deleteIdx !== null) {
             setItems(items.filter((_, i) => i !== deleteIdx));
@@ -99,7 +95,6 @@ function SalePage() {
         setShowDeleteModal(false);
     };
 
-    // Cancel deletion
     const cancelRemoveItem = () => {
         setDeleteIdx(null);
         setShowDeleteModal(false);
@@ -113,31 +108,31 @@ function SalePage() {
                 ...updatedItems[idx],
                 name: selectedItem,
                 classification: selected.Classification || '',
-                pricing: Math.max(selected.ItemPrice || 0, 0.01), // Ensure price is never 0 or negative
+                pricing: Math.max(selected.ItemPrice || 0, 0.01),
                 subtotal: (updatedItems[idx].quantity || 0) * Math.max(selected.ItemPrice || 0, 0.01),
             };
             setItems(updatedItems);
-            console.log(`Item selected: ${selectedItem}, Price: ${selected.ItemPrice}`);
+            // console.log(`Item selected: ${selectedItem}, Price: ${selected.ItemPrice}`);
         }
     };
 
     const handlePricingChange = (idx, newPricing) => {
-        if (isNaN(newPricing)) return; // Prevent non-numeric values
+        if (isNaN(newPricing)) return;
         const updatedItems = [...items];
         updatedItems[idx] = {
             ...updatedItems[idx],
-            pricing: Math.max(newPricing || 0, 0.01), // Ensure price is never 0 or negative
+            pricing: Math.max(newPricing || 0, 0.01),
             subtotal: (updatedItems[idx].quantity || 0) * Math.max(newPricing || 0, 0.01),
         };
         setItems(updatedItems);
     };
 
     const handleQuantityChange = (idx, newQuantity) => {
-        if (isNaN(newQuantity)) return; // Prevent non-numeric values
+        if (isNaN(newQuantity)) return;
         const updatedItems = [...items];
         updatedItems[idx] = {
             ...updatedItems[idx],
-            quantity: Math.max(newQuantity || 0, 1), // Ensure quantity is never 0 or negative
+            quantity: Math.max(newQuantity || 0, 1),
             subtotal: Math.max(newQuantity || 0, 1) * (updatedItems[idx].pricing || 0.01),
         };
         setItems(updatedItems);
@@ -154,7 +149,7 @@ function SalePage() {
 
             if (!item.name || item.quantity <= 0 || item.pricing <= 0) {
                 isValid = false;
-                updatedItem.isInvalid = true; // Mark invalid fields
+                updatedItem.isInvalid = true;
             } else {
                 updatedItem.isInvalid = false;
             }
@@ -180,15 +175,15 @@ function SalePage() {
         const selectedBuyer = allBuyers.find(b => b.CompanyName === e.target.value);
         setBuyer(e.target.value);
         const selectedBuyerId = selectedBuyer ? selectedBuyer.BuyerID : null;
-        console.log('Selected buyer ID:', selectedBuyerId);
-        console.log('Selected buyer:', selectedBuyer);
+        // console.log('Selected buyer ID:', selectedBuyerId);
+        // console.log('Selected buyer:', selectedBuyer);
 
         if (selectedBuyerId) {
-            setBuyerId(selectedBuyerId); // Update state
-            fetchItems(selectedBuyerId); // Fetch items directly
+            setBuyerId(selectedBuyerId);
+            fetchItems(selectedBuyerId);
         } else {
-            setBuyerId(null); // Clear buyerId
-            setAllItems([]); // Clear items
+            setBuyerId(null);
+            setAllItems([]);
         }
     };
 
@@ -212,7 +207,7 @@ function SalePage() {
                 totalAmount,
                 items: items.map(item => ({
                     itemId: allItems.find(i => i.Name === item.name).ItemID,
-                    classification: item.classification, // Include classification in transaction data
+                    classification: item.classification,
                     quantity: item.quantity,
                     itemPrice: item.pricing,
                     subtotal: item.subtotal,
@@ -233,7 +228,6 @@ function SalePage() {
                 second: '2-digit',
             }).format(new Date());
 
-            // Prepare receipt data
             const receipt = {
                 branchName: branchName,
                 branchLocation: branchLocation,

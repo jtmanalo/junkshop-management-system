@@ -7,10 +7,10 @@ import { useAuth } from "../services/AuthContext";
 const PrivateRoute = () => {
     // const user = useAuth();
     // if (!user.token) return <Navigate to="/" />;
-    const { user, token } = useAuth(); // Access user and token from AuthContext
+    const { user, token } = useAuth();
 
     if (!user || !token) {
-        return <Navigate to="/" replace />; // Redirect to login page if not authenticated
+        return <Navigate to="/" replace />;
     }
     return <Outlet />;
 };

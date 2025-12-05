@@ -394,7 +394,7 @@ async function create(data) {
         }
 
         // Debugging: Log the data object
-        console.log("Creating item with data:", data);
+        // console.log("Creating item with data:", data);
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');

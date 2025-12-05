@@ -1,38 +1,29 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-// Import required modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const cron = require('node-cron');
 const inventorySvc = require('./inventory/services');
-
-// Initialize the Express app
+const pool = require('./db');
 const app = express();
 
-// Middleware
 app.use(bodyParser.json());
 app.use(cors());
 
-// Define a basic route
 app.get('/', (req, res) => {
     res.send('Server is running!');
 });
 
-// Start the server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-// Handle server errors
 app.on('error', (err) => {
     console.error('Server encountered an error:', err);
 });
-
-// Import the database connection
-const pool = require('./db');
 
 pool.getConnection()
     .then(conn => {
@@ -41,10 +32,9 @@ pool.getConnection()
     })
     .catch(err => {
         console.error('Database connection failed in index.js:', err);
-        process.exit(1); // Exit if the database connection fails
+        process.exit(1);
     });
 
-// Import routes
 const userRoutes = require('./users/routes');
 const employeeRoutes = require('./employees/routes');
 const sellerRoutes = require('./sellers/routes');
@@ -55,8 +45,9 @@ const itemRoutes = require('./inventory/items/routes');
 const transactionRoutes = require('./transactions/routes');
 const pricelistRoutes = require('./pricing/routes');
 const pricelistitemRoutes = require('./pricing/pricelist_items/routes');
+
 // Cron job: ensure monthly inventory for all branches at midnight on 1st day
-cron.schedule('0 0 4 * *', async () => {
+cron.schedule('0 0 1 * *', async () => {
     try {
         await inventorySvc.ensureMonthlyInventoryForAllBranches();
         console.log('[cron] Ensured monthly inventory for all branches');

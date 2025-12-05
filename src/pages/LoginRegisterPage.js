@@ -6,7 +6,6 @@ import {
     Form,
     Button,
     Card,
-    Modal,
     Alert
 } from 'react-bootstrap';
 import axios from 'axios';
@@ -22,7 +21,7 @@ function LoginPage() {
         username: "",
         email: "",
         password: "",
-        userType: 'owner', // Default user type
+        userType: 'owner',
         positionTitle: "",
         firstName: "",
         middleName: "",
@@ -33,15 +32,13 @@ function LoginPage() {
     });
 
     const auth = useAuth();
-    const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
-        // Set the hire date to the current date
         const today = new Date().toISOString().split('T')[0];
         setFormData((prevData) => ({ ...prevData, hireDate: today }));
     }, []);
 
-    // Add debugging logs to validateLoginForm to check if password validation is triggered
     const validateLoginForm = () => {
         const newErrors = {};
 
@@ -54,17 +51,17 @@ function LoginPage() {
 
         // Validate password
         if (!formData.password) {
-            console.log('Password validation triggered: Password is empty'); // Debugging log
+            // console.log('Password validation triggered: Password is empty');
             newErrors.password = 'Password is required';
-            console.log('Password error set: ', newErrors.password); // Debugging log
-        } else {
-            console.log('Password validation passed: ', formData.password); // Debugging log
+            // console.log('Password error set: ', newErrors.password);
         }
+        // else {
+        // console.log('Password validation passed: ', formData.password);
+        // }
 
         return newErrors;
     };
 
-    // Update validateRegisterForm to ensure errors are properly set for both employee and owner
     const validateRegisterForm = () => {
         const newErrors = {};
 
@@ -115,7 +112,7 @@ function LoginPage() {
             newErrors.name = 'Name is required';
         }
 
-        console.log('Validation errors:', newErrors); // Debugging log
+        // console.log('Validation errors:', newErrors);
         return newErrors;
     };
 
@@ -130,7 +127,6 @@ function LoginPage() {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
-        // Clear errors for the field being updated
         setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
 
         setFormData({ ...formData, [name]: value });
@@ -139,15 +135,14 @@ function LoginPage() {
     const handleLogin = (e) => {
         e.preventDefault();
         const formErrors = validateLoginForm();
-        console.log("Form errors before setting state:", formErrors); // Debugging log
-        console.log("password:", errors.password); // Debugging log
+        // console.log("Form errors before setting state:", formErrors);
+        // console.log("password:", errors.password);
 
         setErrors(formErrors);
 
-        // Log the updated errors state after setting it
-        setTimeout(() => {
-            console.log("Errors state after update:", errors); // Debugging log
-        }, 0);
+        // setTimeout(() => {
+        //     console.log("Errors state after update:", errors);
+        // }, 0);
 
         if (Object.keys(formErrors).length > 0) {
             return;
@@ -158,9 +153,9 @@ function LoginPage() {
                     auth.loginAction(formData);
                     return;
                 }
-                console.log("email:", formData.email);
-                console.log("password:", formData.password);
-                console.log("Please fill in all fields.");
+                // console.log("email:", formData.email);
+                // console.log("password:", formData.password);
+                // console.log("Please fill in all fields.");
                 alert("Please fill in all fields.");
 
             } catch (error) {
@@ -184,7 +179,6 @@ function LoginPage() {
         }
 
         try {
-            // Convert fields to Pascal Case
             const formattedData = {
                 ...formData,
                 firstName: toPascalCase(formData.firstName),
@@ -193,7 +187,6 @@ function LoginPage() {
                 address: toPascalCase(formData.address),
             };
 
-            // Create user data
             const userPayload = {
                 name: formattedData.name || `${formattedData.firstName} ${formattedData.lastName}`,
                 username: formattedData.username,
@@ -209,7 +202,7 @@ function LoginPage() {
                 hireDate: formattedData.hireDate,
             };
 
-            console.log('User payload for registration:', userPayload);
+            // console.log('User payload for registration:', userPayload);
 
             const userResponse = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/sign-up`, userPayload);
             if (userResponse.status === 201 && userResponse.data) {
@@ -221,17 +214,15 @@ function LoginPage() {
                     alert('Registration successful! Your account has been created.');
                 }
 
-                // Switch to login tab upon successful registration
                 setActiveTab('login');
             } else {
                 console.error('User registration failed:', userResponse.data?.error || 'Unknown error');
                 setErrors({ general: userResponse.data?.error || 'Registration failed. Please try again.' });
             }
 
-            // Reset the form fields to their default empty state
             setFormData({
                 username: '',
-                userType: 'owner', // Default user type
+                userType: 'owner',
                 email: '',
                 positionTitle: '',
                 firstName: '',
@@ -244,12 +235,10 @@ function LoginPage() {
             });
         } catch (error) {
             if (error.response && error.response.status === 409) {
-                // Handle duplicate entry error
                 const errorMessage = error.response.data.error;
-                alert(errorMessage); // Show alert for duplicate username/email
+                alert(errorMessage);
                 setErrors({ general: errorMessage });
             } else if (error.response && error.response.status === 500) {
-                // Handle duplicate entry error
                 if (error.response.data.error.includes('Duplicate entry')) {
                     alert('Email or username already in use.');
                     setErrors({ general: 'The email or username is already in use. Please try another.' });
@@ -263,9 +252,7 @@ function LoginPage() {
         }
     };
 
-    // Reset errors and showPassword state when switching tabs or user types
     useEffect(() => {
-        // Reset errors and showPassword state when switching tabs or user types
         setErrors({});
         setShowPassword(false);
     }, [activeTab, formData.userType]);
@@ -294,21 +281,21 @@ function LoginPage() {
                                             type="email"
                                             name="email"
                                             placeholder="Email"
-                                            value={formData.email} // Use formData.email
-                                            onChange={handleInputChange} // Update formData directly
+                                            value={formData.email}
+                                            onChange={handleInputChange}
                                             isInvalid={!!errors.email} />
                                     </Form.Group>
                                     <Form.Group className="mb-4">
                                         <div className="input-group">
                                             <Form.Control
-                                                type={showPassword ? "text" : "password"} // Toggle between text and password
+                                                type={showPassword ? "text" : "password"}
                                                 name="password"
                                                 id="password"
                                                 placeholder="Password"
                                                 value={formData.password}
                                                 onChange={handleInputChange}
                                                 isInvalid={!!errors.password}
-                                                style={{ borderRight: 'none' }} // Remove right border to blend with the icon
+                                                style={{ borderRight: 'none' }}
                                             />
                                             <div className="input-group-append">
                                                 <span
@@ -319,14 +306,14 @@ function LoginPage() {
                                                         height: '100%',
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        borderLeft: 'none', // Remove left border to blend with the input field
-                                                        border: '1px solid #ced4da', // Match the border style of the input field
+                                                        borderLeft: 'none',
+                                                        border: '1px solid #ced4da',
                                                         borderTopRightRadius: '0.25rem',
                                                         borderBottomRightRadius: '0.25rem'
                                                     }}
-                                                    onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
+                                                    onClick={() => setShowPassword(!showPassword)}
                                                 >
-                                                    {showPassword ? <FaEye /> : <FaEyeSlash />} {/* Show appropriate icon */}
+                                                    {showPassword ? <FaEye /> : <FaEyeSlash />}
                                                 </span>
                                             </div>
                                         </div>
@@ -360,7 +347,7 @@ function LoginPage() {
                                                 placeholder="First Name"
                                                 value={formData.firstName}
                                                 onChange={handleInputChange}
-                                                style={{ height: '2.5rem', marginRight: '0.5rem' }} // Added marginRight for spacing
+                                                style={{ height: '2.5rem', marginRight: '0.5rem' }}
                                                 isInvalid={!!errors.firstName}
                                             />
                                             <Form.Control
@@ -369,7 +356,7 @@ function LoginPage() {
                                                 placeholder="Last Name"
                                                 value={formData.lastName}
                                                 onChange={handleInputChange}
-                                                style={{ height: '2.5rem', marginLeft: '0.5rem' }} // Added marginLeft for spacing
+                                                style={{ height: '2.5rem', marginLeft: '0.5rem' }}
                                                 isInvalid={!!errors.lastName}
                                             />
                                         </Form.Group>
@@ -397,14 +384,14 @@ function LoginPage() {
                                     <Form.Group className="mb-4">
                                         <div className="input-group">
                                             <Form.Control
-                                                type={showPassword ? "text" : "password"} // Toggle between text and password
+                                                type={showPassword ? "text" : "password"}
                                                 name="password"
                                                 id="password"
                                                 placeholder="Password"
                                                 value={formData.password}
                                                 onChange={handleInputChange}
                                                 className={renderFieldError('password')}
-                                                style={{ borderRight: 'none' }} // Remove right border to blend with the icon
+                                                style={{ borderRight: 'none' }}
                                             />
                                             <div className="input-group-append">
                                                 <span
@@ -415,14 +402,14 @@ function LoginPage() {
                                                         height: '100%',
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        borderLeft: 'none', // Remove left border to blend with the input field
-                                                        border: '1px solid #ced4da', // Match the border style of the input field
+                                                        borderLeft: 'none',
+                                                        border: '1px solid #ced4da',
                                                         borderTopRightRadius: '0.25rem',
                                                         borderBottomRightRadius: '0.25rem'
                                                     }}
-                                                    onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
+                                                    onClick={() => setShowPassword(!showPassword)}
                                                 >
-                                                    {showPassword ? <FaEye /> : <FaEyeSlash />} {/* Show appropriate icon */}
+                                                    {showPassword ? <FaEye /> : <FaEyeSlash />}
                                                 </span>
                                             </div>
                                         </div>
@@ -436,7 +423,7 @@ function LoginPage() {
                                                     placeholder="Position Title"
                                                     value={formData.positionTitle}
                                                     onChange={handleInputChange}
-                                                    style={{ height: '2.5rem', marginRight: '0.5rem' }} // Added marginRight for spacing
+                                                    style={{ height: '2.5rem', marginRight: '0.5rem' }}
                                                     isInvalid={!!errors.positionTitle}
                                                 />
                                                 <Form.Control
@@ -445,7 +432,7 @@ function LoginPage() {
                                                     placeholder="Contact Number"
                                                     value={formData.contactNumber}
                                                     onChange={handleInputChange}
-                                                    style={{ height: '2.5rem', marginLeft: '0.5rem' }} // Added marginLeft for spacing
+                                                    style={{ height: '2.5rem', marginLeft: '0.5rem' }}
                                                     isInvalid={!!errors.contactNumber}
                                                 />
                                             </Form.Group>
@@ -459,8 +446,8 @@ function LoginPage() {
                                                     isInvalid={!!errors.address}
                                                 />
                                             </Form.Group>
-                                            <Form.Group className="mb-4 d-flex align-items-center justify-content-center"> {/* Center alignment */}
-                                                <Form.Label htmlFor="hireDate" className="small me-2 text-center" style={{ whiteSpace: 'nowrap', fontSize: '0.975rem' }}>Date Hired:</Form.Label> {/* Centered label */}
+                                            <Form.Group className="mb-4 d-flex align-items-center justify-content-center">
+                                                <Form.Label htmlFor="hireDate" className="small me-2 text-center" style={{ whiteSpace: 'nowrap', fontSize: '0.975rem' }}>Date Hired:</Form.Label>
                                                 <Form.Control
                                                     type="date"
                                                     name="hireDate"
@@ -473,9 +460,9 @@ function LoginPage() {
                                             </Form.Group>
                                         </>
                                     )}
-                                    <Form.Group className="mb-4 text-center"> {/* Centered the user type */}
-                                        <Form.Label className="mb-3">Sign up as:</Form.Label> {/* Added margin-bottom to create space */}
-                                        <div className="d-inline-block"> {/* Ensures the checks are inline and centered */}
+                                    <Form.Group className="mb-4 text-center">
+                                        <Form.Label className="mb-3">Sign up as:</Form.Label>
+                                        <div className="d-inline-block">
                                             <Form.Check
                                                 inline
                                                 label="Owner"

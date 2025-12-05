@@ -104,7 +104,7 @@ async function getByBuyerId(buyerId) {
                     b.BuyerID, b.CompanyName, b.ContactPerson, b.Notes, b.Status, b.CreatedAt;`
             , [buyerId]);
 
-        console.log('Query result for getByBuyerId:', queryResult);
+        // console.log('Query result for getByBuyerId:', queryResult);
 
         // Ensure queryResult is an array
         const rows = Array.isArray(queryResult) ? queryResult : [queryResult];
@@ -158,8 +158,8 @@ async function update(contactId, contactData) {
         const query = `UPDATE buyer_contact SET ${fields.join(', ')} WHERE ContactID = ?`;
         values.push(contactId);
 
-        console.log('Update query:', query);
-        console.log('Update values:', values);
+        // console.log('Update query:', query);
+        // console.log('Update values:', values);
 
         const result = await conn.query(query, values);
 

@@ -134,7 +134,7 @@ async function create(req, res) {
 
 async function update(req, res) {
     const transactionId = parseInt(req.params.transactionId, 10);
-    console.log('Updating transaction with ID:', transactionId);
+    // console.log('Updating transaction with ID:', transactionId);
 
     try {
         const updatedTransaction = await transactionService.update(transactionId, req.body);
@@ -174,7 +174,7 @@ async function createPurchase(req, res) {
             totalAmount,
             items
         });
-        console.log('New Purchase:', newPurchase);
+        // console.log('New Purchase:', newPurchase);
         res.status(201).json({
             ...newPurchase,
             id: newPurchase.id ? newPurchase.id.toString() : null, // Safely handle undefined
@@ -213,7 +213,7 @@ async function createSale(req, res) {
             totalAmount,
             items
         });
-        console.log('New Sale:', newSale);
+        // console.log('New Sale:', newSale);
         res.status(201).json({
             ...newSale,
             id: newSale.id ? newSale.id.toString() : null, // Safely handle undefined

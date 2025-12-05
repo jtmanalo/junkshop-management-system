@@ -201,7 +201,7 @@ async function createRepayment(data) {
             throw new Error('Invalid role specified. Role must be either "employee" or "seller".');
         }
 
-        console.log('Fetched party data:', { sellerId, employeeId });
+        // console.log('Fetched party data:', { sellerId, employeeId });
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
@@ -266,7 +266,7 @@ async function createLoan(data) {
     let conn;
     try {
         conn = await pool.getConnection();
-        console.log('Creating loan with data:', data);
+        // console.log('Creating loan with data:', data);
 
         let sellerId = null;
         let employeeId = null;
@@ -296,13 +296,13 @@ async function createLoan(data) {
             throw new Error('Invalid role specified. Role must be either "employee" or "seller".');
         }
 
-        console.log('Fetched party data:', { sellerId, employeeId });
+        // console.log('Fetched party data:', { sellerId, employeeId });
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
         const transactionDate = createdAt;
 
-        console.log('UserID:', data.userId, 'BranchID:', data.branchId);
+        // console.log('UserID:', data.userId, 'BranchID:', data.branchId);
         // Get ShiftID
         const shift = await conn.query(
             `SELECT ShiftID 
@@ -310,7 +310,7 @@ async function createLoan(data) {
              WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
             [data.userId, data.branchId]
         );
-        console.log('Active shift query result:', shift[0]?.ShiftID);
+        // console.log('Active shift query result:', shift[0]?.ShiftID);
 
         if (!shift[0]?.ShiftID && data.userType !== 'owner') {
             throw new Error('No active shift found for the user to record the expense.');
@@ -380,9 +380,9 @@ async function createExpense(data) {
             [data.userId, data.branchId]
         );
 
-        console.log('UserID:', data.userId, 'BranchID:', data.branchId);
+        // console.log('UserID:', data.userId, 'BranchID:', data.branchId);
 
-        console.log('Active shift query result:', shift[0]?.ShiftID);
+        // console.log('Active shift query result:', shift[0]?.ShiftID);
 
         if (!shift[0]?.ShiftID && data.userType !== 'owner') {
             throw new Error('No active shift found for the user to record the expense.');
@@ -431,7 +431,7 @@ async function getExpenseBalance(branchId, userID,) {
         conn = await pool.getConnection();
 
         // Get ShiftID
-        console.log('UserID:', userID, 'BranchID:', branchId);
+        // console.log('UserID:', userID, 'BranchID:', branchId);
         const shift = await conn.query(
             `SELECT ShiftID 
              FROM shift 
@@ -439,9 +439,9 @@ async function getExpenseBalance(branchId, userID,) {
             [userID, branchId]
         );
 
-        console.log('UserID:', userID, 'BranchID:', branchId);
+        // console.log('UserID:', userID, 'BranchID:', branchId);
 
-        console.log('Active shift query result:', shift[0]?.ShiftID);
+        // console.log('Active shift query result:', shift[0]?.ShiftID);
 
         const [balance] = await conn.query(
             `SELECT SUM(TotalAmount) AS TotalExpenses
@@ -474,9 +474,9 @@ async function getBalance(branchId, userID) {
             [data.userId, data.branchId]
         );
 
-        console.log('UserID:', data.userId, 'BranchID:', data.branchId);
+        // console.log('UserID:', data.userId, 'BranchID:', data.branchId);
 
-        console.log('Active shift query result:', shift[0]?.ShiftID);
+        // console.log('Active shift query result:', shift[0]?.ShiftID);
 
         const [balance] = await conn.query(
             `SELECT (InitialCash - RunningTotal) AS Balance
@@ -509,9 +509,9 @@ async function getSaleBalance(branchId, userID) {
             [userID, branchId]
         );
 
-        console.log('UserID:', userID, 'BranchID:', branchId);
+        // // console.log('UserID:', userID, 'BranchID:', branchId);
 
-        console.log('Active shift query result:', shift[0]?.ShiftID);
+        // console.log('Active shift query result:', shift[0]?.ShiftID);
 
         const [balance] = await conn.query(
             `SELECT SUM(TotalAmount) AS TotalSales
@@ -545,9 +545,9 @@ async function getPurchaseBalance(branchId, userID) {
             [userID, branchId]
         );
 
-        console.log('UserID:', userID, 'BranchID:', branchId);
+        // // console.log('UserID:', userID, 'BranchID:', branchId);
 
-        console.log('Active shift query result:', shift[0]?.ShiftID);
+        // // console.log('Active shift query result:', shift[0]?.ShiftID);
 
         const [balance] = await conn.query(
             `SELECT SUM(TotalAmount) AS TotalPurchases
@@ -574,8 +574,8 @@ async function update(transactionId, data) {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
-        console.log('Updating transaction with data:', data);
-        console.log('Transaction ID:', transactionId);
+        // console.log('Updating transaction with data:', data);
+        // console.log('Transaction ID:', transactionId);
 
         const shift = await conn.query(
             `SELECT ShiftID 

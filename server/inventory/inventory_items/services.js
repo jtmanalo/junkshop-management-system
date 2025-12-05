@@ -86,7 +86,7 @@ async function recordPrevious(data) {
         // Use a valid DATE value (first day of previous month)
         const date = previousDate.startOf('month').format('YYYY-MM-01');
 
-        console.log('date:', date);
+        // console.log('date:', date);
 
         const existingInventory = await conn.query('SELECT * FROM inventory WHERE BranchID = ? AND Date = ?',
             [branchId, date]);
@@ -154,21 +154,18 @@ async function getPreviousRecords(branchId, month, year) {
     try {
         conn = await pool.getConnection();
 
-        // Use provided month/year or default to previous month
         let targetMonth = month;
         let targetYear = year;
 
         if (!month || !year) {
-            // Default to previous month if not provided
             const timezone = moment.tz('Asia/Manila');
             const previousDate = moment(timezone).subtract(1, 'months');
             targetMonth = previousDate.month() + 1; // moment returns 0-11
             targetYear = previousDate.year();
         }
 
-        // Create date for the first day of the target month
         const date = moment.tz(`${targetYear}-${targetMonth}`, 'YYYY-M', 'Asia/Manila').startOf('month').format('YYYY-MM-01');
-        console.log('Fetching inventory for date:', date);
+        // console.log('Fetching inventory for date:', date);
 
         const inventory = await conn.query(
             'SELECT * FROM inventory WHERE BranchID = ? AND Date = ?',
@@ -176,12 +173,12 @@ async function getPreviousRecords(branchId, month, year) {
         );
 
         if (inventory.length === 0) {
-            console.log('No inventory found for branchId:', branchId, 'date:', date);
+            // console.log('No inventory found for branchId:', branchId, 'date:', date);
             return [];
         }
 
         const inventoryId = inventory[0]?.InventoryID;
-        console.log('Found inventoryId:', inventoryId);
+        // console.log('Found inventoryId:', inventoryId);
 
         const inventoryItems = await conn.query(
             'SELECT * FROM inventory_item WHERE InventoryID = ?',

@@ -159,7 +159,7 @@ async function updateOrCreatePricelistItemForBranch(userId, branchId, itemId, pr
             'SELECT PriceListID FROM pricelist WHERE BranchID = ? ORDER BY DateEffective DESC LIMIT 1',
             [branchId]
         );
-        console.log('Pricelist found:', pricelist);
+        // console.log('Pricelist found:', pricelist);
 
         let priceListId;
         if (pricelist) {
@@ -217,7 +217,7 @@ async function updateOrCreatePricelistItemForBuyer(userId, buyerId, itemId, pric
             'SELECT PriceListID FROM pricelist WHERE BuyerID = ? ORDER BY DateEffective DESC LIMIT 1',
             [buyerId]
         );
-        console.log('Pricelist found:', pricelist);
+        // console.log('Pricelist found:', pricelist);
 
         let priceListId;
         if (pricelist) {
@@ -264,7 +264,7 @@ async function processHistoricalUpload(userId, entityId, entityType, dateEffecti
     try {
         conn = await pool.getConnection();
 
-        console.log('Processing historical upload with data:', { userId, entityId, entityType, dateEffective });
+        // console.log('Processing historical upload with data:', { userId, entityId, entityType, dateEffective });
 
         // Start Transaction
         await conn.query('START TRANSACTION');

@@ -1,16 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FaInfoCircle, FaSearch } from 'react-icons/fa';
+import { useState, useEffect, useCallback } from 'react';
+import { FaInfoCircle } from 'react-icons/fa';
 import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import { useMatch } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 
 // Page tab 1 to add/manage sellers, view their details, and keep track of their loans and payments
 // Page tab 2 to keep track of employee loans and payments
 function LoanPage() {
     const { token, user } = useAuth();
-    const navigate = useNavigate();
     const matchMobileRoute = useMatch('/mobileroute/*');
     const matchEmployeeDashboard = useMatch('/employee-dashboard/*');
     const isMobileRoute = matchMobileRoute || matchEmployeeDashboard;
@@ -78,7 +76,7 @@ function LoanPage() {
                 lastTransactionDate: seller.LastTransactionDate,
                 createdAt: seller.CreatedAt
             }));
-            console.log('Fetched sellers with loans:', formattedSellers);
+            // console.log('Fetched sellers with loans:', formattedSellers);
             setSellers(formattedSellers);
         } catch (error) {
             console.error('Error fetching sellers:', error);
@@ -145,7 +143,7 @@ function LoanPage() {
             });
             setShowEditSellerModal(false);
             setSelectedSellerDetails(null);
-            fetchSellers(); // Refresh sellers list
+            fetchSellers();
         } catch (error) {
             console.error('Error updating seller:', error);
             alert('Failed to update seller. Please try again.');
@@ -202,7 +200,7 @@ function LoanPage() {
 
     const handleAmountChange = (e) => {
         const value = e.target.value;
-        if (/^\d*\.?\d*$/.test(value)) { // Regex to allow only non-negative numbers
+        if (/^\d*\.?\d*$/.test(value)) {
             setAmount(value);
         }
     };
@@ -214,7 +212,7 @@ function LoanPage() {
                 `${process.env.REACT_APP_BASE_URL}/api/sellers`,
                 {
                     name: newSellerName,
-                    contactNumber: newSellerContact || null, // Allow empty contact number
+                    contactNumber: newSellerContact || null,
                     userId: user?.userID,
                 },
                 {
@@ -229,7 +227,7 @@ function LoanPage() {
             setShowAddSellerModal(false);
             setNewSellerName('');
             setNewSellerContact('');
-            await fetchSellers(); // Refresh seller list
+            await fetchSellers();
         } catch (error) {
             console.error('Error adding seller:', error);
             alert('Failed to add seller.');
@@ -267,7 +265,6 @@ function LoanPage() {
         employee.displayName.toLowerCase().includes(employeeSearch.toLowerCase())
     );
 
-    // Removed all margin and padding to eliminate remaining space on the left
     return (
         <div>
             <div className="container-fluid" style={{ maxWidth: '90vw' }}>

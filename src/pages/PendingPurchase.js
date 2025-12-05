@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Form, Row, Col, InputGroup, Modal, Table, Spinner } from 'react-bootstrap';
+import { Container, Card, Button, Form, Row, Col, InputGroup, Modal, Spinner } from 'react-bootstrap';
 import { FaPlus, FaTrash, FaMinus, FaChevronLeft } from 'react-icons/fa';
 import { DeleteConfirmModal } from '../components/Modal';
 import { useDashboard } from '../services/DashboardContext';
@@ -10,8 +10,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 function PendingPurchase() {
     const location = useLocation();
     const { state } = location || {};
-
-    // Modal state for delete confirmation
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteIdx, setDeleteIdx] = useState(null);
     const { actualBranchId, shiftId, branchName, branchLocation } = useDashboard();
@@ -34,16 +32,14 @@ function PendingPurchase() {
     const [items, setItems] = useState([
         { name: '', quantity: '', pricing: '', subtotal: '' },
     ]);
-    const [originalItems, setOriginalItems] = useState([]); // Store original fetched transaction items
+    const [originalItems, setOriginalItems] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Show modal when trash is clicked
     const handleTrashClick = (idx) => {
         setDeleteIdx(idx);
         setShowDeleteModal(true);
     };
 
-    // Confirm deletion
     const confirmRemoveItem = () => {
         if (deleteIdx !== null) {
             setItems(items.filter((_, i) => i !== deleteIdx));
@@ -52,7 +48,6 @@ function PendingPurchase() {
         setShowDeleteModal(false);
     };
 
-    // Cancel deletion
     const cancelRemoveItem = () => {
         setDeleteIdx(null);
         setShowDeleteModal(false);
@@ -87,7 +82,7 @@ function PendingPurchase() {
 
     useEffect(() => {
         if (actualBranchId && shiftId) {
-            fetchItems(); // Fetch items only after actualBranchId and shiftId are set
+            fetchItems();
         }
     }, [actualBranchId, shiftId]);
 
@@ -98,12 +93,10 @@ function PendingPurchase() {
             const sellerName = state?.sellerName;
             const partyType = state?.partyType;
 
-            // Set type if valid
             if (partyType && typeOptions.includes(partyType)) {
                 setType(partyType);
             }
 
-            // Set seller once allSellers is available
             if (sellerName && allSellers.length > 0) {
                 const matchingSeller = allSellers.find(s => s.Name === sellerName);
                 if (matchingSeller) {
@@ -126,7 +119,7 @@ function PendingPurchase() {
                                 pricing: item.ItemPrice || '',
                                 subtotal: item.Subtotal || '',
                             })));
-                            setOriginalItems(transactionData.map(item => ({ // Store the original fetched items
+                            setOriginalItems(transactionData.map(item => ({
                                 transactionItemId: item.TransactionItemID || '',
                                 name: item.ItemName || '',
                                 quantity: item.Quantity || '',
@@ -175,7 +168,7 @@ function PendingPurchase() {
                 setSeller(sellerName || '');
             } else {
                 setType('Extra' || '');
-                setSeller(''); // Clear seller if not regular
+                setSeller('');
             }
         } else {
             console.warn('No state received in PurchasePage');
@@ -194,7 +187,7 @@ function PendingPurchase() {
                 ...updatedItems[idx],
                 name: selectedItem,
                 classification: selected.Classification || '',
-                pricing: Math.max(selected.ItemPrice || 0, 0.01), // Ensure price is never 0 or negative
+                pricing: Math.max(selected.ItemPrice || 0, 0.01),
                 subtotal: (updatedItems[idx].quantity || 0) * Math.max(selected.ItemPrice || 0, 0.01),
             };
             setItems(updatedItems);
@@ -203,22 +196,22 @@ function PendingPurchase() {
     };
 
     const handleQuantityChange = (idx, newQuantity) => {
-        if (isNaN(newQuantity)) return; // Prevent non-numeric values
+        if (isNaN(newQuantity)) return;
         const updatedItems = [...items];
         updatedItems[idx] = {
             ...updatedItems[idx],
-            quantity: Math.max(newQuantity || 0, 1), // Ensure quantity is never 0 or negative
+            quantity: Math.max(newQuantity || 0, 1),
             subtotal: Math.max(newQuantity || 0, 1) * (updatedItems[idx].pricing || 0.01),
         };
         setItems(updatedItems);
     };
 
     const handlePricingChange = (idx, newPricing) => {
-        if (isNaN(newPricing)) return; // Prevent non-numeric values
+        if (isNaN(newPricing)) return;
         const updatedItems = [...items];
         updatedItems[idx] = {
             ...updatedItems[idx],
-            pricing: Math.max(newPricing || 0, 0.01), // Ensure price is never 0 or negative
+            pricing: Math.max(newPricing || 0, 0.01),
             subtotal: (updatedItems[idx].quantity || 0) * Math.max(newPricing || 0, 0.01),
         };
         setItems(updatedItems);
@@ -231,7 +224,7 @@ function PendingPurchase() {
 
             if (!item.name || item.quantity <= 0 || item.pricing <= 0) {
                 isValid = false;
-                updatedItem.isInvalid = true; // Mark invalid fields
+                updatedItem.isInvalid = true;
             } else {
                 updatedItem.isInvalid = false;
             }
@@ -274,7 +267,7 @@ function PendingPurchase() {
                 items: items.map(item => ({
                     itemId: allItems.find(i => i.Name === item.name).ItemID,
                     transactionItemId: item.transactionItemId,
-                    classification: item.classification, // Include classification in transaction data
+                    classification: item.classification,
                     quantity: item.quantity,
                     price: item.pricing,
                     subtotal: item.subtotal,
@@ -334,8 +327,8 @@ function PendingPurchase() {
 
             const totalAmount = items.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
             const sellerId = allSellers.find(s => s.Name === seller)?.SellerID || null;
-            console.log('Seller ID for pending transaction:', sellerId);
-            console.log('Transaction ID for pending transaction:', state?.transactionId);
+            // console.log('Seller ID for pending transaction:', sellerId);
+            // console.log('Transaction ID for pending transaction:', state?.transactionId);
 
             const transactionData = {
                 sellerId: sellerId,
@@ -365,13 +358,12 @@ function PendingPurchase() {
                 // }),
             };
 
-            console.log('Transaction Data (Pending):', transactionData);
+            // console.log('Transaction Data (Pending):', transactionData);
 
             const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/purchases/${state?.transactionId}`, transactionData);
-            console.log('Pending transaction saved:', response.data);
+            // console.log('Pending transaction saved:', response.data);
 
             alert('Transaction saved as pending.');
-            // Clear fields
             setSeller('');
             setType('');
             setItems([{ name: '', quantity: '', pricing: '', subtotal: '' }]);
@@ -413,9 +405,9 @@ function PendingPurchase() {
 
         const handleBackClick = () => {
             if (!hasChanges()) {
-                navigate(-1); // Navigate back if no changes are made
+                navigate(-1);
             } else {
-                handleMinimize(state); // Send updated items to the backend if changes are made
+                handleMinimize(state);
             }
         };
 

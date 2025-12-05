@@ -65,7 +65,7 @@ async function getPreviousRecords(req, res) {
         const branchId = parseInt(req.query.branchId);
         const month = parseInt(req.query.month);
         const year = parseInt(req.query.year);
-        console.log('Received branchId:', branchId, 'month:', month, 'year:', year);
+        // console.log('Received branchId:', branchId, 'month:', month, 'year:', year);
         if (isNaN(branchId)) {
             return res.status(400).json({ error: 'Invalid or missing branchId parameter.' });
         }

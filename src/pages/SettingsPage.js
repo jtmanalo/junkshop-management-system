@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Form, Button } from 'react-bootstrap';
 import { useAuth } from '../services/AuthContext';
 import axios from 'axios';
@@ -23,12 +23,12 @@ function SettingsPage() {
     useEffect(() => {
         const fetchUserDetails = async () => {
             try {
-                console.log('Fetching user details for:', user?.username); // Debugging log
+                // console.log('Fetching user details for:', user?.username);  
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/user-details?username=${user?.username}`);
 
-                console.log('API Response:', response.data); // Debugging log
+                // console.log('API Response:', response.data);  
                 const userDetails = response.data;
-                console.log('Mapped User Details:', userDetails); // Debugging log
+                // console.log('Mapped User Details:', userDetails);  
                 setFormData({
                     Name: userDetails.Name || '',
                     FirstName: userDetails.FirstName || '',
@@ -55,7 +55,7 @@ function SettingsPage() {
                         Authorization: `Bearer ${user?.token}`,
                     },
                 });
-                console.log('Branches Response:', response.data); // Debugging log
+                // console.log('Branches Response:', response.data);  
                 setBranches(response.data);
             } catch (error) {
                 console.error('Error fetching branches:', error);
@@ -66,12 +66,12 @@ function SettingsPage() {
             fetchUserDetails();
             fetchBranches();
         } else {
-            console.warn('User context is undefined'); // Debugging log
+            console.warn('User context is undefined');
         }
     }, [user]);
 
     useEffect(() => {
-        console.log('Updated formData:', formData); // Log whenever formData changes
+        // console.log('Updated formData:', formData);
     }, [formData]);
 
     const handleInputChange = (e) => {
@@ -84,11 +84,11 @@ function SettingsPage() {
 
     const handleSave = async () => {
         try {
-            console.log('Updated user details:', formData); // Debugging log
-            console.log('User ID:', user.userID); // Debugging log
+            // console.log('Updated user details:', formData);  
+            // console.log('User ID:', user.userID);  
 
             const url = `${process.env.REACT_APP_BASE_URL}/api/users-update/${user.userID}`;
-            console.log('PUT Request URL:', url); // Debugging log
+            // console.log('PUT Request URL:', url);  
 
             const response = await axios.put(
                 url,
@@ -104,7 +104,7 @@ function SettingsPage() {
                 }
             );
 
-            console.log('Save response:', response.data);
+            // console.log('Save response:', response.data);
             alert('User details updated successfully! Please log out and log back in to apply the default branch update.');
         } catch (error) {
             console.error('Error saving user details:', error);
@@ -113,7 +113,7 @@ function SettingsPage() {
     };
 
     if (!user) {
-        return <div>Loading user context...</div>; // Fallback UI
+        return <div>Loading user context...</div>;
     }
 
     return (
@@ -129,7 +129,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="text"
-                                            name="Name" // Ensure this matches the API response key
+                                            name="Name"
                                             value={formData.Name || ''}
                                             onChange={handleInputChange}
                                         />
@@ -140,7 +140,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="text"
-                                            name="Username" // Ensure this matches the API response key
+                                            name="Username"
                                             value={formData.Username || ''}
                                             onChange={handleInputChange}
                                         />
@@ -161,7 +161,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="email"
-                                            name="Email" // Ensure this matches the API response key
+                                            name="Email"
                                             value={formData.Email || ''}
                                             onChange={handleInputChange}
                                         />
@@ -195,7 +195,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="text"
-                                            name="FirstName" // Ensure this matches the API response key
+                                            name="FirstName"
                                             value={formData.FirstName || ''}
                                             onChange={handleInputChange}
                                         />
@@ -206,7 +206,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="text"
-                                            name="MiddleName" // Ensure this matches the API response key
+                                            name="MiddleName"
                                             value={formData.MiddleName || ''}
                                             onChange={handleInputChange}
                                         />
@@ -217,7 +217,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="text"
-                                            name="LastName" // Ensure this matches the API response key
+                                            name="LastName"
                                             value={formData.LastName || ''}
                                             onChange={handleInputChange}
                                         />
@@ -228,7 +228,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="text"
-                                            name="Username" // Ensure this matches the API response key
+                                            name="Username"
                                             value={formData.Username || ''}
                                             onChange={handleInputChange}
                                         />
@@ -249,7 +249,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="email"
-                                            name="Email" // Ensure this matches the API response key
+                                            name="Email"
                                             value={formData.Email || ''}
                                             onChange={handleInputChange}
                                         />
@@ -260,7 +260,7 @@ function SettingsPage() {
                                     <td>
                                         <Form.Control
                                             type="text"
-                                            name="ContactNumber" // Ensure this matches the API response key
+                                            name="ContactNumber"
                                             value={formData.ContactNumber || ''}
                                             onChange={handleInputChange}
                                         />
@@ -272,7 +272,7 @@ function SettingsPage() {
                                         <Form.Control
                                             as="textarea"
                                             rows={3}
-                                            name="Address" // Ensure this matches the API response key
+                                            name="Address"
                                             value={formData.Address || ''}
                                             onChange={handleInputChange}
                                         />

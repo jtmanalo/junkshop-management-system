@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import moment from 'moment-timezone';
 import { useDashboard } from '../services/DashboardContext';
@@ -11,11 +11,11 @@ function OngoingPage() {
     const { shiftId } = useDashboard();
     const navigate = useNavigate();
     const { user } = useAuth();
-    console.log('OngoingPage shiftId:', shiftId);
+    // console.log('OngoingPage shiftId:', shiftId);
 
     useEffect(() => {
         if (!shiftId) {
-            console.log('Shift ID is null, skipping fetchPendingTransactions');
+            // console.log('Shift ID is null, skipping fetchPendingTransactions');
             return;
         }
 

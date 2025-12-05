@@ -6,10 +6,10 @@ const DashboardContext = createContext();
 export const useDashboard = () => useContext(DashboardContext);
 
 export const DashboardProvider = ({ children, user }) => {
-    const [branchName, setBranchName] = useState(null); // Add branch state
-    const [branchLocation, setBranchLocation] = useState(null); // Add branch location state
-    const [actualBranchId, setActualBranchId] = useState(null); // Store actual branch ID
-    const [shiftId, setShiftId] = useState(null); // Store shift ID
+    const [branchName, setBranchName] = useState(null);
+    const [branchLocation, setBranchLocation] = useState(null);
+    const [actualBranchId, setActualBranchId] = useState(null);
+    const [shiftId, setShiftId] = useState(null);
 
     const fetchActiveShift = useCallback(async () => {
         if (!user?.userID) return;
@@ -19,7 +19,7 @@ export const DashboardProvider = ({ children, user }) => {
             );
 
             if (response.error) {
-                alert(response.error); // Display the error message from the backend
+                alert(response.error);
                 return;
             }
 
@@ -48,9 +48,9 @@ export const DashboardProvider = ({ children, user }) => {
             setBranchName,
             branchLocation,
             setBranchLocation,
-            actualBranchId, // Provide actual branch ID
-            shiftId, // Provide shift ID
-            fetchActiveShift // Provide fetchActiveShift function
+            actualBranchId,
+            shiftId,
+            fetchActiveShift
         }}>
             {children}
         </DashboardContext.Provider>

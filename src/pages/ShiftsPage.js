@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Table, Form, Button, Modal, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import moment from 'moment-timezone';
 
-// View logs should show LogsPage or a modal version
 function ShiftsPage() {
     const { token } = useAuth();
     const [selectedSeller, setSelectedSeller] = useState('all');
@@ -31,7 +30,7 @@ function ShiftsPage() {
                 `${process.env.REACT_APP_BASE_URL}/api/daily-logs/${shiftId}`
             );
             setShiftLogs(response.data);
-            console.log('Shift logs:', response.data);
+            // console.log('Shift logs:', response.data);
         } catch (error) {
             console.error('Error fetching shift logs:', error.response?.data || error.message);
         } finally {
@@ -46,7 +45,7 @@ function ShiftsPage() {
                 `${process.env.REACT_APP_BASE_URL}/api/shift-employees/${shiftId}`
             );
             setShiftEmployees(response.data);
-            console.log('Shift employees:', response.data);
+            // console.log('Shift employees:', response.data);
         } catch (error) {
             console.error('Error fetching shift employees:', error.response?.data || error.message);
         } finally {
@@ -55,11 +54,11 @@ function ShiftsPage() {
     };
 
     const handleRowClick = (log) => {
-        setSelectedLog(log); // Set the selected log
+        setSelectedLog(log);
     };
 
     const handleCloseModal = () => {
-        setSelectedLog(null); // Close the modal
+        setSelectedLog(null);
     };
 
     const handleViewLogs = async (shiftId) => {

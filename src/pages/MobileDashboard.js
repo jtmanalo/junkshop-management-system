@@ -1,6 +1,6 @@
 import { Container, Modal, Form, Card, Button, Table } from 'react-bootstrap';
 import { useNavigate, useLocation, Route, Routes } from 'react-router-dom';
-import { useState, useEffect, act } from 'react';
+import { useState, useEffect } from 'react';
 import { FaShoppingCart, FaMoneyBillWave, FaChartLine, FaFileInvoiceDollar, FaHandHoldingUsd, FaUserTie, FaBoxOpen, FaClock } from 'react-icons/fa';
 import { ActiveTabCard, ButtonsCard } from '../components/Card';
 import CustomButton from '../components/CustomButton';
@@ -27,14 +27,14 @@ import PricelistPage from './ItemsTable';
 import PendingPurchase from './PendingPurchase';
 
 function SetBranchModal({ show, branchOptions, onSetBranch }) {
-  const [selectedBranch, setSelectedBranch] = useState(branchOptions[0] || ''); // Default to the first branch
+  const [selectedBranch, setSelectedBranch] = useState(branchOptions[0] || '');
   const navigate = useNavigate();
 
   const { user } = useAuth();
 
   useEffect(() => {
     if (branchOptions.length > 0 && !selectedBranch) {
-      setSelectedBranch(branchOptions[0]); // Automatically select the first branch if none is selected
+      setSelectedBranch(branchOptions[0]);
     }
   }, [branchOptions, selectedBranch]);
 
@@ -45,7 +45,7 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
     }
 
     if (selectedBranch) {
-      onSetBranch(selectedBranch); // Save the selected branch
+      onSetBranch(selectedBranch);
     } else {
       alert('Please select a branch location.');
     }
@@ -96,11 +96,11 @@ function MobileDashboard() {
   const { user, token } = useAuth();
   const [showEndShiftModal, setShowEndShiftModal] = useState(false);
   const [activeTab, setActiveTab] = useState('Balance');
-  const [shiftStarted, setShiftStarted] = useState(false); // false = not started
+  const [shiftStarted, setShiftStarted] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [branch, setBranch] = useState('');
   const [startingCash, setStartingCash] = useState('1000.00');
-  const [branchOptions, setBranchOptions] = useState([]); // State to store branch options
+  const [branchOptions, setBranchOptions] = useState([]);
   const [showSetBranchModal, setShowSetBranchModal] = useState(true);
   const [shiftId, setShiftId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -135,7 +135,7 @@ function MobileDashboard() {
   const handleAddEmployee = async () => {
     if (onAddEmployee) {
       await onAddEmployee();
-      fetchShiftEmployees(); // Refresh the employee list after adding
+      fetchShiftEmployees();
     }
   };
 
@@ -181,14 +181,14 @@ function MobileDashboard() {
   };
 
   useEffect(() => {
-    refreshBalance(actualBranchId, user?.userId);// Refresh balance when shift starts
-    refreshTotalExpense(actualBranchId, user?.userId); // Refresh expense balance when shift starts
-    refreshTotalPurchase(actualBranchId, user?.userId); // Refresh purchase balance when shift starts
-    refreshTotalSale(actualBranchId, user?.userId); // Refresh sale balance when shift starts
+    refreshBalance(actualBranchId, user?.userId);
+    refreshTotalExpense(actualBranchId, user?.userId);
+    refreshTotalPurchase(actualBranchId, user?.userId);
+    refreshTotalSale(actualBranchId, user?.userId);
   }, [shiftStarted, user, actualBranchId]);
 
   const fetchActiveShift = async () => {
-    setLoading(true); // Start loading before fetching
+    setLoading(true);
     try {
       const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/shifts/active/${user.userID}`, {
         headers: {
@@ -198,32 +198,32 @@ function MobileDashboard() {
       const data = response.data;
       if (data && data.length > 0) {
         const activeShift = data[0];
-        setShiftId(activeShift.ShiftID); // Set the active shift ID
+        setShiftId(activeShift.ShiftID);
         setBranch({
           display: `${activeShift.Name} - ${activeShift.Location}`,
           id: activeShift.BranchID
-        }); // Set the branch details
-        setShiftStarted(true); // Mark the shift as started
+        });
+        setShiftStarted(true);
       } else {
-        setShiftStarted(false); // No active shift
+        setShiftStarted(false);
       }
       return data;
     } catch (error) {
       console.error('Error fetching active shift:', error.response?.data || error.message);
       return null;
     } finally {
-      setLoading(false); // Stop loading after fetching
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     const initializeDashboard = async () => {
-      setLoading(true); // Start loading
+      setLoading(true);
 
       try {
         const activeShiftData = await fetchActiveShift();
         if (activeShiftData && activeShiftData.length > 0) {
-          setShowSetBranchModal(false); // Active shift found, no need to show modal
+          setShowSetBranchModal(false);
           return;
         }
 
@@ -233,22 +233,21 @@ function MobileDashboard() {
             id: user.defaultBranchID,
           };
           setBranch(defaultBranch);
-          setShowSetBranchModal(false); // Default branch found, no need to show modal
+          setShowSetBranchModal(false);
           return;
         }
 
-        setShowSetBranchModal(true); // No active shift or default branch, show branch modal
+        setShowSetBranchModal(true);
       } catch (error) {
         console.error('Error initializing dashboard:', error);
       } finally {
-        setLoading(false); // Stop loading
+        setLoading(false);
       }
     };
 
     initializeDashboard();
   }, [user]);
 
-  // fetch branches where owner has usertype 'owner'
   const fetchBranches = async () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches-with-owner-usertype`, {
@@ -257,7 +256,7 @@ function MobileDashboard() {
         },
       });
       const data = response.data;
-      // console.log('Fetched branches with owner usertype:', data);
+
       const branches = data.map(branch => ({
         display: `${branch.Name} - ${branch.Location}`,
         id: branch.BranchID
@@ -274,11 +273,10 @@ function MobileDashboard() {
   }, []);
 
   const handleSetBranch = (branch) => {
-    setBranch(branch); // Save the full branch object to state
+    setBranch(branch);
     setShowSetBranchModal(false);
   };
 
-  // Create shift function
   const createShift = async (branchId, userId, initialCash, token) => {
     try {
       const payload = {
@@ -298,8 +296,8 @@ function MobileDashboard() {
         }
       );
       // console.log('Shift created successfully:', response.data);
+      refreshBalance(branchId, userId);
       return response.data;
-      refreshBalance(branchId, userId); // Refresh balance after creating shift
     } catch (error) {
       console.error('Error creating shift:', error.response?.data || error.message);
       throw error;
@@ -357,8 +355,8 @@ function MobileDashboard() {
       const shiftData = await createShift(branchId, userId, initialCash, token);
       setShiftId(shiftData.id);
 
-      refreshBalance(branchId, userId); // Refresh balance after starting shift
-      setShiftStarted(true); // Ensure this is called
+      refreshBalance(branchId, userId);
+      setShiftStarted(true);
       setShowModal(false);
     } catch (error) {
       alert('Error starting shift. Please try again.');
@@ -366,14 +364,13 @@ function MobileDashboard() {
     // console.log('Shift started with initial balance:', startingCash);
   };
 
-  // Remove redundant declaration of setShiftEmployees
   const onAddEmployee = async () => {
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}/api/shift-employees`,
         {
           shiftId,
-          firstName: 'John', // Example data, replace with actual logic
+          firstName: 'John',
           lastName: 'Doe',
         },
         {
@@ -389,7 +386,6 @@ function MobileDashboard() {
     }
   };
 
-  // Add refresh functions to MobileDashboard
   const refreshBalance = async (branchId, userId) => {
     if (!branchId || !userId) return;
     // console.log('Refreshing balance:', branchId, userId);
@@ -438,7 +434,6 @@ function MobileDashboard() {
     }
   };
 
-  // Trigger refreshes in useEffect
   useEffect(() => {
     if (user && actualBranchId) {
       refreshBalance(actualBranchId, user.userID);
@@ -549,24 +544,24 @@ function MobileDashboard() {
             actions={[
               {
                 label: 'Loans',
-                icon: <FaHandHoldingUsd size={28} color="#232323" />, // Seller icon
+                icon: <FaHandHoldingUsd size={28} color="#232323" />,
                 onClick: () => navigate(`/employee-dashboard/${user?.username}/loans`),
               },
               {
                 label: 'Buyer',
-                icon: <FaUserTie size={28} color="#232323" />, // Buyer icon
+                icon: <FaUserTie size={28} color="#232323" />,
                 onClick: () => navigate(`/employee-dashboard/${user?.username}/buyers`),
               },
               {
                 label: 'Item',
-                icon: <FaBoxOpen size={28} color="#232323" />, // Item icon
+                icon: <FaBoxOpen size={28} color="#232323" />,
                 onClick: () => navigate(`/employee-dashboard/${user?.username}/items`),
               },
               {
                 label: 'Shift',
-                icon: <FaClock size={28} color="#232323" />, // Item icon
+                icon: <FaClock size={28} color="#232323" />,
                 onClick: () => setShowShiftEmployeesModal(true),
-                disabled: !shiftStarted // Disable if shift has not started
+                disabled: !shiftStarted
               },
             ]}
           />
@@ -681,12 +676,12 @@ function MobileDashboard() {
         employees={employees}
       />
       <ShiftEmployeesModal
-        show={showShiftEmployeesModal} // Modal visibility controlled by state
-        onClose={() => setShowShiftEmployeesModal(false)} // Close modal handler
-        shiftId={shiftId} // Pass the current shift ID
-        token={token} // Pass the authentication token
-        onAddEmployee={() => setShowAddEmployeeModal(true)} // Callback for adding employees
-        shiftStarted={shiftStarted} // Pass shift status
+        show={showShiftEmployeesModal}
+        onClose={() => setShowShiftEmployeesModal(false)}
+        shiftId={shiftId}
+        token={token}
+        onAddEmployee={() => setShowAddEmployeeModal(true)}
+        shiftStarted={shiftStarted}
       />
     </>
   );
@@ -704,7 +699,6 @@ const soloPages = [
 function MobileLayout({ activePage, setActivePage, username, userType, children }) {
   const location = useLocation();
 
-  // Check if the current route matches any of the soloPages
   const isSoloPage = soloPages.some((path) => {
     const regex = new RegExp(path.replace(':username', username));
     return regex.test(location.pathname);
@@ -816,7 +810,7 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
     const [firstName, lastName] = selectedEmployee.split(' ');
 
     try {
-      console.log('Adding employee to shift:', { shiftId, firstName, lastName });
+      // console.log('Adding employee to shift:', { shiftId, firstName, lastName });
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}/api/shift-employees`,
         {
@@ -825,7 +819,7 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
           lastName,
         }
       );
-      console.log('Employee added successfully:', response.data);
+      // console.log('Employee added successfully:', response.data);
 
       alert('Employee added successfully!');
       onClose();
@@ -904,7 +898,7 @@ function ShiftEmployeesModal({ show, onClose, shiftId, token, onAddEmployee, shi
   const handleAddEmployee = async () => {
     if (onAddEmployee) {
       await onAddEmployee();
-      fetchShiftEmployees(); // Refresh the employee list after adding
+      fetchShiftEmployees();
     }
   };
 

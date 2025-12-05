@@ -3,9 +3,11 @@ import { Table, Button, Form, Modal, Row, Col, Alert } from 'react-bootstrap';
 import { FaInfoCircle } from 'react-icons/fa';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function EmployeesTable() {
     const { token, user } = useAuth();
+    const navigate = useNavigate();
     const currentUsername = user ? user.username : null;
     const [users, setUsers] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -32,7 +34,7 @@ function EmployeesTable() {
     const [showEditSuccessAlert, setShowEditSuccessAlert] = useState(false);
     const [showApproveSuccessAlert, setShowApproveSuccessAlert] = useState(false);
     const [showRejectSuccessAlert, setShowRejectSuccessAlert] = useState(false);
-    const [undoAction, setUndoAction] = useState(null);
+    // const [undoAction, setUndoAction] = useState(null);
 
     useEffect(() => {
         const fetchEmployees = async () => {
@@ -143,7 +145,7 @@ function EmployeesTable() {
             setShowUpdateModal(false);
             setSelectedUser(null);
             setShowEditSuccessAlert(true);
-            setTimeout(() => setShowEditSuccessAlert(false), 3000); // Auto-hide after 3 seconds
+            setTimeout(() => setShowEditSuccessAlert(false), 3000);
         } catch (error) {
             console.error('Error updating employee status:', error);
         }
@@ -154,17 +156,16 @@ function EmployeesTable() {
             if (modalAction === 'approve' || modalAction === 'reject') {
                 const updatedStatus = modalAction === 'approve' ? 'approved' : 'rejected';
 
-                // Retrieve the authentication token
-                console.log('Token:', token); // Debugging the user object
+                // console.log('Token:', token);
 
                 if (!token) {
                     console.error('Error: Missing authentication token. Redirecting to login.');
-                    // Optionally, redirect to login page or show an error message
+                    navigate('/login');
                     return;
                 }
 
-                console.log('Using token:', token); // Debugging the token
-                console.log('Updating user:', selectedUser.Username, 'with userID', selectedUser.UserID, 'to status:', updatedStatus);
+                // console.log('Using token:', token);
+                // console.log('Updating user:', selectedUser.Username, 'with userID', selectedUser.UserID, 'to status:', updatedStatus);
 
                 await axios.put(
                     `${process.env.REACT_APP_BASE_URL}/api/users/${selectedUser.UserID}/approve-reject`,
@@ -240,16 +241,15 @@ function EmployeesTable() {
         };
 
         try {
-            const response = await axios.post(
+            await axios.post(
                 `${process.env.REACT_APP_BASE_URL}/api/employees`,
                 employeeData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            console.log('Add employee response:', response.data);
+            // console.log('Add employee response:', response.data);
 
-            // Show success alert
             setShowSuccessAlert(true);
-            setTimeout(() => setShowSuccessAlert(false), 5000); // Auto-hide after 3 seconds
+            setTimeout(() => setShowSuccessAlert(false), 5000);
 
             // Fetch updated employee list
             const updatedResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/employees-and-users`);

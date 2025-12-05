@@ -1,34 +1,26 @@
-import SalesPerformanceChart from '../components/SalesPerformanceChart';
-import BreakEvenChart from '../components/BreakEvenChart';
-import ProfitMarginBarChart from '../components/ProfitMarginBarChart';
-import ExpenseBreakdownDonut from '../components/ExpenseBreakdownDonut';
-import ExpenseTrendStackedBar from '../components/ExpenseTrendStackedBar';
-import LocationAnalysisTable from '../components/LocationAnalysisTable';
+// import SalesPerformanceChart from '../components/SalesPerformanceChart';
+// import BreakEvenChart from '../components/BreakEvenChart';
+// import ProfitMarginBarChart from '../components/ProfitMarginBarChart';
+// import ExpenseBreakdownDonut from '../components/ExpenseBreakdownDonut';
+// import ExpenseTrendStackedBar from '../components/ExpenseTrendStackedBar';
+// import LocationAnalysisTable from '../components/LocationAnalysisTable';
 import PriceTrendGraph from '../components/PriceTrendGraph';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Form, Row, Col, Card } from 'react-bootstrap';
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
 
 function AnalyticsPage() {
-    // --- State for Filters and Data ---
-    const [entityTypeFilter, setEntityTypeFilter] = useState('buyer'); // 'buyer' or 'branch'
-    const [entities, setEntities] = useState([]); // List of buyers OR branches
-    const [items, setItems] = useState([]); // List of all items
-
-    // --- State for Chart Inputs ---
-    const [selectedEntityId, setSelectedEntityId] = useState(null); // The ID of the selected buyer/branch
-    const [selectedItemId, setSelectedItemId] = useState(null); // The ID of the selected item
-
+    const [entityTypeFilter, setEntityTypeFilter] = useState('buyer');
+    const [entities, setEntities] = useState([]);
+    const [items, setItems] = useState([]);
+    const [selectedEntityId, setSelectedEntityId] = useState(null);
+    const [selectedItemId, setSelectedItemId] = useState(null);
     const [loadingEntities, setLoadingEntities] = useState(false);
     const [loadingItems, setLoadingItems] = useState(false);
-
-    // --- Data Fetching Functions ---
 
     const fetchItems = useCallback(async () => {
         setLoadingItems(true);
         try {
-            // Assuming this API returns a list of all items {ItemID, Name, Classification}
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items`);
             console.log('Fetched items:', response.data);
             setItems(response.data.map(item => ({
@@ -48,7 +40,7 @@ function AnalyticsPage() {
         setEntities([]);
         setSelectedEntityId(null);
 
-        const endpoint = type === 'buyer' ? '/api/buyers-list' : '/api/branches'; // Assuming a simple list API
+        const endpoint = type === 'buyer' ? '/api/buyers-list' : '/api/branches';
 
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}${endpoint}`);
@@ -60,7 +52,6 @@ function AnalyticsPage() {
 
             setEntities(entityData);
 
-            // Set first item as default selection
             if (entityData.length > 0) {
                 setSelectedEntityId(entityData[0].id);
             }
@@ -72,27 +63,21 @@ function AnalyticsPage() {
         }
     }, []);
 
-    // --- useEffect Hooks ---
-
-    // 1. Initial Load: Fetch all items and default entities (buyers)
     useEffect(() => {
         fetchItems();
         fetchEntities(entityTypeFilter);
-    }, [fetchItems, fetchEntities]);
+    }, [fetchItems, fetchEntities, entityTypeFilter]);
 
-    // 2. Entity Type Change: Refetch entities when the dropdown changes
     useEffect(() => {
         fetchEntities(entityTypeFilter);
     }, [entityTypeFilter, fetchEntities]);
 
-    // 3. Set Initial Item ID: Once items are loaded, set the first one as default
     useEffect(() => {
         if (items.length > 0 && selectedItemId === null) {
             setSelectedItemId(items[0].id);
         }
     }, [items, selectedItemId]);
 
-    // --- Render Logic ---
     const isLoading = loadingEntities || loadingItems;
 
     return (
@@ -171,7 +156,7 @@ function AnalyticsPage() {
                     {selectedEntityId && selectedItemId && !isLoading ? (
                         <PriceTrendGraph
                             entityId={selectedEntityId}
-                            entityType={entityTypeFilter} // Passes 'buyer' or 'branch'
+                            entityType={entityTypeFilter}
                             itemId={selectedItemId}
                         />
                     ) : (
@@ -191,38 +176,3 @@ function AnalyticsPage() {
 }
 
 export default AnalyticsPage;
-
-// function AnalyticsPage() {
-//     const [defaultEntityId, setDefaultEntityId] = useState(null);
-//     const [defaultItemId, setDefaultItemId] = useState(null);
-//     const [defaultEntityType, setDefaultEntityType] = useState('buyer');
-
-//     return (
-//         <div>
-//             <h1 className="mb-4">Analytics</h1>
-//             <div className="d-flex gap-4" style={{ width: '100%' }}>
-//                 {/* <SalesPerformanceChart />
-//                 <BreakEvenChart /> */}
-//                 {defaultEntityId && defaultItemId ? (
-//                     <PriceTrendGraph
-//                         entityId={defaultEntityId}
-//                         entityType={defaultEntityType}
-//                         itemId={defaultItemId}
-//                     />
-//                 ) : (
-//                     <div>Select an item and a buyer or branch to view the price trend.</div>
-//                 )}
-//             </div>
-//             <div className="d-flex gap-4" style={{ width: '100%' }}>
-//                 {/* <ProfitMarginBarChart />
-//                 <ExpenseBreakdownDonut /> */}
-//             </div>
-//             <div className="d-flex gap-4" style={{ width: '100%' }}>
-//                 {/* <ExpenseTrendStackedBar />
-//                 <LocationAnalysisTable /> */}
-//             </div>
-//         </div>
-//     );
-// }
-
-// export default AnalyticsPage;

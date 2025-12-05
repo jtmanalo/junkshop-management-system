@@ -2,22 +2,19 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts'; // Assuming Recharts is used
+} from 'recharts';
 import moment from 'moment-timezone';
 
 function PriceTrendGraph({ entityId, entityType, itemId }) {
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Function to format raw SQL data for a stepped line graph
     const formatPriceTrendData = (rawData) => {
         if (!rawData || rawData.length === 0) return [];
 
         // The data must be sorted chronologically (ensured by SQL: ORDER BY UpdatedAt ASC)
-
         return rawData.map(point => ({
-            // Recharts/Chart.js often use a standard label and value key
-            date: moment(point.UpdatedAt).format('YYYY-MM-DD HH:mm'), // Format for display on X-axis
+            date: moment(point.UpdatedAt).tz('Asia/Manila').format('YYYY-MM-DD HH:mm'),
             price: parseFloat(point.NewPrice),
         }));
     };
@@ -26,20 +23,17 @@ function PriceTrendGraph({ entityId, entityType, itemId }) {
         const fetchTrendData = async () => {
             setLoading(true);
             try {
-                console.log('Fetching price trend for:', { itemId, entityId, entityType });
-                // Ensure the entityId is sent correctly based on whether it's a Buyer or Branch
+                // console.log('Fetching price trend for:', { itemId, entityId, entityType });
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pricelist/trend`, {
                     params: {
                         itemId: itemId,
                         entityId: entityId,
-                        entityType: entityType // Pass type to help backend validation
+                        entityType: entityType
                     }
                 });
 
                 const formattedData = formatPriceTrendData(response.data);
 
-                // CRITICAL FOR STEPPED GRAPH: Duplicate the last point of the dataset 
-                // but use the current time. This ensures the line extends to NOW.
                 if (formattedData.length > 0) {
                     const lastPoint = formattedData[formattedData.length - 1];
                     const nowPoint = {

@@ -9,17 +9,17 @@ function PricelistPage() {
 
     const fetchAllItems = useCallback((actualBranchId) => {
         if (!actualBranchId) return;
-        setLoading(true); // Start loading
+        setLoading(true);
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?branchId=${actualBranchId}`)
             .then(response => {
                 setAllItemsList(response.data);
-                console.log('All items with prices:', response.data); // Log the fetched items
+                // console.log('All items with prices:', response.data);
             })
             .catch(error => {
                 console.error('Error fetching all items:', error);
             })
             .finally(() => {
-                setLoading(false); // Stop loading
+                setLoading(false);
             });
     }, []);
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Spinner, Modal, Button } from 'react-bootstrap';
+import { Table, Modal, Button } from 'react-bootstrap';
 import axios from 'axios';
 import moment from 'moment-timezone';
 import { useDashboard } from '../services/DashboardContext';
@@ -9,7 +9,7 @@ function LogsPage() {
     const [logs, setLogs] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [activeShiftError, setActiveShiftError] = useState('');
-    const [selectedLog, setSelectedLog] = useState(null); // State for selected log
+    const [selectedLog, setSelectedLog] = useState(null);
 
     console.log('LogsPage shiftId:', shiftId);
 
@@ -33,13 +33,13 @@ function LogsPage() {
 
     useEffect(() => {
         if (!shiftId) {
-            console.log('Shift ID is null, skipping fetchLogs');
+            // console.log('Shift ID is null, skipping fetchLogs');
             return;
         }
 
         const fetchLogs = async () => {
             setIsLoading(true);
-            console.log('Fetching logs for shiftId:', shiftId);
+            // console.log('Fetching logs for shiftId:', shiftId);
             try {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/daily-logs/${shiftId}`);
                 const sortedLogs = response.data.sort((a, b) => new Date(b.TransactionDate) - new Date(a.TransactionDate));
@@ -55,11 +55,11 @@ function LogsPage() {
     }, [shiftId]);
 
     const handleRowClick = (log) => {
-        setSelectedLog(log); // Set the selected log
+        setSelectedLog(log);
     };
 
     const handleCloseModal = () => {
-        setSelectedLog(null); // Close the modal
+        setSelectedLog(null);
     };
 
     return (

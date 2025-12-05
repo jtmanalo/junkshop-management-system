@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Container,
     Card,
@@ -12,10 +12,9 @@ import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import { useDashboard } from '../services/DashboardContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 
 function DebtPage() {
-    const { refreshBalance, refreshTotalExpense, actualBranchId } = useDashboard();
+    const { actualBranchId } = useDashboard();
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -32,13 +31,13 @@ function DebtPage() {
                 if (role === 'seller') {
                     const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sellers`);
                     const sellers = response.data;
-                    console.log('Fetched sellers:', sellers);
+                    // console.log('Fetched sellers:', sellers);
                     setPeople(sellers);
                     return;
                 } else if (role === 'employee') {
                     const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/employees-and-users`);
                     const employees = response.data;
-                    console.log('Fetched employees:', employees);
+                    // console.log('Fetched employees:', employees);
                     setPeople(employees);
                     return;
                 }
@@ -89,7 +88,7 @@ function DebtPage() {
                 );
                 console.log('Loan Recorded:', response.data);
             }
-            alert('Transaction successful!'); // Alert the user
+            alert('Transaction successful!');
 
             setAmount('');
             setNotes('');
@@ -155,7 +154,6 @@ function DebtPage() {
                                         onChange={(e) => setSelectedPerson(e.target.value)}
                                         required
                                     >
-                                        {/* Replace the options below with dynamic data */}
                                         <option value="">Select</option>
                                         {people.map((person) => (
                                             <option key={role === 'seller' ? person.SellerID : person.EmployeeID} value={person.id}>
@@ -213,7 +211,7 @@ function DebtPage() {
                                                 e.preventDefault();
                                             }
                                         }}
-                                        onWheel={(e) => e.target.blur()} // Disable up/down buttons
+                                        onWheel={(e) => e.target.blur()}
                                         required
                                     />
                                 </Col>
@@ -224,7 +222,7 @@ function DebtPage() {
                                 <Button
                                     variant="dark"
                                     style={{ borderRadius: '1rem', fontFamily: 'inherit', fontSize: '1.1rem', padding: '0.75rem 2rem', fontWeight: 600, letterSpacing: 1, margin: '0 1rem', flex: 1, pointerEvents: 'auto' }}
-                                    onClick={handleSubmit} // Added onClick to trigger handleSubmit
+                                    onClick={handleSubmit}
                                 >
                                     Record Transaction
                                 </Button>

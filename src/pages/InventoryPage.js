@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Form, Button, Modal } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
+import { Table, Form, Button, Modal, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment-timezone';
@@ -8,7 +8,7 @@ import InventoryMatrixTable from '../components/InventoryMatrixTable';
 function InventoryPage() {
     const [branches, setBranches] = useState([]);
     const [items, setItems] = useState([]);
-    const [allItems, setAllItems] = useState([]); // To store all possible items
+    const [allItems, setAllItems] = useState([]);
     const [filteredItems, setFilteredItems] = useState([]);
     const [branchFilter, setBranchFilter] = useState('');
     const [monthFilter, setMonthFilter] = useState(String(moment.tz('Asia/Manila').month() + 1));
@@ -18,8 +18,9 @@ function InventoryPage() {
     const [modalBranch, setModalBranch] = useState('');
     const [modalItems, setModalItems] = useState([]);
     const [yearsOptions, setYearsOptions] = useState([]);
-    const [updatedStatus, setUpdatedStatus] = useState({}); // { [itemId]: true }
+    const [updatedStatus, setUpdatedStatus] = useState({});
     const [itemPrices, setItemPrices] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
 
     const fetchPricesForBranch = async (branchId) => {
         if (!branchId) return;
@@ -35,10 +36,9 @@ function InventoryPage() {
             });
 
             setItemPrices(priceMap);
-            console.log('Prices fetched for branch:', branchId, priceMap);
+            // console.log('Prices fetched for branch:', branchId, priceMap);
         } catch (error) {
             console.error('Error fetching prices for branch:', error);
-            // Keep default prices if fetch fails
         }
     };
 
@@ -48,8 +48,8 @@ function InventoryPage() {
                 .then(response => {
                     setBranches(response.data);
                     if (response.data.length > 0) {
-                        setBranchFilter(response.data[0].BranchID); // Set the first branch as default
-                        console.log('Default branch set to:', response.data[0].BranchID);
+                        setBranchFilter(response.data[0].BranchID);
+                        // console.log('Default branch set to:', response.data[0].BranchID);
                     }
                 })
                 .catch(error => {
@@ -69,12 +69,10 @@ function InventoryPage() {
                     dailyStock: {}
                 }));
                 setAllItems(allItemsData);
-                setFilteredItems(allItemsData); // Initially populate with all items
+                setFilteredItems(allItemsData);
 
-                // Initialize prices as empty, will be fetched when branch changes
                 const initialPrices = {};
                 allItemsData.forEach(item => {
-                    // TODO: Replace 100 with a value fetched from the database (e.g., pricelist_item.GuidePrice)
                     initialPrices[item.ItemID] = 0;
                 });
                 setItemPrices(initialPrices);
@@ -88,7 +86,6 @@ function InventoryPage() {
             try {
                 const itemData = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items`);
                 setItems(itemData.data);
-                // Build unique modal items by ItemID (fallback to id or name+classification)
                 const uniqueMap = new Map();
                 (itemData.data || []).forEach((it) => {
                     const key = it.ItemID ?? it.id ?? `${it.Name}|${it.Classification || ''}`;
@@ -101,7 +98,6 @@ function InventoryPage() {
                     }
                 });
                 setModalItems(Array.from(uniqueMap.values()));
-                // Build year options from item dates
                 const years = Array.from(
                     new Set(
                         (itemData.data || [])
@@ -127,7 +123,6 @@ function InventoryPage() {
             } catch (error) {
                 console.error('Error fetching items:', error);
                 setItems([]);
-                // Fallback year options when no items fetched
                 const currentYear = moment.tz('Asia/Manila').year();
                 setYearsOptions([currentYear]);
             }
@@ -139,23 +134,21 @@ function InventoryPage() {
     }, []);
 
     useEffect(() => {
-        // Fetch prices whenever branch changes
         fetchPricesForBranch(branchFilter);
     }, [branchFilter]);
 
     useEffect(() => {
         const fetchAndFilter = async () => {
+            setIsLoading(true);
             let accumulationData = [];
             let previousMonthInventory = [];
-            console.log('Fetching accumulation data with filters:', { branchFilter, monthFilter, yearFilter });
+            // console.log('Fetching accumulation data with filters:', { branchFilter, monthFilter, yearFilter });
             if (branchFilter && monthFilter && yearFilter) {
                 try {
-                    // Fetch daily changes for current month
                     const { data: acc } = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/daily-changes?branchId=${branchFilter}&month=${Number(monthFilter)}&year=${Number(yearFilter)}`);
-                    console.log('Accumulation data fetched:', acc);
+                    // console.log('Accumulation data fetched:', acc);
                     accumulationData = acc || [];
 
-                    // Calculate previous month and year for inventory lookup
                     const currentMonth = Number(monthFilter);
                     const currentYear = Number(yearFilter);
                     let prevMonth = currentMonth - 1;
@@ -165,13 +158,16 @@ function InventoryPage() {
                         prevYear = currentYear - 1;
                     }
 
-                    // Fetch previous month inventory quantities
                     const { data: prevInventory } = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/inventory-items/previous-records?branchId=${branchFilter}&month=${prevMonth}&year=${prevYear}`);
-                    console.log('Previous month inventory fetched:', prevInventory);
+                    // console.log('Previous month inventory fetched:', prevInventory);
                     previousMonthInventory = prevInventory || [];
                 } catch (e) {
                     console.error('Error fetching accumulation or previous inventory data:', e);
+                } finally {
+                    setIsLoading(false);
                 }
+            } else {
+                setIsLoading(false);
             }
 
             const byItem = new Map();
@@ -184,7 +180,6 @@ function InventoryPage() {
                 m[day] = changeAmount;
             });
 
-            // Create a map of previous month inventory by ItemID
             const previousInventoryMap = new Map();
             previousMonthInventory.forEach(inv => {
                 previousInventoryMap.set(Number(inv.ItemID), Number(inv.TotalQuantity));
@@ -217,14 +212,13 @@ function InventoryPage() {
     }, [branchFilter, monthFilter, yearFilter, searchTerm, allItems]);
 
     const handleShowModal = () => {
-        // Use allItems that are already loaded with proper formatting
-        console.log('Branch selected for modal:', modalBranch);
-        console.log('Preparing modal items from allItems:', allItems[0].ItemID);
+        // console.log('Branch selected for modal:', modalBranch);
+        // console.log('Preparing modal items from allItems:', allItems[0].ItemID);
         const itemsForModal = allItems.map(item => ({
             ItemID: item.ItemID,
             Name: item.Name,
             Classification: item.Classification,
-            name: item.name, // Already formatted as "Name - Classification"
+            name: item.name,
             totalQuantity: 0
         }));
         setModalItems(itemsForModal);
@@ -233,7 +227,6 @@ function InventoryPage() {
 
     const loadBranchPreviousInventory = async (branchId) => {
         if (!branchId) {
-            // Reset to default if no branch selected
             const itemsForModal = allItems.map(item => ({
                 ItemID: item.ItemID,
                 Name: item.Name,
@@ -246,7 +239,6 @@ function InventoryPage() {
         }
 
         try {
-            // Calculate previous month and year
             const currentMonth = Number(monthFilter);
             const currentYear = Number(yearFilter);
             let prevMonth = currentMonth - 1;
@@ -257,15 +249,13 @@ function InventoryPage() {
             }
 
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/inventory-items/previous-records?branchId=${branchId}&month=${prevMonth}&year=${prevYear}`);
-            console.log('Previous inventory data:', response.data);
+            // console.log('Previous inventory data:', response.data);
 
-            // Create a map of existing inventory items
             const existingInventoryMap = new Map();
             (response.data || []).forEach(inv => {
                 existingInventoryMap.set(inv.ItemID, inv.TotalQuantity);
             });
 
-            // Map all items with existing quantities or 0 as placeholder if not found
             const itemsForModal = allItems.map(item => ({
                 ItemID: item.ItemID,
                 Name: item.Name,
@@ -276,7 +266,6 @@ function InventoryPage() {
             setModalItems(itemsForModal);
         } catch (error) {
             console.error('Error fetching previous inventory:', error);
-            // Fallback to 0 for all items if API fails
             const itemsForModal = allItems.map(item => ({
                 ItemID: item.ItemID,
                 Name: item.Name,
@@ -289,14 +278,13 @@ function InventoryPage() {
     };
 
     const handleUpdateItem = async (itemId, totalQuantity) => {
-        console.log('Updating item:', { itemId, totalQuantity, branchId: modalBranch });
+        // console.log('Updating item:', { itemId, totalQuantity, branchId: modalBranch });
         try {
             await axios.post(`${process.env.REACT_APP_BASE_URL}/api/inventory-items/record-previous`, {
                 branchId: modalBranch,
                 itemId,
                 totalQuantity
             });
-            // Mark item as updated for 3 seconds
             setUpdatedStatus((prev) => ({ ...prev, [itemId]: true }));
             setTimeout(() => {
                 setUpdatedStatus((prev) => {
@@ -312,14 +300,13 @@ function InventoryPage() {
     };
 
     const handleUpdateAll = async () => {
-        // Trigger updates for all items currently in the modal list
-        console.log('Updating all items in modal:', modalItems);
+        // console.log('Updating all items in modal:', modalItems);
         for (const item of modalItems) {
             try {
-                console.log('Updating item in bulk:', item, item.ItemID ?? item.id, item.totalQuantity);
+                // console.log('Updating item in bulk:', item, item.ItemID ?? item.id, item.totalQuantity);
                 await handleUpdateItem(item.ItemID ?? item.id, item.totalQuantity);
             } catch (e) {
-                // Individual failures are already handled in handleUpdateItem
+                console.error('Error updating item in bulk:', e);
             }
         }
     };
@@ -418,15 +405,47 @@ function InventoryPage() {
                     </Form.Group>
                 </Form>
             </div>
-            <InventoryMatrixTable
-                filteredItems={filteredItems}
-                monthFilter={monthFilter}
-                yearFilter={yearFilter}
-                itemPrices={itemPrices}
-                handlePriceChange={handlePriceChange}
-                branchFilter={branchFilter}
-            // fetchBestSellDetails={fetchBestSellDetails}
-            />
+            {isLoading ? (
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: '400px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '4px',
+                    padding: '40px'
+                }}>
+                    <Spinner animation="border" role="status" style={{ marginBottom: '20px' }}>
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                    <p>Fetching inventory data...</p>
+                </div>
+            ) : (
+                <>
+                    {!isLoading && filteredItems.length === 0 && (
+                        <div style={{
+                            backgroundColor: '#fff3cd',
+                            border: '1px solid #ffc107',
+                            borderRadius: '4px',
+                            padding: '15px',
+                            marginBottom: '20px',
+                            color: '#856404',
+                            maxWidth: '90%',
+                        }}>
+                            <strong>⚠️ No rows visible</strong> - If the table appears empty, try <strong>refreshing</strong> the page.
+                        </div>
+                    )}
+                    <InventoryMatrixTable
+                        filteredItems={filteredItems}
+                        monthFilter={monthFilter}
+                        yearFilter={yearFilter}
+                        itemPrices={itemPrices}
+                        handlePriceChange={handlePriceChange}
+                        branchFilter={branchFilter}
+                    />
+                </>
+            )}
 
             <Modal show={showModal} onHide={() => setShowModal(false)}>
                 <Modal.Header closeButton>

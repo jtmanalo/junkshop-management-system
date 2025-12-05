@@ -104,7 +104,7 @@ async function updateOrCreatePricelistItemForBranch(req, res) {
 
 async function updateOrCreatePricelistItemForBuyer(req, res) {
     const { userId, buyerId, itemId, price } = req.body;
-    console.log('Received data:', { userId, buyerId, itemId, price });
+    // console.log('Received data:', { userId, buyerId, itemId, price });
 
     if (!buyerId || !itemId || price === undefined) {
         return res.status(400).json({ error: 'BuyerID, ItemID, and Price are required.' });

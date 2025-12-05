@@ -53,7 +53,7 @@ async function getUserDetails(req, res) {
         if (!userDetails) {
             return res.status(404).send("User not found");
         }
-        console.log('User Details:', userDetails);
+        // console.log('User Details:', userDetails);
         res.json(userDetails);
     } catch (error) {
         console.error('Error in getUserDetails:', error);
@@ -216,7 +216,7 @@ async function update(req, res) {
 
 // Update user controller
 async function updateUser(req, res) {
-    console.log('PUT Request URL:', req.url);
+    // console.log('PUT Request URL:', req.url);
     const userId = parseInt(req.params.id, 10);
     const {
         name,

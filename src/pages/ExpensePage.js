@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     Container,
     Card,
@@ -21,7 +21,7 @@ function DebtPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    console.log('ExpensePage user and branch:', user, actualBranchId);
+    // console.log('ExpensePage user and branch:', user, actualBranchId);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -44,7 +44,7 @@ function DebtPage() {
                 }
             );
             console.log('Expense Recorded:', response.data);
-            alert('Transaction successful!'); // Alert the user
+            alert('Transaction successful!');
             setAmount('');
             setNotes('');
             setPaymentMethod('cash');
@@ -100,7 +100,7 @@ function DebtPage() {
                                                 e.preventDefault();
                                             }
                                         }}
-                                        onWheel={(e) => e.target.blur()} // Disable up/down buttons
+                                        onWheel={(e) => e.target.blur()}
                                         required
                                     />
                                 </Col>
@@ -125,7 +125,7 @@ function DebtPage() {
                                 <Button
                                     variant="dark"
                                     style={{ borderRadius: '1rem', fontFamily: 'inherit', fontSize: '1.1rem', padding: '0.75rem 2rem', fontWeight: 600, letterSpacing: 1, margin: '0 1rem', flex: 1, pointerEvents: 'auto' }}
-                                    onClick={handleSubmit} // Added onClick to trigger handleSubmit
+                                    onClick={handleSubmit}
                                 >
                                     Record Expense
                                 </Button>

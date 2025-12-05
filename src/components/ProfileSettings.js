@@ -117,7 +117,6 @@ function ProfileSettings() {
                     </div>
                 </Col>
             </Row>
-            {/* Buttons moved to top right */}
         </div>
     );
 }

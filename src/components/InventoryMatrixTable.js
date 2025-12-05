@@ -3,14 +3,12 @@ import { Table, Form, OverlayTrigger, Popover, Spinner } from 'react-bootstrap';
 import moment from 'moment-timezone';
 import axios from 'axios';
 
-// Component to render the final table structure based on filteredItems
 function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPrices, handlePriceChange, branchFilter }) {
-    const [historicalCostData, setHistoricalCostData] = useState({}); // { [itemId]: { ...data } }
+    const [historicalCostData, setHistoricalCostData] = useState({});
 
 
     // 1. Determines the number of days in the selected month
     const generateDailyColumns = () => {
-        // Ensure the date parsing uses 'Asia/Manila' as established in your setup
         const daysInMonth = monthFilter && yearFilter
             ? moment.tz(`${yearFilter}-${monthFilter}`, 'YYYY-M', 'Asia/Manila').daysInMonth()
             : moment.tz('Asia/Manila').daysInMonth();
@@ -22,41 +20,37 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
         if (monthFilter && yearFilter) {
             const selMonthIndex = parseInt(monthFilter, 10) - 1; // moment uses 0-11
             const selYear = parseInt(yearFilter, 10);
-            return moment.tz([selYear, selMonthIndex], 'Asia/Manila').subtract(1, 'month').format('MMMM');
+            return moment.tz([selYear, selMonthIndex], 'Asia/Manila').subtract(1, 'month').format('MMM');
         }
-        return moment.tz('Asia/Manila').subtract(1, 'month').format('MMMM');
+        return moment.tz('Asia/Manila').subtract(1, 'month').format('MMM');
     };
 
     const days = generateDailyColumns();
     const prevMonthName = getHeaderMonthName();
 
-    const [hoverData, setHoverData] = useState({}); // { [itemId]: { bestBuyer: string, bestPrice: number, currentStockValue: number } }
+    const [hoverData, setHoverData] = useState({});
     const [loadingItem, setLoadingItem] = useState(null);
 
     const fetchBestSellDetails = async (itemId, currentPrice, totalStock) => {
         if (hoverData[itemId] || loadingItem === itemId) {
-            return; // Already fetched or currently loading
+            return;
         }
 
         setLoadingItem(itemId);
         try {
-            // New API endpoint to fetch best buyer pricelist data
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/best-sell-price`, {
                 params: { itemId }
             });
             const data = response.data;
 
-            // The data structure has bestSellPrice as a nested object
             const bestSellData = data.bestSellPrice || data;
 
-            // Assuming the backend returns the best buyer and their price
             const bestBuyerName = bestSellData.BestBuyerName || 'N/A';
             const bestBuyerPrice = parseFloat(bestSellData.BestBuyerPrice) || 0;
 
-            // Total computed value based on the BEST SELL PRICE
             const bestValue = bestBuyerPrice * totalStock;
 
-            console.log('Fetched best sell details:', bestSellData);
+            // console.log('Fetched best sell details:', bestSellData);
 
             setHoverData(prev => ({
                 ...prev,
@@ -99,10 +93,9 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
 
     const fetchHistoricalCostDetails = async (itemId, totalStock, lastMonthStock) => {
         if (historicalCostData[itemId]) {
-            return; // Already fetched
+            return;
         }
 
-        // Validate that branchFilter exists before making the API call
         if (!branchFilter) {
             console.warn(`Cannot fetch historical cost: branchFilter is empty for ItemID: ${itemId}`);
             return;
@@ -120,16 +113,14 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
             console.log(`Fetching historical cost for ItemID: ${itemId} at BranchID: ${branchFilter}`);
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/historical-cost/${itemId}`, {
                 params: {
-                    // Pass the branch filter to the backend
                     branchId: branchFilter
                 }
             });
             const data = response.data;
 
-            console.log('Fetched historical cost data:', data);
+            // console.log('Fetched historical cost data:', data);
 
             // 3. Calculate the total value and total quantity, including the initial stock
-
             const historicalCostPurchased = parseFloat(data.TotalCostPurchased) || 0;
             const quantityPurchased = parseFloat(data.TotalQuantityPurchased) || 0;
 
@@ -211,10 +202,8 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
         const data = hoverData[itemData.ItemID];
         const isLoading = loadingItem === itemData.ItemID;
 
-        // Use the editable price for the "Current Branch Value" calculation
         const currentPrice = parseFloat(itemPrices[itemData.ItemID]) || 0;
         const currentBranchValue = currentPrice * itemData.finalTotalStock;
-
 
         return (
             <Popover id={`popover-basic-${itemData.ItemID}`} style={{ maxWidth: '300px' }}>
@@ -365,7 +354,7 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
                         );
                     })}
                 </tbody>
-                {/* *** NEW: Footer Row for Totals *** */}
+                {/*Footer Row for Totals*/}
                 <tfoot>
                     <tr className="table-primary">
                         <td colSpan={2}></td>

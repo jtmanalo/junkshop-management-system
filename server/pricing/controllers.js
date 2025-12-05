@@ -93,7 +93,7 @@ async function getPriceTrendController(req, res) { // Renamed to avoid confusion
 
 async function getNetIncomeTrendController(req, res) {
     const { year, branchId } = req.query;
-    console.log('Received parameters for net income trend:', { year, branchId });
+    // console.log('Received parameters for net income trend:', { year, branchId });
 
     if (!year || !branchId) {
         return res.status(400).json({ error: 'Year and Branch ID are required for the net income trend report.' });

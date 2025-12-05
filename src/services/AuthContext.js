@@ -25,7 +25,7 @@ const AuthProvider = ({ children }) => {
             console.log("Login response:", res);
 
             if (res.error) {
-                alert(res.error); // Display the error message from the backend
+                alert(res.error);
                 return;
             }
 
@@ -51,7 +51,7 @@ const AuthProvider = ({ children }) => {
         } catch (err) {
             if (err.response) {
                 if (err.response.status === 403 || err.response.status === 404 || err.response.status === 401) {
-                    alert(err.response.data.error); // Handle 'not approved' or 'user does not exist' errors
+                    alert(err.response.data.error);
                 } else {
                     console.error(err);
                 }

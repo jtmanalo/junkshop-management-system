@@ -126,12 +126,13 @@ async function createInventory(branchId) {
         conn = await pool.getConnection();
 
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const dateFirstDayOfMonth = moment().tz('Asia/Manila').startOf('month').format('YYYY-MM-DD HH:mm:ss');
 
         const result = await conn.query(
             'INSERT INTO inventory (BranchID, Date, CreatedAt) VALUES (?, ?, ?)',
             [
                 branchId,
-                createdAt,
+                dateFirstDayOfMonth,
                 createdAt
             ]
         );

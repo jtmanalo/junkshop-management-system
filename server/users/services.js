@@ -93,14 +93,14 @@ async function getByEmail(email) {
 
 async function getByUsername(username) {
     let conn;
-    console.log('Entering getByUsername function');
-    console.log('Username parameter:', username);
+    // console.log('Entering getByUsername function');
+    // console.log('Username parameter:', username);
 
     try {
         conn = await pool.getConnection();
-        console.log('Querying UserID for username:', username); // Debugging
+        // console.log('Querying UserID for username:', username);
         const rows = await conn.query('SELECT UserID FROM user WHERE Username = ?', [username]);
-        console.log('Query result:', rows[0]); // Debugging
+        // console.log('Query result:', rows[0]);
         return rows[0]; // Return the first row if found
     } catch (error) {
         console.error('Error during query execution:', error);
@@ -112,14 +112,14 @@ async function getByUsername(username) {
 
 async function getUserDetailsByUsername(username) {
     let conn;
-    console.log('Entering getUserDetailsByUsername function');
-    console.log('Username parameter:', username);
+    // console.log('Entering getUserDetailsByUsername function');
+    // console.log('Username parameter:', username);
 
     try {
         conn = await pool.getConnection();
-        console.log('Querying UserID and UserType for username:', username); // Debugging
+        // console.log('Querying UserID and UserType for username:', username);  
         const rows = await conn.query('SELECT UserID, Username, UserType FROM user WHERE Username = ?', [username]);
-        console.log('Query result:', rows); // Debugging
+        // console.log('Query result:', rows);  
         return rows[0]; // Return the first row if found
     } catch (error) {
         console.error('Error during query execution:', error);

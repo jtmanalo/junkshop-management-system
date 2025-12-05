@@ -9,12 +9,10 @@ function NetIncomeChart({ data }) {
     // 1. Data Transformation: Format the raw data for Recharts
     // The backend returns: [{ report_month_num: 1, net_income_value: 1500.50 }, ...]
     const formattedData = data.map(item => {
-        const monthName = moment().month(item.report_month_num - 1).format('MMM'); // Converts 1 -> Jan, 12 -> Dec
+        const monthName = moment().month(item.report_month_num - 1).format('MMM');
         return {
             month: monthName,
-            // Ensure the value is treated as a number
             'Net Income': parseFloat(item.net_income_value) || 0,
-            // Add other data points for stacked/composite charts (optional, but good for context)
             'Revenue': parseFloat(item.total_revenue) || 0,
             'Expenses': parseFloat(item.total_expenses_and_costs) || 0,
         };
@@ -43,7 +41,7 @@ function NetIncomeChart({ data }) {
                 {/* Y-Axis shows the income value. A reference line at Y=0 is crucial. */}
                 <YAxis
                     label={{ value: 'Income (PHP)', angle: -90, position: 'left', dx: -10 }}
-                    tickFormatter={(value) => `₱${value.toLocaleString()}`} // Format as currency
+                    tickFormatter={(value) => `₱${value.toLocaleString()}`}
                 />
 
                 {/* Custom Tooltip to show details on hover */}
@@ -71,7 +69,6 @@ function NetIncomeChart({ data }) {
                 <Bar
                     dataKey="Net Income"
                     fill="#8884d8"
-                // Optional: Custom coloring based on positive/negative value
                 // cell={<CustomBar color={data.net_income_value > 0 ? '#4CAF50' : '#F44336'} />}
                 />
             </BarChart>

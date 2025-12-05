@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Container, Card, Row, Col, Form } from 'react-bootstrap';
-import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { TopNav, SideNav } from '../components/NavBar';
 import SettingsPage from './SettingsPage';
 import AnalyticsPage from './AnalyticsPage';
@@ -14,8 +14,8 @@ import HelpPage from './HelpPage';
 import ItemsPage from './ItemsPage';
 import ActivityLogs from './ActivityLogs';
 import { useAuth } from '../services/AuthContext';
-import { MetricCard, MetricChartCard } from '../components/Card';
-import { FaChartLine, FaShoppingCart, FaMoneyBillWave, FaReceipt, FaWallet } from 'react-icons/fa';
+// import { MetricCard, MetricChartCard } from '../components/Card';
+// import { FaChartLine, FaShoppingCart, FaMoneyBillWave, FaReceipt, FaWallet } from 'react-icons/fa';
 import moment from 'moment';
 import axios from 'axios';
 import NetIncomeChart from '../components/NetIncomeChart';
@@ -27,96 +27,92 @@ function AdminDashboard() {
     const [incomeYearFilter, setIncomeYearFilter] = useState(currentYear);
     const [incomeChartData, setIncomeChartData] = useState([]);
     const [incomeLoading, setIncomeLoading] = useState(false);
-    const [dynamicMetrics, setDynamicMetrics] = useState(null);
+    // const [dynamicMetrics, setDynamicMetrics] = useState(null);
     const [branches, setBranches] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
 
-    const fetchMetrics = useCallback(async () => {
-        setLoading(true);
-        try {
-            // Adjust this URL to your new backend route
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/daily-metrics`);
-            setDynamicMetrics(response.data); // Data structure from Node.js service
-        } catch (error) {
-            console.error('Error fetching dashboard metrics:', error);
-            setDynamicMetrics(null);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    // const fetchMetrics = useCallback(async () => {
+    //     setLoading(true);
+    //     try {
+    //         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/daily-metrics`);
+    //         setDynamicMetrics(response.data);
+    //     } catch (error) {
+    //         console.error('Error fetching dashboard metrics:', error);
+    //         setDynamicMetrics(null);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // }, []);
 
-    useEffect(() => {
-        fetchMetrics();
-    }, [fetchMetrics]);
+    // useEffect(() => {
+    //     fetchMetrics();
+    // }, [fetchMetrics]);
 
     // Function to calculate percentage change
-    const calculateTrend = (current, previous) => {
-        // Ensure both values are treated as numbers and handle division by zero
-        current = parseFloat(current);
-        previous = parseFloat(previous);
+    // const calculateTrend = (current, previous) => {
+    //     current = parseFloat(current);
+    //     previous = parseFloat(previous);
 
-        if (previous === 0) {
-            return current > 0 ? '+100%' : 'N/A';
-        }
-        const change = ((current - previous) / previous) * 100;
-        return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
-    };
+    //     if (previous === 0) {
+    //         return current > 0 ? '+100%' : 'N/A';
+    //     }
+    //     const change = ((current - previous) / previous) * 100;
+    //     return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+    // };
 
     // Function to format currency (Philippine Peso)
-    const formatPeso = (value) => {
-        return `₱${new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`;
-    };
-
-    // --- Data Mapping and Rendering ---
+    // const formatPeso = (value) => {
+    //     return `₱${new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`;
+    // };
 
     // Only map the data if it has been fetched
-    const metricCards = dynamicMetrics ? [
-        {
-            title: 'Revenue',
-            value: formatPeso(dynamicMetrics.revenue.today),
-            icon: <FaChartLine size={24} color="#4CAF50" />,
-            trend: calculateTrend(dynamicMetrics.revenue.today, dynamicMetrics.revenue.prev),
-            subtitle: `${calculateTrend(dynamicMetrics.revenue.today, dynamicMetrics.revenue.prev)} from yesterday`,
-            trendColor: dynamicMetrics.revenue.today >= dynamicMetrics.revenue.prev ? '#4CAF50' : '#E57373',
-            iconBg: '#E8F5E9',
-        },
-        {
-            title: 'Total Purchase',
-            value: formatPeso(dynamicMetrics.totalPurchase.today),
-            icon: <FaShoppingCart size={24} color="#FFC107" />,
-            trend: calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev),
-            subtitle: `${calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev)} from yesterday`,
-            trendColor: calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev).includes('-') ? '#4CAF50' : '#E57373',
-            iconBg: '#FFF8E1',
-        },
-        {
-            title: 'Gross Profit',
-            value: formatPeso(dynamicMetrics.grossProfit.today),
-            icon: <FaMoneyBillWave size={24} color="#00BCD4" />,
-            trend: calculateTrend(dynamicMetrics.grossProfit.today, dynamicMetrics.grossProfit.prev),
-            subtitle: `${calculateTrend(dynamicMetrics.grossProfit.today, dynamicMetrics.grossProfit.prev)} from yesterday`,
-            trendColor: dynamicMetrics.grossProfit.today >= dynamicMetrics.grossProfit.prev ? '#4CAF50' : '#E57373',
-            iconBg: '#E0F7FA',
-        },
-        {
-            title: 'Expenses',
-            value: formatPeso(dynamicMetrics.expenses.today),
-            icon: <FaReceipt size={24} color="#FF7043" />,
-            trend: calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev),
-            subtitle: `${calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev)} from yesterday`,
-            trendColor: calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev).includes('-') ? '#4CAF50' : '#E57373',
-            iconBg: '#FFEBEE',
-        },
-        {
-            title: 'Net Income',
-            value: formatPeso(dynamicMetrics.netIncome.today),
-            icon: <FaWallet size={24} color="#8BC34A" />,
-            trend: calculateTrend(dynamicMetrics.netIncome.today, dynamicMetrics.netIncome.prev),
-            subtitle: `${calculateTrend(dynamicMetrics.netIncome.today, dynamicMetrics.netIncome.prev)} from yesterday`,
-            trendColor: dynamicMetrics.netIncome.today >= dynamicMetrics.netIncome.prev ? '#4CAF50' : '#E57373',
-            iconBg: '#F1F8E9',
-        },
-    ] : [];
+    // const metricCards = dynamicMetrics ? [
+    //     {
+    //         title: 'Revenue',
+    //         value: formatPeso(dynamicMetrics.revenue.today),
+    //         icon: <FaChartLine size={24} color="#4CAF50" />,
+    //         trend: calculateTrend(dynamicMetrics.revenue.today, dynamicMetrics.revenue.prev),
+    //         subtitle: `${calculateTrend(dynamicMetrics.revenue.today, dynamicMetrics.revenue.prev)} from yesterday`,
+    //         trendColor: dynamicMetrics.revenue.today >= dynamicMetrics.revenue.prev ? '#4CAF50' : '#E57373',
+    //         iconBg: '#E8F5E9',
+    //     },
+    //     {
+    //         title: 'Total Purchase',
+    //         value: formatPeso(dynamicMetrics.totalPurchase.today),
+    //         icon: <FaShoppingCart size={24} color="#FFC107" />,
+    //         trend: calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev),
+    //         subtitle: `${calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev)} from yesterday`,
+    //         trendColor: calculateTrend(dynamicMetrics.totalPurchase.today, dynamicMetrics.totalPurchase.prev).includes('-') ? '#4CAF50' : '#E57373',
+    //         iconBg: '#FFF8E1',
+    //     },
+    //     {
+    //         title: 'Gross Profit',
+    //         value: formatPeso(dynamicMetrics.grossProfit.today),
+    //         icon: <FaMoneyBillWave size={24} color="#00BCD4" />,
+    //         trend: calculateTrend(dynamicMetrics.grossProfit.today, dynamicMetrics.grossProfit.prev),
+    //         subtitle: `${calculateTrend(dynamicMetrics.grossProfit.today, dynamicMetrics.grossProfit.prev)} from yesterday`,
+    //         trendColor: dynamicMetrics.grossProfit.today >= dynamicMetrics.grossProfit.prev ? '#4CAF50' : '#E57373',
+    //         iconBg: '#E0F7FA',
+    //     },
+    //     {
+    //         title: 'Expenses',
+    //         value: formatPeso(dynamicMetrics.expenses.today),
+    //         icon: <FaReceipt size={24} color="#FF7043" />,
+    //         trend: calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev),
+    //         subtitle: `${calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev)} from yesterday`,
+    //         trendColor: calculateTrend(dynamicMetrics.expenses.today, dynamicMetrics.expenses.prev).includes('-') ? '#4CAF50' : '#E57373',
+    //         iconBg: '#FFEBEE',
+    //     },
+    //     {
+    //         title: 'Net Income',
+    //         value: formatPeso(dynamicMetrics.netIncome.today),
+    //         icon: <FaWallet size={24} color="#8BC34A" />,
+    //         trend: calculateTrend(dynamicMetrics.netIncome.today, dynamicMetrics.netIncome.prev),
+    //         subtitle: `${calculateTrend(dynamicMetrics.netIncome.today, dynamicMetrics.netIncome.prev)} from yesterday`,
+    //         trendColor: dynamicMetrics.netIncome.today >= dynamicMetrics.netIncome.prev ? '#4CAF50' : '#E57373',
+    //         iconBg: '#F1F8E9',
+    //     },
+    // ] : [];
 
     // Generate year options (e.g., last 5 years)
     const yearsOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -132,7 +128,6 @@ function AdminDashboard() {
                         branchId: incomeBranchFilter
                     }
                 });
-                // The data is already aggregated by month in the backend
                 setIncomeChartData(response.data);
             } catch (error) {
                 console.error('Error fetching income trend:', error);
@@ -235,7 +230,6 @@ function AdminDashboard() {
                         {incomeLoading ? (
                             <div className="text-center p-5 text-muted">Loading Income Data...</div>
                         ) : (
-                            // PASSES the fetched data array to the new component
                             <NetIncomeChart data={incomeChartData} />
                         )}
                     </div>
@@ -269,7 +263,7 @@ function AdminLayout({ activePage, setActivePage, username, children }) {
                 style={{
                     marginLeft: mainContentMarginLeft,
                     transition: 'margin-left 0.3s ease',
-                    paddingTop: '60px' // Offset for the fixed Navbar
+                    paddingTop: '60px'
                 }}
             >
                 <TopNav toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} username={username} userType="Owner" />
@@ -315,7 +309,6 @@ export default function DesktopRoutes() {
         branches: `/admin-dashboard/${user?.username}/branches`,
         settings: `/admin-dashboard/${user?.username}/settings`,
         help: `/admin-dashboard/${user?.username}/help`,
-        items: `/admin-dashboard/${user?.username}/items`,
         dashboard: `/admin-dashboard/${user?.username}`,
     };
 

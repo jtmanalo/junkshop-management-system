@@ -130,7 +130,7 @@ async function getBalance(branchId, userId) {
     try {
         conn = await pool.getConnection();
 
-        console.log('Calculating balance for BranchID:', branchId, 'UserID:', userId);
+        // console.log('Calculating balance for BranchID:', branchId, 'UserID:', userId);
 
         // const sale = await conn.query(
         //     `SELECT IFNULL(SUM(TotalAmount), 0) AS TotalSales
@@ -161,7 +161,7 @@ async function getBalance(branchId, userId) {
             [shift[0]?.ShiftID]
         );
 
-        console.log('Shift balance fetched:', balance[0].Balance);
+        // console.log('Shift balance fetched:', balance[0].Balance);
 
         if (balance.length === 0) {
             return 0;

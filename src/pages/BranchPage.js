@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
 import { Button, Table, Modal, Form, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
@@ -12,7 +11,7 @@ function BranchPage() {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [showAddSuccessAlert, setShowAddSuccessAlert] = useState(false);
     const [showEditSuccessAlert, setShowEditSuccessAlert] = useState(false);
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     // console.log('User from context:', user);
     // console.log('Authenticated User:', user.username);
     // console.log('User ID:', user?.userID);
@@ -26,7 +25,7 @@ function BranchPage() {
             .catch(error => {
                 console.error('Error fetching branches:', error);
             });
-    }, [user?.username]);
+    }, []);
 
     useEffect(() => {
         fetchBranches();
@@ -38,12 +37,11 @@ function BranchPage() {
 
     const handleCloseAdd = () => {
         setShowAdd(false);
-        // Clear form data
         setFormData({ name: '', location: '', openingDate: '', status: '' });
     };
 
     const handleEditBranch = (BranchID) => {
-        BranchID = Number(BranchID); // Convert BranchID to a number
+        BranchID = Number(BranchID);
         // console.log('BranchID:', BranchID);
         const branch = branches.find(branch => branch.BranchID === BranchID);
         // console.log('Found Branch:', branch);
@@ -65,7 +63,6 @@ function BranchPage() {
 
     const handleCloseEdit = () => {
         setShowEdit(false);
-        // Clear form data
         setFormData({ name: '', location: '', openingDate: '', status: '' });
     };
 
@@ -85,12 +82,10 @@ function BranchPage() {
                 status: formData.status
             });
             setShowEdit(false);
-            fetchBranches(); // Refresh the branches after editing
+            fetchBranches();
             setShowEditSuccessAlert(true);
-            setTimeout(() => setShowEditSuccessAlert(false), 3000); // Auto-hide after 3 seconds
-
-            // Clear form data
             setFormData({ name: '', location: '', openingDate: '', status: '' });
+            setTimeout(() => setShowEditSuccessAlert(false), 3000);
         } catch (error) {
             console.error('Error updating branch:', error);
             alert('Failed to update branch. Please try again.');
@@ -115,12 +110,10 @@ function BranchPage() {
             });
             console.log('Branch added successfully');
             setShowAdd(false);
-            fetchBranches(); // Refresh the branches after adding a new one
+            fetchBranches();
             setShowAddSuccessAlert(true);
-            setTimeout(() => setShowAddSuccessAlert(false), 3000); // Auto-hide after 3 seconds
-
-            // Clear form data
             setFormData({ name: '', location: '', openingDate: '', status: '' });
+            setTimeout(() => setShowAddSuccessAlert(false), 3000);
         } catch (error) {
             console.error('Error adding branch:', error);
         }
