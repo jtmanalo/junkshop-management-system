@@ -5,8 +5,6 @@ const userService = require('./services');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const nodemailer = require('nodemailer'); // Import nodemailer
 
-// Secret key for JWT (should be stored securely in environment variables)
-const JWT_SECRET = process.env.JWT_SECRET;
 
 async function approveReject(req, res) {
     const userId = parseInt(req.params.id, 10);
@@ -179,7 +177,7 @@ async function login(req, res) {
         }
 
         // Generate JWT token
-        const token = jwt.sign({ id: user.UserID, email: user.Email }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ id: user.UserID, email: user.Email }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         // Log the login activity
         await userService.createActivityLog({
@@ -312,7 +310,7 @@ function authenticateToken(req, res, next) {
         return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token.' });
         }
@@ -330,7 +328,7 @@ async function validateToken(req, res) {
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET); // Verify the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
         res.json({ valid: true, email: decoded.email }); // Respond with token validity and email
     } catch (error) {
         res.json({ valid: false, error: 'Invalid or expired token.' }); // Respond with invalid status
@@ -348,7 +346,7 @@ async function forgotPassword(req, res) {
         }
 
         // Generate a password reset token
-        const resetToken = jwt.sign({ id: user.UserID, email: user.Email }, JWT_SECRET, { expiresIn: '1h' });
+        const resetToken = jwt.sign({ id: user.UserID, email: user.Email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         // Send email with reset link
         const transporter = nodemailer.createTransport({
