@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/junkshop-management-system/static/css/main.85ac5646.css",
+    "main.js": "/junkshop-management-system/static/js/main.12b91315.js",
+    "static/js/453.e30f2c15.chunk.js": "/junkshop-management-system/static/js/453.e30f2c15.chunk.js",
+    "index.html": "/junkshop-management-system/index.html",
+    "main.85ac5646.css.map": "/junkshop-management-system/static/css/main.85ac5646.css.map",
+    "main.12b91315.js.map": "/junkshop-management-system/static/js/main.12b91315.js.map",
+    "453.e30f2c15.chunk.js.map": "/junkshop-management-system/static/js/453.e30f2c15.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.85ac5646.css",
+    "static/js/main.12b91315.js"
+  ]
+}
