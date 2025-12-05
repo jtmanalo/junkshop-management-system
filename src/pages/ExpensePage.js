@@ -25,13 +25,13 @@ function DebtPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Submitting expense:', {
-            branchId: actualBranchId,
-            userId: user?.userID,
-            totalAmount: Number(amount),
-            notes,
-            paymentMethod
-        });
+        // console.log('Submitting expense:', {
+        //     branchId: actualBranchId,
+        //     userId: user?.userID,
+        //     totalAmount: Number(amount),
+        //     notes,
+        //     paymentMethod
+        // });
         try {
             const response = await axios.post(
                 `${process.env.REACT_APP_BASE_URL}/api/expenses`,
@@ -43,7 +43,7 @@ function DebtPage() {
                     paymentMethod: paymentMethod
                 }
             );
-            console.log('Expense Recorded:', response.data);
+            // console.log('Expense Recorded:', response.data);
             alert('Transaction successful!');
             setAmount('');
             setNotes('');

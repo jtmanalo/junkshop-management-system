@@ -173,7 +173,7 @@ async function create(req, res) {
         userId
     } = req.body;
 
-    console.log('Create item request body:', req.body);
+    // console.log('Create item request body:', req.body);
     if (!name || !unitOfMeasurement) {
         return res.status(400).json({ error: 'Name and UnitOfMeasurement are required' });
     }

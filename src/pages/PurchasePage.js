@@ -161,7 +161,7 @@ function PurchasePage() {
                 subtotal: (updatedItems[idx].quantity || 0) * Math.max(selected.ItemPrice || 0, 0.01),
             };
             setItems(updatedItems);
-            console.log(`Item selected: ${selectedItem}, Price: ${selected.ItemPrice}`);
+            // console.log(`Item selected: ${selectedItem}, Price: ${selected.ItemPrice}`);
         }
     };
 

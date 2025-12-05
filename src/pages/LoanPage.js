@@ -105,7 +105,7 @@ function LoanPage() {
                 lastTransactionDate: employee.LastTransactionDate,
                 createdAt: employee.CreatedAt
             }));
-            console.log('Fetched employees with loans:', formattedEmployees);
+            // console.log('Fetched employees with loans:', formattedEmployees);
             setEmployees(formattedEmployees);
         } catch (error) {
             console.error('Error fetching employees:', error);
@@ -221,7 +221,7 @@ function LoanPage() {
                     },
                 }
             );
-            console.log('Seller added:', response.data);
+            // console.log('Seller added:', response.data);
             setSuccessMessage('Seller added successfully!');
             setShowSuccessAlert(true);
             setShowAddSellerModal(false);

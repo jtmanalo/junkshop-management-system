@@ -22,7 +22,7 @@ const AuthProvider = ({ children }) => {
             });
 
             const res = response.data;
-            console.log("Login response:", res);
+            // console.log("Login response:", res);
 
             if (res.error) {
                 alert(res.error);
@@ -31,7 +31,7 @@ const AuthProvider = ({ children }) => {
 
             if (res.token && res.userType && res.username && res.userID) {
                 const { token, userType, username, userID, defaultBranchID, branchName, branchLocation } = res;
-                console.log("Login response data:", { token, userType, username, userID, defaultBranchID, branchName, branchLocation });
+                // console.log("Login response data:", { token, userType, username, userID, defaultBranchID, branchName, branchLocation });
                 const userData = { username, userType, userID, defaultBranchID, branchName, branchLocation };
                 setUser(userData);
                 setToken(token);
@@ -39,9 +39,9 @@ const AuthProvider = ({ children }) => {
                 localStorage.setItem("user", JSON.stringify(userData));
 
                 if (userType === 'owner') {
-                    console.log("Navigating to admin-dashboard for user:", username);
+                    // console.log("Navigating to admin-dashboard for user:", username);
                     navigate(`/admin-dashboard/${username}`);
-                    console.log("Navigation attempted to:", `/admin-dashboard/${username}`);
+                    // console.log("Navigation attempted to:", `/admin-dashboard/${username}`);
                 } else if (userType === 'employee') {
                     navigate(`/employee-dashboard/${username}`);
                 }

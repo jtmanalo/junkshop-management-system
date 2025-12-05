@@ -60,12 +60,12 @@ function BuyersPage() {
     const fetchBuyers = async () => {
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers-with-prices`);
-            console.log('Buyers:', response.data);
+            // console.log('Buyers:', response.data);
             const formattedBuyers = [...new Set(response.data.map(buyer => buyer.CompanyName))];
             const buyerPricelist = Array.from(
                 response.data.reduce((map, buyer) => {
                     if (buyer.BuyerID && buyer.CompanyName && !map.has(buyer.BuyerID)) {
-                        console.log('Adding BuyerID:', buyer.BuyerID);
+                        // console.log('Adding BuyerID:', buyer.BuyerID);
                         map.set(buyer.BuyerID, { id: buyer.BuyerID, companyName: buyer.CompanyName });
                     }
                     return map;
@@ -118,8 +118,8 @@ function BuyersPage() {
             setItems([...formattedItems]);
             setRows(formattedRows);
             setFilteredRows(formattedRows);
-            console.log('Rows:', formattedRows);
-            console.log('Buyers:', formattedBuyers);
+            // console.log('Rows:', formattedRows);
+            // console.log('Buyers:', formattedBuyers);
         } catch (error) {
             console.error('Error fetching buyers:', error);
         }
@@ -142,7 +142,7 @@ function BuyersPage() {
         if (!buyerId) return;
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?buyerId=${buyerId}`)
             .then(response => {
-                // console.log('All items with prices:', response.data); 
+                // // console.log('All items with prices:', response.data); 
                 if (isHistorical) {
                     setHistoricalItemsList(response.data.map(item => ({ ...item })));
                 } else {
@@ -155,14 +155,14 @@ function BuyersPage() {
     }, []);
 
     const handlePricelistChange = (index, value) => {
-        console.log(`Updating price for index ${index}:`, value);
+        // console.log(`Updating price for index ${index}:`, value);
         setPricelistItems(prevItems => {
             const updatedItems = [...prevItems];
             updatedItems[index] = {
                 ...updatedItems[index],
                 price: value,
             };
-            console.log('Updated Pricelist Items:', updatedItems);
+            // console.log('Updated Pricelist Items:', updatedItems);
             return updatedItems;
         });
     };
@@ -176,7 +176,7 @@ function BuyersPage() {
             price: item.price
         })
             .then(response => {
-                // console.log('Pricelist item updated successfully:', response.data);
+                // // console.log('Pricelist item updated successfully:', response.data);
                 setPricelistItems(prevItems => {
                     const updatedItems = [...prevItems];
                     updatedItems[index].isUpdated = true;
@@ -193,7 +193,7 @@ function BuyersPage() {
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/contacts/${buyerId}`);
             const data = response.data[0];
-            // console.log('Raw Buyer Contacts Data:', data);
+            // // console.log('Raw Buyer Contacts Data:', data);
 
             const formattedContacts = {
                 buyerId: data.BuyerID,
@@ -205,7 +205,7 @@ function BuyersPage() {
                 primaryContact: data.PrimaryContact,
                 otherContacts: data.OtherContacts ? data.OtherContacts.split('; ') : [] // Split other contacts into an array
             };
-            // console.log('Fetched Buyer Contacts:', formattedContacts);
+            // // console.log('Fetched Buyer Contacts:', formattedContacts);
             setBuyerContacts([formattedContacts]);
             return formattedContacts;
         } catch (error) {
@@ -234,12 +234,12 @@ function BuyersPage() {
 
     const handleViewPricelist = async (buyerId, companyName) => {
         try {
-            console.log('Fetching pricelist for BuyerID:', buyerId);
+            // console.log('Fetching pricelist for BuyerID:', buyerId);
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items-with-prices?buyerId=${buyerId}`);
             const filteredItems = response.data.filter(item => item.price !== '');
             setViewPricelistName(companyName);
             setViewPricelistItems(filteredItems);
-            console.log('Pricelist for view-only modal:', filteredItems);
+            // console.log('Pricelist for view-only modal:', filteredItems);
             setShowViewPricelistModal(true);
         } catch (error) {
             console.error('Error fetching pricelist for view-only modal:', error);
@@ -249,7 +249,7 @@ function BuyersPage() {
     const handleAddBuyer = (buyerData) => {
         axios.post(`${process.env.REACT_APP_BASE_URL}/api/buyers`, buyerData)
             .then(response => {
-                console.log('Buyer added successfully:', response.data);
+                // console.log('Buyer added successfully:', response.data);
                 setShowAddBuyerModal(false);
                 setNewBuyerName('');
                 setNewBuyerCompany('');
@@ -291,7 +291,7 @@ function BuyersPage() {
             status: editBuyerStatus,
         })
             .then(response => {
-                console.log('Buyer updated successfully:', response.data);
+                // console.log('Buyer updated successfully:', response.data);
                 setShowEditBuyerModal(false);
                 fetchBuyers();
                 setSuccessMessage('Buyer updated successfully!');
@@ -500,7 +500,7 @@ function BuyersPage() {
                             value={selectedBuyerForPricelist}
                             onChange={e => {
                                 const buyerId = e.target.value;
-                                console.log("Selected buyer:", buyerId);
+                                // console.log("Selected buyer:", buyerId);
                                 setSelectedBuyerForPricelist(buyerId);
                                 fetchAllItems(buyerId);
                             }}

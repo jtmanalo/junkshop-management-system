@@ -13,7 +13,7 @@ function ReceiptPage() {
     if (!receiptData) {
         return <div>No receipt data available.</div>;
     }
-    console.log('Rendering ReceiptPage with data:', receiptData);
+    // console.log('Rendering ReceiptPage with data:', receiptData);
 
     const saveAsImage = () => {
         const receiptElement = document.getElementById('receipt-content');

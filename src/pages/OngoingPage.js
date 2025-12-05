@@ -23,7 +23,7 @@ function OngoingPage() {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/pending-transactions/${shiftId}`);
                 setPendingTransactions(response.data);
-                console.log('Fetched pending transactions:', response.data);
+                // console.log('Fetched pending transactions:', response.data);
             } catch (error) {
                 console.error('Error fetching pending transactions:', error);
             }
@@ -56,8 +56,8 @@ function OngoingPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                 {Array.isArray(pendingTransactions) && pendingTransactions.map(transaction => {
                     const { date, time } = formatDateTime(transaction.TransactionDate);
-                    console.log('Rendering transaction:', transaction);
-                    console.log("Name", transaction.SellerName);
+                    // console.log('Rendering transaction:', transaction);
+                    // console.log("Name", transaction.SellerName);
                     return (
                         <Card
                             key={transaction.TransactionID}

@@ -110,7 +110,7 @@ function InventoryMatrixTable({ filteredItems, monthFilter, yearFilter, itemPric
 
         try {
             // 2. Fetch the Historical Cost of tracked stock (Filtered by Branch)
-            console.log(`Fetching historical cost for ItemID: ${itemId} at BranchID: ${branchFilter}`);
+            // console.log(`Fetching historical cost for ItemID: ${itemId} at BranchID: ${branchFilter}`);
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/historical-cost/${itemId}`, {
                 params: {
                     branchId: branchFilter

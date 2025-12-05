@@ -41,7 +41,7 @@ function EmployeesTable() {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/employees-and-users`);
                 const employees = response.data;
-                console.log('Fetched employees:', employees);
+                // console.log('Fetched employees:', employees);
                 setUsers(employees);
             } catch (error) {
                 console.error('Error fetching employees:', error);
@@ -107,7 +107,7 @@ function EmployeesTable() {
         ...user,
         EmployeeStatus: user.AccountStatus === 'rejected' ? 'Not Employed' : user.EmployeeStatus
     }));
-    console.log('Sorted users:', sortedUsers);
+    // console.log('Sorted users:', sortedUsers);
 
     const handleActionClick = (action, user) => {
         setModalAction(action);
@@ -132,7 +132,7 @@ function EmployeesTable() {
             const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/employees/${selectedUser.EmployeeID}`, {
                 status: newEmployeeStatus,
             });
-            console.log('Update response:', response.data);
+            // console.log('Update response:', response.data);
 
             // Refresh the employee list
             const updatedUsers = users.map((user) =>

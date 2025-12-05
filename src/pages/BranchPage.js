@@ -12,14 +12,14 @@ function BranchPage() {
     const [showAddSuccessAlert, setShowAddSuccessAlert] = useState(false);
     const [showEditSuccessAlert, setShowEditSuccessAlert] = useState(false);
     const { user } = useAuth();
-    // console.log('User from context:', user);
-    // console.log('Authenticated User:', user.username);
-    // console.log('User ID:', user?.userID);
+    // // console.log('User from context:', user);
+    // // console.log('Authenticated User:', user.username);
+    // // console.log('User ID:', user?.userID);
 
     const fetchBranches = useCallback(() => {
         axios.get(`${process.env.REACT_APP_BASE_URL}/api/branches`)
             .then(response => {
-                // console.log('API Response:', response.data);
+                // // console.log('API Response:', response.data);
                 setBranches(response.data);
             })
             .catch(error => {
@@ -42,14 +42,14 @@ function BranchPage() {
 
     const handleEditBranch = (BranchID) => {
         BranchID = Number(BranchID);
-        // console.log('BranchID:', BranchID);
+        // // console.log('BranchID:', BranchID);
         const branch = branches.find(branch => branch.BranchID === BranchID);
-        // console.log('Found Branch:', branch);
+        // // console.log('Found Branch:', branch);
         if (!branch) {
             console.error('Branch not found!');
         }
         // else {
-        // console.log('Selected Branch:', branch);
+        // // console.log('Selected Branch:', branch);
         // }
         setFormData({
             name: branch?.Name || '',
@@ -73,7 +73,7 @@ function BranchPage() {
 
     const handleEditFormSubmit = async (e) => {
         e.preventDefault();
-        // console.log('Submitting Edit Form with data:', formData);
+        // // console.log('Submitting Edit Form with data:', formData);
         try {
             await axios.put(`${process.env.REACT_APP_BASE_URL}/api/branches/${formData.BranchID}`, {
                 name: formData.name,
@@ -94,13 +94,13 @@ function BranchPage() {
 
     const handleAddFormSubmit = async (e) => {
         e.preventDefault();
-        console.log('Submitting Add Form with data:', formData);
-        // console.log('User inside handleAddFormSubmit:', user); // Log the user object
-        // console.log('User ID inside handleAddFormSubmit:', user?.userID); // Log userID
+        // console.log('Submitting Add Form with data:', formData);
+        // // console.log('User inside handleAddFormSubmit:', user); // Log the user object
+        // // console.log('User ID inside handleAddFormSubmit:', user?.userID); // Log userID
 
         try {
-            // console.log('User ID:', user?.userID);
-            // console.log('User Type:', user?.userType);
+            // // console.log('User ID:', user?.userID);
+            // // console.log('User Type:', user?.userType);
 
             await axios.post(`${process.env.REACT_APP_BASE_URL}/api/branches`, {
                 name: formData.name,
@@ -108,7 +108,7 @@ function BranchPage() {
                 openingDate: formData.openingDate,
                 username: user?.username
             });
-            console.log('Branch added successfully');
+            // console.log('Branch added successfully');
             setShowAdd(false);
             fetchBranches();
             setShowAddSuccessAlert(true);

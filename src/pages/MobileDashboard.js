@@ -350,7 +350,7 @@ function MobileDashboard() {
       const branchId = branch.id;
       const userId = user?.userID;
       const initialCash = Number(startingCash);
-      console.log('Starting shift with:', { branchId, userId, initialCash });
+      // console.log('Starting shift with:', { branchId, userId, initialCash });
 
       const shiftData = await createShift(branchId, userId, initialCash, token);
       setShiftId(shiftData.id);

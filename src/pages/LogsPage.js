@@ -11,7 +11,7 @@ function LogsPage() {
     const [activeShiftError, setActiveShiftError] = useState('');
     const [selectedLog, setSelectedLog] = useState(null);
 
-    console.log('LogsPage shiftId:', shiftId);
+    // console.log('LogsPage shiftId:', shiftId);
 
     // useEffect(() => {
     //     const fetchActiveShift = async () => {

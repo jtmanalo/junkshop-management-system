@@ -88,7 +88,7 @@ function PendingPurchase() {
 
     useEffect(() => {
         if (state) {
-            console.log('PurchasePage received state:', state);
+            // console.log('PurchasePage received state:', state);
             const transactionId = state?.transactionId;
             const sellerName = state?.sellerName;
             const partyType = state?.partyType;
@@ -109,7 +109,7 @@ function PendingPurchase() {
                     try {
                         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/transaction-items/${transactionId}`);
                         const transactionData = response.data;
-                        console.log('Transaction Items:', transactionData);
+                        // console.log('Transaction Items:', transactionData);
 
                         if (Array.isArray(transactionData) && transactionData.length > 0) {
                             setItems(transactionData.map(item => ({
@@ -144,7 +144,7 @@ function PendingPurchase() {
     useEffect(() => {
         if (state?.sellerName && allSellers.length > 0) {
             const matchingSeller = allSellers.find(s => s.Name === state.sellerName);
-            console.log('Matching seller for name', state.sellerName, ':', matchingSeller);
+            // console.log('Matching seller for name', state.sellerName, ':', matchingSeller);
             if (matchingSeller) {
                 setSeller(matchingSeller.Name);
             }
@@ -191,7 +191,7 @@ function PendingPurchase() {
                 subtotal: (updatedItems[idx].quantity || 0) * Math.max(selected.ItemPrice || 0, 0.01),
             };
             setItems(updatedItems);
-            console.log(`Item selected: ${selectedItem}, Price: ${selected.ItemPrice}`);
+            // console.log(`Item selected: ${selectedItem}, Price: ${selected.ItemPrice}`);
         }
     };
 
@@ -247,7 +247,7 @@ function PendingPurchase() {
     };
 
     const confirmPaymentMethod = async (state) => {
-        console.log('Confirming payment method with state:', state);
+        // console.log('Confirming payment method with state:', state);
         if (!selectedPaymentMethod) {
             alert('Please select a payment method.');
             return;

@@ -174,7 +174,7 @@ function ItemsPage() {
             return;
         }
 
-        console.log('userId for new item:', user?.userID);
+        // console.log('userId for new item:', user?.userID);
 
         axios.post(`${process.env.REACT_APP_BASE_URL}/api/items`, {
             ...newItem,
@@ -245,7 +245,7 @@ function ItemsPage() {
                 ...updatedItems[index],
                 price: value,
             };
-            console.log('Updated Items:', updatedItems);
+            // console.log('Updated Items:', updatedItems);
             return updatedItems;
         });
     };
@@ -259,7 +259,7 @@ function ItemsPage() {
             price: item.price
         })
             .then(response => {
-                console.log('Pricelist item updated successfully:', response.data);
+                // console.log('Pricelist item updated successfully:', response.data);
                 setAllItemsList(prevItems => {
                     const updatedItems = [...prevItems];
                     updatedItems[index].isUpdated = true;
@@ -387,7 +387,7 @@ function ItemsPage() {
         const pricesToUpload = historicalItemsList
             .filter(item => parseFloat(item.historicalPrice) > 0)
             .map(item => {
-                console.log('Item being mapped:', item, 'ItemID:', item.id);
+                // console.log('Item being mapped:', item, 'ItemID:', item.id);
                 return {
                     itemId: item.id,
                     price: parseFloat(item.historicalPrice),
@@ -905,7 +905,7 @@ function ItemsPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {console.log('historicalItemsList in render:', historicalItemsList, 'length:', historicalItemsList.length)}
+                                    {/* {console.log('historicalItemsList in render:', historicalItemsList, 'length:', historicalItemsList.length)} */}
                                     {historicalItemsList.length === 0 ? (
                                         <tr><td colSpan="3" className="text-center">Select a branch to load items.</td></tr>
                                     ) : (

@@ -31,13 +31,13 @@ function DebtPage() {
                 if (role === 'seller') {
                     const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/sellers`);
                     const sellers = response.data;
-                    // console.log('Fetched sellers:', sellers);
+                    // // console.log('Fetched sellers:', sellers);
                     setPeople(sellers);
                     return;
                 } else if (role === 'employee') {
                     const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/employees-and-users`);
                     const employees = response.data;
-                    // console.log('Fetched employees:', employees);
+                    // // console.log('Fetched employees:', employees);
                     setPeople(employees);
                     return;
                 }
@@ -50,14 +50,14 @@ function DebtPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Submitting transaction:', {
-            amount,
-            notes,
-            paymentMethod,
-            transactionType,
-            role,
-            selectedPerson
-        });
+        // console.log('Submitting transaction:', {
+        //     amount,
+        //     notes,
+        //     paymentMethod,
+        //     transactionType,
+        //     role,
+        //     selectedPerson
+        // });
         try {
             if (transactionType === 'repayment') {
                 const response = await axios.post(
@@ -72,7 +72,7 @@ function DebtPage() {
                         paymentMethod: paymentMethod
                     }
                 );
-                console.log('Repayment Recorded:', response.data);
+                // console.log('Repayment Recorded:', response.data);
             } else {
                 const response = await axios.post(
                     `${process.env.REACT_APP_BASE_URL}/api/loans`,
@@ -86,7 +86,7 @@ function DebtPage() {
                         paymentMethod: paymentMethod
                     }
                 );
-                console.log('Loan Recorded:', response.data);
+                // console.log('Loan Recorded:', response.data);
             }
             alert('Transaction successful!');
 

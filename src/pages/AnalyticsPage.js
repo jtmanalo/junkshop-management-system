@@ -22,7 +22,7 @@ function AnalyticsPage() {
         setLoadingItems(true);
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/all-items`);
-            console.log('Fetched items:', response.data);
+            // console.log('Fetched items:', response.data);
             setItems(response.data.map(item => ({
                 id: item.ItemID,
                 name: `${item.Name}${item.Classification ? ` - ${item.Classification}` : ''}`,
