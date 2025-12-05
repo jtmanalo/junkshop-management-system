@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Table, Modal, Form, Alert } from 'react-bootstrap';
+import { Button, Table, Modal, Form, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 
@@ -11,6 +11,7 @@ function BranchPage() {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [showAddSuccessAlert, setShowAddSuccessAlert] = useState(false);
     const [showEditSuccessAlert, setShowEditSuccessAlert] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { user } = useAuth();
     // // console.log('User from context:', user);
     // // console.log('Authenticated User:', user.username);
@@ -73,6 +74,7 @@ function BranchPage() {
 
     const handleEditFormSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         // // console.log('Submitting Edit Form with data:', formData);
         try {
             await axios.put(`${process.env.REACT_APP_BASE_URL}/api/branches/${formData.BranchID}`, {
@@ -89,11 +91,14 @@ function BranchPage() {
         } catch (error) {
             console.error('Error updating branch:', error);
             alert('Failed to update branch. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const handleAddFormSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         // console.log('Submitting Add Form with data:', formData);
         // // console.log('User inside handleAddFormSubmit:', user); // Log the user object
         // // console.log('User ID inside handleAddFormSubmit:', user?.userID); // Log userID
@@ -116,6 +121,8 @@ function BranchPage() {
             setTimeout(() => setShowAddSuccessAlert(false), 3000);
         } catch (error) {
             console.error('Error adding branch:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -273,11 +280,17 @@ function BranchPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="outline-secondary" onClick={handleCloseAdd}>
+                    <Button variant="outline-secondary" onClick={handleCloseAdd} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button variant="outline-primary" type="submit" onClick={handleAddFormSubmit}>
-                        Submit
+                    <Button variant="outline-primary" type="submit" onClick={handleAddFormSubmit} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                            </>
+                        ) : (
+                            'Submit'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -329,11 +342,18 @@ function BranchPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="outline-secondary" onClick={handleCloseAdd}>
+                    <Button variant="outline-secondary" onClick={handleCloseEdit} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button variant="outline-primary" type="submit" onClick={handleEditFormSubmit}>
-                        Submit
+                    <Button variant="outline-primary" type="submit" onClick={handleEditFormSubmit} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Submitting...
+                            </>
+                        ) : (
+                            'Submit'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>

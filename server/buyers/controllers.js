@@ -27,6 +27,19 @@ async function getAllWithPrices(req, res) {
     }
 }
 
+async function getFormattedBuyersWithPrices(req, res) {
+    try {
+        const formattedData = await buyerService.getFormattedBuyersWithPrices();
+        if (formattedData.length === 0) {
+            return res.status(204).send("No buyers found");
+        }
+        res.json(formattedData);
+    } catch (error) {
+        console.error('Error getFormattedBuyersWithPrices:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 async function getList(req, res) {
     try {
         const buyers = await buyerService.getBuyersList();
@@ -107,5 +120,6 @@ module.exports = {
     getById,
     update,
     getList,
-    getAllWithPrices
+    getAllWithPrices,
+    getFormattedBuyersWithPrices
 };

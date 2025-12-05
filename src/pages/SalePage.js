@@ -33,13 +33,14 @@ function SalePage() {
     ];
     const navigate = useNavigate();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchItems = async (buyerId) => {
         try {
             // console.log('Fetching items for buyerId:', buyerId);
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/items/buyer/${buyerId}`);
             setAllItems(response.data);
-            // console.log('Fetched items:', response.data);
+            console.log('Fetched items:', response.data);
         } catch (error) {
             if (error.response && error.response.status === 404) {
                 console.error('Items not found for the selected buyer:', error);
@@ -100,19 +101,21 @@ function SalePage() {
         setShowDeleteModal(false);
     };
 
-    const handleItemChange = (idx, selectedItem) => {
-        const selected = allItems.find(item => item.Name === selectedItem);
+    const handleItemChange = (idx, selectedItemDisplay) => {
+        const selected = allItems.find(item =>
+            `${item.Name}${item.Classification ? ` - ${item.Classification}` : ''}` === selectedItemDisplay
+        );
         if (selected) {
             const updatedItems = [...items];
             updatedItems[idx] = {
                 ...updatedItems[idx],
-                name: selectedItem,
+                name: selected.Name,
                 classification: selected.Classification || '',
                 pricing: Math.max(selected.ItemPrice || 0, 0.01),
                 subtotal: (updatedItems[idx].quantity || 0) * Math.max(selected.ItemPrice || 0, 0.01),
             };
             setItems(updatedItems);
-            // console.log(`Item selected: ${selectedItem}, Price: ${selected.ItemPrice}`);
+            console.log(`Item selected: ${selected.Name}, Classification: ${selected.Classification}, Price: ${selected.ItemPrice}`);
         }
     };
 
@@ -193,6 +196,12 @@ function SalePage() {
             return;
         }
 
+        if (isSubmitting) {
+            return;
+        }
+
+        setIsSubmitting(true);
+
         try {
             const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
             const buyerId = allBuyers.find(b => b.CompanyName === buyer)?.BuyerID || null;
@@ -242,14 +251,17 @@ function SalePage() {
             };
 
             // console.log('Receipt Data:', receipt);
+            setShowPaymentModal(false);
             setBuyer('');
             setType('');
             setItems([{ name: '', quantity: '', pricing: '', subtotal: '' }]);
             setSelectedPaymentMethod('cash');
             setTransactionNotes('');
+            setIsSubmitting(false);
 
             navigate(`/employee-dashboard/${user?.username}/receipt`, { state: { receiptData: receipt } });
         } catch (error) {
+            setIsSubmitting(false);
             if (error.response) {
                 if (error.response.status === 400) {
                     console.error('Bad Request:', error.response.data);
@@ -332,13 +344,13 @@ function SalePage() {
                             )}
                             <div style={{ flex: 3, padding: '0.5rem 0', marginRight: '4px' }}>
                                 <Form.Select
-                                    value={item.name || ''}
+                                    value={(item.name && item.classification ? `${item.name} - ${item.classification}` : item.name) || ''}
                                     onChange={(e) => handleItemChange(idx, e.target.value)}
-                                    style={{ background: '#222', color: '#fff', border: 'none', borderBottom: '1px solid #343a40', fontFamily: 'inherit', fontSize: '1rem', letterSpacing: 1, textAlign: 'center' }}
+                                    style={{ background: '#222', color: '#fff', border: 'none', borderBottom: '1px solid #343a40', fontFamily: 'inherit', fontSize: '1rem', letterSpacing: 1, textAlign: 'center', width: '100%' }}
                                 >
-                                    <option value="" disabled>Item</option>
+                                    <option value="">Item</option>
                                     {allItems.map((option, i) => (
-                                        <option key={i} value={option.Name}>{option.Name} {option.Classification ? `- ${option.Classification}` : ''}</option>
+                                        <option key={i} value={`${option.Name}${option.Classification ? ` - ${option.Classification}` : ''}`}>{option.Name}{option.Classification ? ` - ${option.Classification}` : ''}</option>
                                     ))}
                                 </Form.Select>
                             </div>
@@ -460,9 +472,10 @@ function SalePage() {
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="primary" onClick={confirmPaymentMethod}
-                        disabled={!selectedPaymentMethod}
+                        disabled={!selectedPaymentMethod || isSubmitting}
                     >
-                        Confirm
+                        {isSubmitting ? <Spinner animation="border" size="sm" className="me-2" /> : ''}
+                        {isSubmitting ? 'Processing...' : 'Confirm'}
                     </Button>
                 </Modal.Footer>
             </Modal>

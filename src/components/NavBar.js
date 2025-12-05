@@ -210,7 +210,7 @@ export function SideNav({ activePage, setActivePage, isCollapsed, toggleSidebar 
     { name: 'Employees', icon: FaUser, key: 'employees' },
     { name: 'Branches', icon: FaBuilding, key: 'branches' },
     { name: 'Profile Settings', icon: FaUserCog, key: 'settings' },
-    { name: 'Help / Tutorial / FAQs', icon: FaListAlt, key: 'help' },
+    { name: 'Help / Tutorial', icon: FaListAlt, key: 'help' },
     { name: 'Log out', icon: FaSignOutAlt, key: 'logout', onClick: () => auth.logOut() },
   ];
 

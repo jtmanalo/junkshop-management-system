@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FaInfoCircle } from 'react-icons/fa';
-import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootstrap';
+import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import { useMatch } from 'react-router-dom';
@@ -35,6 +35,7 @@ function LoanPage() {
     const [successMessage, setSuccessMessage] = useState('');
     const [sellerSearch, setSellerSearch] = useState('');
     const [employeeSearch, setEmployeeSearch] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     // const [actualBranchId, setActualBranchId] = useState(null);
 
     // useEffect(() => {
@@ -137,6 +138,7 @@ function LoanPage() {
     const handleUpdateSellerSubmit = async (e) => {
         e.preventDefault();
         try {
+            setIsSubmitting(true);
             await axios.put(`${process.env.REACT_APP_BASE_URL}/api/sellers/${selectedSellerDetails.id}`, {
                 name: selectedSellerDetails.displayName,
                 contactNumber: selectedSellerDetails.contactNumber,
@@ -147,6 +149,8 @@ function LoanPage() {
         } catch (error) {
             console.error('Error updating seller:', error);
             alert('Failed to update seller. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -208,6 +212,7 @@ function LoanPage() {
     const handleAddSeller = async (e) => {
         e.preventDefault();
         try {
+            setIsSubmitting(true);
             const response = await axios.post(
                 `${process.env.REACT_APP_BASE_URL}/api/sellers`,
                 {
@@ -231,6 +236,8 @@ function LoanPage() {
         } catch (error) {
             console.error('Error adding seller:', error);
             alert('Failed to add seller.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -460,6 +467,7 @@ function LoanPage() {
                                         type="text"
                                         value={selectedSellerDetails.displayName}
                                         onChange={(e) => setSelectedSellerDetails({ ...selectedSellerDetails, displayName: e.target.value })}
+                                        disabled={isSubmitting}
                                         required
                                     />
                                 </Form.Group>
@@ -469,11 +477,21 @@ function LoanPage() {
                                         type="text"
                                         value={selectedSellerDetails.contactNumber}
                                         onChange={(e) => setSelectedSellerDetails({ ...selectedSellerDetails, contactNumber: e.target.value })}
+                                        disabled={isSubmitting}
                                     />
                                 </Form.Group>
                                 <Modal.Footer>
-                                    <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
-                                    <Button variant="primary" type="submit">Save Changes</Button>
+                                    <Button variant="secondary" onClick={handleCloseModal} disabled={isSubmitting}>Cancel</Button>
+                                    <Button variant="primary" type="submit" disabled={isSubmitting}>
+                                        {isSubmitting ? (
+                                            <>
+                                                <Spinner animation="border" size="sm" className="me-2" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            'Save Changes'
+                                        )}
+                                    </Button>
                                 </Modal.Footer>
                             </Form>
                         )}
@@ -632,6 +650,7 @@ function LoanPage() {
                                     value={newSellerName}
                                     onChange={(e) => setNewSellerName(e.target.value)}
                                     placeholder="Enter seller name"
+                                    disabled={isSubmitting}
                                     required
                                 />
                             </Form.Group>
@@ -642,14 +661,22 @@ function LoanPage() {
                                     value={newSellerContact}
                                     onChange={(e) => setNewSellerContact(e.target.value)}
                                     placeholder="Enter contact number (optional)"
+                                    disabled={isSubmitting}
                                 />
                             </Form.Group>
                             <Modal.Footer>
-                                <Button variant="secondary" onClick={() => setShowAddSellerModal(false)}>
+                                <Button variant="secondary" onClick={() => setShowAddSellerModal(false)} disabled={isSubmitting}>
                                     Cancel
                                 </Button>
-                                <Button variant="primary" type="submit">
-                                    Add Seller
+                                <Button variant="primary" type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? (
+                                        <>
+                                            <Spinner animation="border" size="sm" className="me-2" />
+                                            Adding...
+                                        </>
+                                    ) : (
+                                        'Add Seller'
+                                    )}
                                 </Button>
                             </Modal.Footer>
                         </Form>
