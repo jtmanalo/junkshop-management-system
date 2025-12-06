@@ -15,6 +15,6 @@ router.get('/sellers/:id', sellerController.getById);
 router.put('/sellers/:id', sellerController.update);
 
 // Delete a seller
-// router.delete('/sellers/:id', sellerController.remove);
+router.delete('/delete-seller/:id', sellerController.remove);
 
 module.exports = router;

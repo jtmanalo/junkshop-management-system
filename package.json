@@ -20,6 +20,7 @@
     "handsontable": "^16.2.0",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.545.0",
+    "mariadb": "^3.4.5",
     "mdb-ui-kit": "^9.1.0",
     "moment-timezone": "^0.6.0",
     "react": "^19.2.0",
