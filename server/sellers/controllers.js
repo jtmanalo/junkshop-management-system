@@ -84,6 +84,12 @@ async function remove(req, res) {
             return res.status(404).json({ error: 'Seller not found' });
         }
 
+        //  await sellerService.createActivityLog({
+        //     userId: userId,
+        //     activityType: 'delete',
+        //     description: `Seller ${name} deleted by user ${username}.`,
+        // });
+
         res.status(200).json({ message: 'Seller deleted successfully' });
     } catch (error) {
         console.error('Error in deleteSeller:', error);
