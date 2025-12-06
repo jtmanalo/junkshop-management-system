@@ -10,12 +10,14 @@ import {
     Spinner
 } from 'react-bootstrap';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import eye icons
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 function LoginPage() {
     const [activeTab, setActiveTab] = useState('login');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
@@ -166,12 +168,15 @@ function LoginPage() {
 
             } catch (error) {
                 setLoading(false);
+                navigate('/');
                 if (error.response && error.response.status === 401) {
                     setErrors({ general: 'Invalid email or password. Please try again.' });
                 } else {
                     console.error('Error during login:', error);
                     setErrors({ general: 'An error occurred. Please try again later.' });
                 }
+            } finally {
+                setLoading(false);
             }
         }
     };
