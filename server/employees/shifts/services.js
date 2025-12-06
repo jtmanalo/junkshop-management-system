@@ -63,6 +63,16 @@ async function create(data) {
     try {
         conn = await pool.getConnection();
 
+        // Check if there's already an active shift for this branch
+        const existingShift = await conn.query(
+            `SELECT ShiftID FROM shift WHERE BranchID = ? AND EndDatetime IS NULL`,
+            [data.branchId]
+        );
+
+        if (existingShift.length > 0) {
+            throw new Error('An active shift already exists for this branch. Please end the current shift before creating a new one.');
+        }
+
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
         const startDatetime = moment(data.startDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
