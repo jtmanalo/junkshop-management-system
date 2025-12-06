@@ -7,6 +7,9 @@ router.get('/buyers', buyerController.getAll);
 
 router.get('/buyers-with-prices', buyerController.getAllWithPrices);
 
+// Get formatted buyers with prices for table rendering
+router.get('/buyers-with-prices-formatted', buyerController.getFormattedBuyersWithPrices);
+
 // Get buyers list (ID and CompanyName only)
 router.get('/buyers-list', buyerController.getList);
 

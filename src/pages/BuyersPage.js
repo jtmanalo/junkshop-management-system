@@ -4,7 +4,7 @@
 // Edit button only for rows with items/prices
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Table, Form, Button, Alert, Modal } from 'react-bootstrap';
+import { Table, Form, Button, Alert, Modal, Spinner } from 'react-bootstrap';
 import { FaInfoCircle } from 'react-icons/fa';
 import { useAuth } from '../services/AuthContext';
 // import { useMatch } from 'react-router-dom';
@@ -21,7 +21,7 @@ function BuyersPage() {
     const [items, setItems] = useState([]);
     const [selectedItem, setSelectedItem] = useState('');
     const [rows, setRows] = useState([]);
-    const [filteredRows, setFilteredRows] = useState([]); // State for filtered rows
+    const [filteredRows, setFilteredRows] = useState([]);
     const [buyerContacts, setBuyerContacts] = useState([]);
     const [showContactsModal, setShowContactsModal] = useState(false);
     // const [currentBuyerId, setCurrentBuyerId] = useState(null);
@@ -53,13 +53,14 @@ function BuyersPage() {
     const [editBuyerStatus, setEditBuyerStatus] = useState('active');
     const [showAddPreviousPricelistModal, setShowAddPreviousPricelistModal] = useState(false);
     const [historicalEffectiveDate, setHistoricalEffectiveDate] = useState(
-        moment().tz('Asia/Manila').format('YYYY-MM-DD')
+        moment().tz('Asia/Manila').subtract(1, 'day').format('YYYY-MM-DD')
     );
     const [historicalItemsList, setHistoricalItemsList] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchBuyers = async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers-with-prices`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers`);
             // console.log('Buyers:', response.data);
             const formattedBuyers = [...new Set(response.data.map(buyer => buyer.CompanyName))];
             const buyerPricelist = Array.from(
@@ -97,28 +98,37 @@ function BuyersPage() {
                 ).values()
             );
 
-            const formattedRows = response.data.map(buyer => {
-                if (buyer.Name && buyer.CompanyName && buyer.Price) {
-                    return {
-                        buyerId: buyer.BuyerID,
-                        itemName: buyer.Name && buyer.Classification && buyer.UnitOfMeasurement
-                            ? `${buyer.Name} - ${buyer.Classification} (${buyer.UnitOfMeasurement})`
-                            : buyer.Name
-                                ? `${buyer.Name} (${buyer.UnitOfMeasurement})`
-                                : '',
-                        price: buyer.Price,
-                        companyName: buyer.CompanyName,
-                    };
-                }
-                return null;
-            }).filter(row => row !== null);
-
             setBuyers(formattedBuyers);
             setBuyerPricelist(buyerPricelist);
             setItems([...formattedItems]);
-            setRows(formattedRows);
-            setFilteredRows(formattedRows);
-            // console.log('Rows:', formattedRows);
+
+            // Fetch formatted rows for main table from new endpoint
+            try {
+                const formattedResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/buyers-with-prices-formatted`);
+                setRows(formattedResponse.data);
+                setFilteredRows(formattedResponse.data);
+                // console.log('Formatted Rows:', formattedResponse.data);
+            } catch (error) {
+                // Fallback to frontend formatting if endpoint fails
+                console.warn('Using fallback table formatting:', error);
+                const formattedRows = response.data.map(buyer => {
+                    if (buyer.Name && buyer.CompanyName && buyer.Price) {
+                        return {
+                            buyerId: buyer.BuyerID,
+                            itemName: buyer.Name && buyer.Classification && buyer.UnitOfMeasurement
+                                ? `${buyer.Name} - ${buyer.Classification} (${buyer.UnitOfMeasurement})`
+                                : buyer.Name
+                                    ? `${buyer.Name} (${buyer.UnitOfMeasurement})`
+                                    : '',
+                            price: buyer.Price,
+                            companyName: buyer.CompanyName,
+                        };
+                    }
+                    return null;
+                }).filter(row => row !== null);
+                setRows(formattedRows);
+                setFilteredRows(formattedRows);
+            }
             // console.log('Buyers:', formattedBuyers);
         } catch (error) {
             console.error('Error fetching buyers:', error);
@@ -130,11 +140,11 @@ function BuyersPage() {
     }, []);
 
     useEffect(() => {
-        const filtered = rows.filter(row => {
+        const filtered = Array.isArray(rows) ? rows.filter(row => {
             const matchesBuyer = selectedBuyer ? row.companyName === selectedBuyer : true;
             const matchesItem = selectedItem ? row.itemName.includes(selectedItem) : true;
             return matchesBuyer && matchesItem;
-        });
+        }) : [];
         setFilteredRows(filtered);
     }, [selectedBuyer, selectedItem, rows]);
 
@@ -144,7 +154,11 @@ function BuyersPage() {
             .then(response => {
                 // // console.log('All items with prices:', response.data); 
                 if (isHistorical) {
-                    setHistoricalItemsList(response.data.map(item => ({ ...item })));
+                    const itemsWithHistoricalPrice = response.data.map(item => ({
+                        ...item,
+                        historicalPrice: ''
+                    }));
+                    setHistoricalItemsList(itemsWithHistoricalPrice);
                 } else {
                     setPricelistItems(response.data);
                 }
@@ -177,15 +191,25 @@ function BuyersPage() {
         })
             .then(response => {
                 // // console.log('Pricelist item updated successfully:', response.data);
-                setPricelistItems(prevItems => {
-                    const updatedItems = [...prevItems];
-                    updatedItems[index].isUpdated = true;
-                    return updatedItems;
-                });
-                fetchBuyers();
+                if (response.status === 200 || response.status === 201) {
+                    setPricelistItems(prevItems => {
+                        const updatedItems = [...prevItems];
+                        updatedItems[index].isUpdated = true;
+                        return updatedItems;
+                    });
+                    setSuccessMessage('Price updated successfully!');
+                    setShowSuccessAlert(true);
+                    setTimeout(() => setShowSuccessAlert(false), 3000);
+                    fetchBuyers();
+                } else {
+                    throw new Error('Unexpected response status');
+                }
             })
             .catch(error => {
                 console.error('Error updating pricelist item:', error);
+                setSuccessMessage('Failed to update price. Please try again.');
+                setShowSuccessAlert(true);
+                setTimeout(() => setShowSuccessAlert(false), 3000);
             });
     };
 
@@ -247,22 +271,33 @@ function BuyersPage() {
     };
 
     const handleAddBuyer = (buyerData) => {
+        setIsSubmitting(true);
         axios.post(`${process.env.REACT_APP_BASE_URL}/api/buyers`, buyerData)
             .then(response => {
                 // console.log('Buyer added successfully:', response.data);
-                setShowAddBuyerModal(false);
-                setNewBuyerName('');
-                setNewBuyerCompany('');
-                setNewBuyerNotes('');
-                setNewBuyerContactMethod('');
-                setNewBuyerContactDetail('');
-                fetchBuyers();
-                setSuccessMessage('Buyer added successfully!');
-                setShowSuccessAlert(true);
-                setTimeout(() => setShowSuccessAlert(false), 3000);
+                if (response.status === 200 || response.status === 201) {
+                    setShowAddBuyerModal(false);
+                    setNewBuyerName('');
+                    setNewBuyerCompany('');
+                    setNewBuyerNotes('');
+                    setNewBuyerContactMethod('');
+                    setNewBuyerContactDetail('');
+                    fetchBuyers();
+                    setSuccessMessage('Buyer added successfully!');
+                    setShowSuccessAlert(true);
+                    setTimeout(() => setShowSuccessAlert(false), 3000);
+                } else {
+                    throw new Error('Unexpected response status');
+                }
             })
             .catch(error => {
                 console.error('Error adding buyer:', error);
+                setSuccessMessage('Failed to add buyer. Please try again.');
+                setShowSuccessAlert(true);
+                setTimeout(() => setShowSuccessAlert(false), 3000);
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
     };
 
@@ -282,6 +317,7 @@ function BuyersPage() {
 
     // Function to handle saving the edited buyer details
     const handleSaveBuyer = () => {
+        setIsSubmitting(true);
         axios.put(`${process.env.REACT_APP_BASE_URL}/api/buyers/${editBuyerId}`, {
             companyName: editBuyerCompany,
             contactPerson: editBuyerName,
@@ -292,14 +328,24 @@ function BuyersPage() {
         })
             .then(response => {
                 // console.log('Buyer updated successfully:', response.data);
-                setShowEditBuyerModal(false);
-                fetchBuyers();
-                setSuccessMessage('Buyer updated successfully!');
-                setShowSuccessAlert(true);
-                setTimeout(() => setShowSuccessAlert(false), 3000);
+                if (response.status === 200 || response.status === 201) {
+                    setShowEditBuyerModal(false);
+                    fetchBuyers();
+                    setSuccessMessage('Buyer updated successfully!');
+                    setShowSuccessAlert(true);
+                    setTimeout(() => setShowSuccessAlert(false), 3000);
+                } else {
+                    throw new Error('Unexpected response status');
+                }
             })
             .catch(error => {
                 console.error('Error updating buyer:', error);
+                setSuccessMessage('Failed to update buyer. Please try again.');
+                setShowSuccessAlert(true);
+                setTimeout(() => setShowSuccessAlert(false), 3000);
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
     };
 
@@ -339,6 +385,8 @@ function BuyersPage() {
             return;
         }
 
+        setIsSubmitting(true);
+
         try {
             await axios.post(`${process.env.REACT_APP_BASE_URL}/api/pricelist/upload-historical`, {
                 userId,
@@ -360,11 +408,15 @@ function BuyersPage() {
             setSuccessMessage(e.response?.data?.message || 'Failed to upload history. Check server logs.');
             setShowSuccessAlert(true);
             setTimeout(() => setShowSuccessAlert(false), 5000);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const handleOpenAddPreviousPricelistModal = () => {
-        setHistoricalEffectiveDate(moment().tz('Asia/Manila').format('YYYY-MM-DD'));
+        setHistoricalEffectiveDate(moment().tz('Asia/Manila').subtract(1, 'day').format('YYYY-MM-DD'));
+        setSelectedBuyerForPricelist('');
+        setHistoricalItemsList([]);
         setShowAddPreviousPricelistModal(true);
     };
 
@@ -739,7 +791,7 @@ function BuyersPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddBuyerModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowAddBuyerModal(false)} disabled={isSubmitting}>
                         Cancel
                     </Button>
                     <Button
@@ -753,8 +805,16 @@ function BuyersPage() {
                                 contactDetail: newBuyerContactDetail,
                             });
                         }}
+                        disabled={isSubmitting}
                     >
-                        Add Buyer
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Adding...
+                            </>
+                        ) : (
+                            'Add Buyer'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -820,11 +880,18 @@ function BuyersPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowEditBuyerModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowEditBuyerModal(false)} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleSaveBuyer}>
-                        Save Changes
+                    <Button variant="primary" onClick={handleSaveBuyer} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Saving...
+                            </>
+                        ) : (
+                            'Save Changes'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -858,10 +925,10 @@ function BuyersPage() {
                                     type="date"
                                     value={historicalEffectiveDate}
                                     onChange={e => setHistoricalEffectiveDate(e.target.value)}
-                                    max={moment().tz('Asia/Manila').format('YYYY-MM-DD')} // Must be past or current
+                                    max={moment().tz('Asia/Manila').subtract(1, 'day').format('YYYY-MM-DD')} // Must be past date only
                                     required
                                 />
-                                <Form.Text muted>Must be a past or current date for history.</Form.Text>
+                                <Form.Text muted>Must be a past date for history.</Form.Text>
                             </Form.Group>
                         </div>
 
@@ -882,7 +949,7 @@ function BuyersPage() {
                                         historicalItemsList.map((item, index) => (
                                             <tr key={item.ItemID || item.id}>
                                                 <td>{item.name}{item.classification ? ` - ${item.classification}` : ''}</td>
-                                                <td>{item.price || 'N/A'}</td> {/* Shows current active price */}
+                                                <td>{item.currentPrice || item.price || 'N/A'}</td> {/* Shows current active price */}
                                                 <td>
                                                     <Form.Control
                                                         type="number"
@@ -903,11 +970,18 @@ function BuyersPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddPreviousPricelistModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowAddPreviousPricelistModal(false)} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleUploadHistoricalPrices}>
-                        Upload History
+                    <Button variant="primary" onClick={handleUploadHistoricalPrices} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Uploading...
+                            </>
+                        ) : (
+                            'Upload History'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>

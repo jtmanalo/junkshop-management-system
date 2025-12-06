@@ -2,14 +2,14 @@ const mariadb = require('mariadb');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-console.log('Database Config:', {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
-    connectTimeout: 10000,
-});
+// console.log('Database Config:', {
+//     host: process.env.DB_HOST,
+//     user: process.env.DB_USER,
+//     password: process.env.DB_PASSWORD,
+//     database: process.env.DB_NAME,
+//     port: process.env.DB_PORT,
+//     connectTimeout: 10000,
+// });
 
 const pool = mariadb.createPool({
     host: process.env.DB_HOST,
@@ -17,7 +17,7 @@ const pool = mariadb.createPool({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
-    connectionLimit: 10,
+    connectionLimit: 20,
     timezone: '+08:00',
     connectTimeout: 10000,
 });

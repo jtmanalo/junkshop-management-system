@@ -9,7 +9,7 @@ const PrivateRoute = () => {
     const { user, token } = useAuth();
 
     if (!user || !token) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/" replace />;
     }
     return <Outlet />;
 };

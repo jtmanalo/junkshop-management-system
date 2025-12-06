@@ -6,7 +6,8 @@ import {
     Form,
     Button,
     Card,
-    Alert
+    Alert,
+    Spinner
 } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
@@ -14,6 +15,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import eye icons
 
 function LoginPage() {
     const [activeTab, setActiveTab] = useState('login');
+    const [loading, setLoading] = useState(false);
 
     const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
@@ -148,6 +150,7 @@ function LoginPage() {
             return;
         } else {
             setErrors({});
+            setLoading(true);
             try {
                 if (formData.email !== "" && formData.password !== "") {
                     auth.loginAction(formData);
@@ -157,8 +160,10 @@ function LoginPage() {
                 // console.log("password:", formData.password);
                 // console.log("Please fill in all fields.");
                 alert("Please fill in all fields.");
+                setLoading(false);
 
             } catch (error) {
+                setLoading(false);
                 if (error.response && error.response.status === 401) {
                     setErrors({ general: 'Invalid email or password. Please try again.' });
                 } else {
@@ -178,6 +183,7 @@ function LoginPage() {
             return;
         }
 
+        setLoading(true);
         try {
             const formattedData = {
                 ...formData,
@@ -249,6 +255,8 @@ function LoginPage() {
                 console.error('Error during registration:', error);
                 setErrors({ general: 'An error occurred. Please try again later.' });
             }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -260,6 +268,22 @@ function LoginPage() {
     return (
         <Container className="d-flex align-items-center justify-content-center min-vh-100">
             <Card className="w-100" style={{ maxWidth: '450px' }}>
+                {loading && (
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '100vh',
+                        backgroundColor: '#f8f9fa',
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        zIndex: 1050,
+                    }}>
+                        <span className="spinner-border" role="status" aria-hidden="true"></span>
+                    </div>
+                )}
                 <Tab.Container activeKey={activeTab} onSelect={(key) => setActiveTab(key)}>
                     <Nav variant="pills" justify className='mb-3'>
                         <Nav.Item>
@@ -320,7 +344,7 @@ function LoginPage() {
 
                                     </Form.Group>
 
-                                    <Button className="mb-4 w-100" type="submit">Sign in</Button>
+                                    <Button className="mb-4 w-100" type="submit" disabled={loading}>Sign in</Button>
                                     <p className="text-center">Not a member? <Nav.Link onClick={() => setActiveTab('register')} className="d-inline-block p-0" style={{ color: 'blue', textDecoration: 'underline' }}>Register</Nav.Link></p>
                                 </Form>
                             </Tab.Pane>
@@ -483,7 +507,7 @@ function LoginPage() {
                                             />
                                         </div>
                                     </Form.Group>
-                                    <Button className="mb-4 w-100" type="submit">Sign up</Button>
+                                    <Button className="mb-4 w-100" type="submit" disabled={loading}>Sign up</Button>
                                     <p className="text-center">Already a member? <Nav.Link onClick={() => setActiveTab('login')} className="d-inline-block p-0" style={{ color: 'blue', textDecoration: 'underline' }}>Login</Nav.Link></p>
                                 </Form>
                             </Tab.Pane>

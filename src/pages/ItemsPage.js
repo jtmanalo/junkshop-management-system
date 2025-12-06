@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card } from 'react-bootstrap';
+import { Table, Form, Button, Modal, Alert, Tabs, Tab, Card, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
 import { useMatch } from 'react-router-dom';
@@ -43,11 +43,12 @@ function ItemsPage() {
     });
     const [showEditItemModal, setShowEditItemModal] = useState(false);
     const [showAddPreviousPricelistModal, setShowAddPreviousPricelistModal] = useState(false);
-    const [historicalEffectiveDate, setHistoricalEffectiveDate] = useState(moment().tz('Asia/Manila').format('YYYY-MM-DD'));
+    const [historicalEffectiveDate, setHistoricalEffectiveDate] = useState(moment().tz('Asia/Manila').subtract(1, 'day').format('YYYY-MM-DD'));
     const [historicalItemsList, setHistoricalItemsList] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleOpenAddPreviousPricelistModal = () => {
-        setHistoricalEffectiveDate(moment().tz('Asia/Manila').format('YYYY-MM-DD'));
+        setHistoricalEffectiveDate(moment().tz('Asia/Manila').subtract(1, 'day').format('YYYY-MM-DD'));
         setShowAddPreviousPricelistModal(true);
     };
 
@@ -174,6 +175,7 @@ function ItemsPage() {
             return;
         }
 
+        setIsSubmitting(true);
         // console.log('userId for new item:', user?.userID);
 
         axios.post(`${process.env.REACT_APP_BASE_URL}/api/items`, {
@@ -195,6 +197,9 @@ function ItemsPage() {
             .catch(error => {
                 console.error('Error adding item:', error);
 
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
     };
 
@@ -307,6 +312,8 @@ function ItemsPage() {
             return;
         }
 
+        setIsSubmitting(true);
+
         try {
             await handleEdit(itemId, branchId, newPrice);
 
@@ -327,6 +334,8 @@ function ItemsPage() {
             fetchAllItems(branchId);
         } catch (error) {
             console.error('Error submitting edited price:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -349,6 +358,8 @@ function ItemsPage() {
             return;
         }
 
+        setIsSubmitting(true);
+
         try {
             await axios.put(
                 `${process.env.REACT_APP_BASE_URL}/api/items/${itemId}`,
@@ -370,6 +381,8 @@ function ItemsPage() {
             setShowEditItemModal(false);
         } catch (error) {
             console.error('Error updating item:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -401,6 +414,8 @@ function ItemsPage() {
             return;
         }
 
+        setIsSubmitting(true);
+
         try {
             await axios.post(`${process.env.REACT_APP_BASE_URL}/api/pricelist/upload-historical`, {
                 userId,
@@ -420,6 +435,8 @@ function ItemsPage() {
         } catch (e) {
             console.error('Error uploading historical prices:', e.response?.data || e.message);
             setErrors({ general: e.response?.data?.message || 'Failed to upload history. Check server logs.' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -658,11 +675,18 @@ function ItemsPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddItemModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowAddItemModal(false)} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleAddItemSubmit}>
-                        Add Item
+                    <Button variant="primary" onClick={handleAddItemSubmit} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Adding...
+                            </>
+                        ) : (
+                            'Add Item'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -781,11 +805,18 @@ function ItemsPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowEditPriceModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowEditPriceModal(false)} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleEditPriceSubmit}>
-                        Update Price
+                    <Button variant="primary" onClick={handleEditPriceSubmit} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Updating...
+                            </>
+                        ) : (
+                            'Update Price'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -838,11 +869,18 @@ function ItemsPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowEditItemModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowEditItemModal(false)} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleEditItemSubmit}>
-                        Save Changes
+                    <Button variant="primary" onClick={handleEditItemSubmit} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Saving...
+                            </>
+                        ) : (
+                            'Save Changes'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -851,7 +889,7 @@ function ItemsPage() {
                 setShowAddPreviousPricelistModal(false);
                 setSelectedBranchForPricelist('');
                 setHistoricalItemsList([]);
-                setHistoricalEffectiveDate(moment().tz('Asia/Manila').format('YYYY-MM-DD'));
+                setHistoricalEffectiveDate(moment().tz('Asia/Manila').subtract(1, 'day').format('YYYY-MM-DD'));
                 setErrors({});
             }}>
                 <Modal.Header closeButton>
@@ -887,10 +925,10 @@ function ItemsPage() {
                                     type="date"
                                     value={historicalEffectiveDate}
                                     onChange={e => setHistoricalEffectiveDate(e.target.value)}
-                                    max={moment().tz('Asia/Manila').format('YYYY-MM-DD')} // Cannot select future dates
+                                    max={moment().tz('Asia/Manila').subtract(1, 'day').format('YYYY-MM-DD')} // Cannot   select current or future dates
                                     required
                                 />
-                                <Form.Text muted>Must be a past or current date.</Form.Text>
+                                <Form.Text muted>Must be a past date only.</Form.Text>
                             </Form.Group>
                         </div>
 
@@ -937,11 +975,18 @@ function ItemsPage() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddPreviousPricelistModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowAddPreviousPricelistModal(false)} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleUploadHistoricalPrices}>
-                        Upload
+                    <Button variant="primary" onClick={handleUploadHistoricalPrices} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Uploading...
+                            </>
+                        ) : (
+                            'Upload'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>

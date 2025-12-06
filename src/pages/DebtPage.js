@@ -60,7 +60,7 @@ function DebtPage() {
         // });
         try {
             if (transactionType === 'repayment') {
-                const response = await axios.post(
+                await axios.post(
                     `${process.env.REACT_APP_BASE_URL}/api/repayments`,
                     {
                         branchId: actualBranchId,
@@ -74,7 +74,7 @@ function DebtPage() {
                 );
                 // console.log('Repayment Recorded:', response.data);
             } else {
-                const response = await axios.post(
+                await axios.post(
                     `${process.env.REACT_APP_BASE_URL}/api/loans`,
                     {
                         branchId: actualBranchId,

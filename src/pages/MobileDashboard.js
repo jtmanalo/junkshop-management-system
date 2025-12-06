@@ -1,4 +1,4 @@
-import { Container, Modal, Form, Card, Button, Table } from 'react-bootstrap';
+import { Container, Modal, Form, Card, Button, Table, Spinner } from 'react-bootstrap';
 import { useNavigate, useLocation, Route, Routes } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { FaShoppingCart, FaMoneyBillWave, FaChartLine, FaFileInvoiceDollar, FaHandHoldingUsd, FaUserTie, FaBoxOpen, FaClock } from 'react-icons/fa';
@@ -28,6 +28,7 @@ import PendingPurchase from './PendingPurchase';
 
 function SetBranchModal({ show, branchOptions, onSetBranch }) {
   const [selectedBranch, setSelectedBranch] = useState(branchOptions[0] || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const { user } = useAuth();
@@ -45,6 +46,7 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
     }
 
     if (selectedBranch) {
+      // setIsSubmitting(true);
       onSetBranch(selectedBranch);
     } else {
       alert('Please select a branch location.');
@@ -80,9 +82,11 @@ function SetBranchModal({ show, branchOptions, onSetBranch }) {
         )}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={() => navigate(`/admin-dashboard/${user?.username}/branches`)}>
-          Go to Admin Dashboard
-        </Button>
+        {user?.userType !== 'employee' && (
+          <Button variant="secondary" onClick={() => navigate(`/admin-dashboard/${user?.username}/branches`)}>
+            Go to Admin Dashboard
+          </Button>
+        )}
         <Button variant="primary" onClick={handleSetBranch} disabled={branchOptions.length === 0}>
           Set Location
         </Button>
@@ -114,6 +118,7 @@ function MobileDashboard() {
   const navigate = useNavigate();
   const [show, setShow] = useState(false);
   const [shiftEmployees, setShiftEmployees] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchShiftEmployees = async () => {
     try {
@@ -285,6 +290,7 @@ function MobileDashboard() {
         initialCash
       };
       // console.log('Creating shift with payload:', payload);
+      setIsSubmitting(true);
 
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}/api/shifts`,
@@ -301,6 +307,8 @@ function MobileDashboard() {
     } catch (error) {
       console.error('Error creating shift:', error.response?.data || error.message);
       throw error;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -310,7 +318,7 @@ function MobileDashboard() {
         shiftId
       };
       // console.log('Ending shift with payload:', payload);
-
+      setIsSubmitting(true);
       const response = await axios.put(
         `${process.env.REACT_APP_BASE_URL}/api/shifts/${shiftId}`,
         payload,
@@ -325,6 +333,8 @@ function MobileDashboard() {
     } catch (error) {
       console.error('Error ending shift:', error.response?.data || error.message);
       throw error;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -366,6 +376,7 @@ function MobileDashboard() {
 
   const onAddEmployee = async () => {
     try {
+      setIsSubmitting(true);
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}/api/shift-employees`,
         {
@@ -383,6 +394,8 @@ function MobileDashboard() {
       setShiftEmployees((prevEmployees) => [...prevEmployees, response.data]);
     } catch (error) {
       console.error('Error adding employee:', error.response?.data || error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -800,6 +813,7 @@ export default function MobileRoutes() {
 
 function AddEmployeeModal({ show, onClose, shiftId, employees }) {
   const [selectedEmployee, setSelectedEmployee] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddEmployee = async () => {
     if (!selectedEmployee) {
@@ -811,6 +825,7 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
 
     try {
       // console.log('Adding employee to shift:', { shiftId, firstName, lastName });
+      setIsSubmitting(true);
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}/api/shift-employees`,
         {
@@ -826,6 +841,8 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
     } catch (error) {
       console.error('Error adding employee:', error.response?.data || error.message);
       alert('Failed to add employee. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -854,11 +871,18 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button variant="outline-primary" onClick={handleAddEmployee}>
-          Add Employee
+        <Button variant="outline-primary" onClick={handleAddEmployee} disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Spinner animation="border" size="sm" className="me-2" />
+              Adding...
+            </>
+          ) : (
+            `Add Employee`
+          )}
         </Button>
       </Modal.Footer>
     </Modal>
@@ -867,6 +891,7 @@ function AddEmployeeModal({ show, onClose, shiftId, employees }) {
 
 function ShiftEmployeesModal({ show, onClose, shiftId, token, onAddEmployee, shiftStarted }) {
   const [shiftEmployees, setShiftEmployees] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchShiftEmployees = async () => {
     if (!shiftId) {
@@ -915,8 +940,15 @@ function ShiftEmployeesModal({ show, onClose, shiftId, token, onAddEmployee, shi
       <Modal.Body>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Employee List</h5>
-          <Button variant="outline-primary" onClick={handleAddEmployee} disabled={!shiftStarted}>
-            Add Employee
+          <Button variant="outline-primary" onClick={handleAddEmployee} disabled={!shiftStarted || isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Adding...
+              </>
+            ) : (
+              `Add Employee`
+            )}
           </Button>
         </div>
         <div style={tableStyle}>

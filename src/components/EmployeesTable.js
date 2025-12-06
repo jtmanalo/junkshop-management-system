@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Form, Modal, Row, Col, Alert } from 'react-bootstrap';
+import { Table, Button, Form, Modal, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import { FaInfoCircle } from 'react-icons/fa';
 import axios from 'axios';
 import { useAuth } from '../services/AuthContext';
@@ -29,6 +29,7 @@ function EmployeesTable() {
         address: '',
         status: 'active', // Default status
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessAlert, setShowSuccessAlert] = useState(false);
     const [showAddSuccessAlert, setShowAddSuccessAlert] = useState(false);
     const [showEditSuccessAlert, setShowEditSuccessAlert] = useState(false);
@@ -129,6 +130,7 @@ function EmployeesTable() {
 
     const handleUpdateEmployeeStatus = async () => {
         try {
+            setIsSubmitting(true);
             const response = await axios.put(`${process.env.REACT_APP_BASE_URL}/api/employees/${selectedUser.EmployeeID}`, {
                 status: newEmployeeStatus,
             });
@@ -148,11 +150,14 @@ function EmployeesTable() {
             setTimeout(() => setShowEditSuccessAlert(false), 3000);
         } catch (error) {
             console.error('Error updating employee status:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const handleConfirmAction = async () => {
         try {
+            setIsSubmitting(true);
             if (modalAction === 'approve' || modalAction === 'reject') {
                 const updatedStatus = modalAction === 'approve' ? 'approved' : 'rejected';
 
@@ -211,6 +216,8 @@ function EmployeesTable() {
             setSelectedUser(null);
         } catch (error) {
             console.error('Error approving/rejecting user:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -241,6 +248,7 @@ function EmployeesTable() {
         };
 
         try {
+            setIsSubmitting(true);
             await axios.post(
                 `${process.env.REACT_APP_BASE_URL}/api/employees`,
                 employeeData,
@@ -269,6 +277,8 @@ function EmployeesTable() {
             });
         } catch (error) {
             console.error('Error adding employee:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -526,8 +536,17 @@ function EmployeesTable() {
                         Are you sure you want to {modalAction} this user?
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="outline-secondary" onClick={handleCancelAction}>No, cancel</Button>
-                        <Button variant={modalAction === 'approve' ? 'outline-primary' : 'outline-danger'} onClick={handleConfirmAction}>Yes, {modalAction}</Button>
+                        <Button variant="outline-secondary" onClick={handleCancelAction} disabled={isSubmitting}>No, cancel</Button>
+                        <Button variant={modalAction === 'approve' ? 'outline-primary' : 'outline-danger'} onClick={handleConfirmAction} disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <>
+                                    <Spinner animation="border" size="sm" className="me-2" />
+                                    Submitting...
+                                </>
+                            ) : (
+                                `Yes, ${modalAction}`
+                            )}
+                        </Button>
                     </Modal.Footer>
                 </Modal>
             )}
@@ -545,6 +564,7 @@ function EmployeesTable() {
                                 <Form.Select
                                     value={newEmployeeStatus}
                                     onChange={(e) => setNewEmployeeStatus(e.target.value)}
+                                    disabled={isSubmitting}
                                 >
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
@@ -554,11 +574,18 @@ function EmployeesTable() {
                         </Form>
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="outline-secondary" onClick={() => setShowUpdateModal(false)}>
+                        <Button variant="outline-secondary" onClick={() => setShowUpdateModal(false)} disabled={isSubmitting}>
                             Cancel
                         </Button>
-                        <Button variant="outline-primary" onClick={handleUpdateEmployeeStatus}>
-                            Update
+                        <Button variant="outline-primary" onClick={handleUpdateEmployeeStatus} disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <>
+                                    <Spinner animation="border" size="sm" className="me-2" />
+                                    Submitting...
+                                </>
+                            ) : (
+                                'Update'
+                            )}
                         </Button>
                     </Modal.Footer>
                 </Modal>
@@ -584,6 +611,7 @@ function EmployeesTable() {
                                             name="firstName"
                                             value={newEmployee.firstName}
                                             onChange={handleNewEmployeeChange}
+                                            disabled={isSubmitting}
                                             required
                                         />
                                     </Form.Group>
@@ -597,6 +625,7 @@ function EmployeesTable() {
                                             name="middleName"
                                             value={newEmployee.middleName}
                                             onChange={handleNewEmployeeChange}
+                                            disabled={isSubmitting}
                                         />
                                     </Form.Group>
                                 </Col>
@@ -611,6 +640,7 @@ function EmployeesTable() {
                                             name="lastName"
                                             value={newEmployee.lastName}
                                             onChange={handleNewEmployeeChange}
+                                            disabled={isSubmitting}
                                             required
                                         />
                                     </Form.Group>
@@ -624,6 +654,7 @@ function EmployeesTable() {
                                     name="nickname"
                                     value={newEmployee.nickname}
                                     onChange={handleNewEmployeeChange}
+                                    disabled={isSubmitting}
                                 />
                             </Form.Group>
 
@@ -637,6 +668,7 @@ function EmployeesTable() {
                                     name="positionTitle" // Corrected to match the state key
                                     value={newEmployee.positionTitle}
                                     onChange={handleNewEmployeeChange}
+                                    disabled={isSubmitting}
                                     required
                                 />
                             </Form.Group>
@@ -650,6 +682,7 @@ function EmployeesTable() {
                                     name="hireDate"
                                     value={newEmployee.hireDate}
                                     onChange={handleNewEmployeeChange}
+                                    disabled={isSubmitting}
                                     required
                                 />
                             </Form.Group>
@@ -663,6 +696,7 @@ function EmployeesTable() {
                                     name="contactNumber"
                                     value={newEmployee.contactNumber}
                                     onChange={handleNewEmployeeChange}
+                                    disabled={isSubmitting}
                                 />
                             </Form.Group>
 
@@ -674,11 +708,19 @@ function EmployeesTable() {
                                     name="address"
                                     value={newEmployee.address}
                                     onChange={handleNewEmployeeChange}
+                                    disabled={isSubmitting}
                                 />
                             </Form.Group>
 
-                            <Button variant="outline-primary" type="submit">
-                                Submit
+                            <Button variant="outline-primary" type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <>
+                                        <Spinner animation="border" size="sm" className="me-2" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    'Submit'
+                                )}
                             </Button>
                         </Form>
                     </Modal.Body>
