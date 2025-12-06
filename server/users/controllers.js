@@ -80,8 +80,13 @@ async function register(req, res) {
 
     const users = await userService.getAll();
     // Check for duplicate username or email
-    const existingUser = users.find((user) => user.email === data.email);
-    const existingUsername = users.find((user) => user.username === data.username);
+    const existingUser = users.find((user) => user.Email === data.email);
+    const existingUsername = users.find((user) => user.Username === data.username);
+    const existingOwner = users.find((user) => user.UserType === 'owner');
+
+    if (existingOwner && userType === 'owner') {
+        return res.status(409).json({ error: 'An owner account already exists. Only one owner is allowed.' });
+    }
     if (existingUsername) {
         return res.status(409).json({ error: 'A user with this username already exists.' });
     }
