@@ -134,7 +134,8 @@ function LoginPage() {
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleLogin = (e) => {
+    //
+    const handleLogin = async (e) => {
         e.preventDefault();
         const formErrors = validateLoginForm();
         // console.log("Form errors before setting state:", formErrors);
@@ -153,7 +154,8 @@ function LoginPage() {
             setLoading(true);
             try {
                 if (formData.email !== "" && formData.password !== "") {
-                    auth.loginAction(formData);
+                    //
+                    await auth.loginAction(formData);
                     return;
                 }
                 // console.log("email:", formData.email);

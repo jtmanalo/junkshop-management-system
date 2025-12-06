@@ -135,6 +135,28 @@ function LoanPage() {
         setShowEditSellerModal(true);
     };
 
+    const handleDeleteSeller = async (sellerId) => {
+        if (!window.confirm('Are you sure you want to delete this seller? This action cannot be undone.')) {
+            return;
+        }
+        try {
+            setIsSubmitting(true);
+            await axios.delete(`${process.env.REACT_APP_BASE_URL}/api/delete-seller/${sellerId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            });
+            setSuccessMessage('Seller deleted successfully!');
+            setShowSuccessAlert(true);
+            fetchSellers();
+        } catch (error) {
+            console.error('Error deleting seller:', error);
+            alert('Failed to delete seller. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleUpdateSellerSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -354,6 +376,16 @@ function LoanPage() {
                                                                     >
                                                                         Edit Profile
                                                                     </Button>
+                                                                    {user?.userType === 'owner' && (
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            onClick={() => handleDeleteSeller(seller.id)}
+                                                                            disabled={isSubmitting}
+                                                                        >
+                                                                            Delete
+                                                                        </Button>
+                                                                    )}
                                                                     {/* <Button
                                                                         variant="outline-primary"
                                                                         size="sm"
