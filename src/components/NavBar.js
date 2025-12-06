@@ -12,21 +12,17 @@ import {
   FaChevronDown,
   FaBars,
   FaUserCog,
-  FaKey,
   FaListAlt,
   FaSignOutAlt,
   FaClipboardList,
   FaFileInvoice,
-  FaSpinner,
   FaUser,
   FaBuilding,
   FaBox,
   FaClock,
-  FaTruckLoading,
   FaUserTie,
   FaHandHoldingUsd
 } from 'react-icons/fa';
-import { BottomNav } from './NavLink';
 // import useIsMobile from './useIsMobile';
 
 function UserProfileDropdown() {
