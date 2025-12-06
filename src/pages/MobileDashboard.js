@@ -369,7 +369,8 @@ function MobileDashboard() {
       setShiftStarted(true);
       setShowModal(false);
     } catch (error) {
-      alert('Error starting shift. Please try again.');
+      const errorMessage = error.response?.data?.message || error.message || 'Error starting shift. Please try again later.';
+      alert(errorMessage);
     }
     // console.log('Shift started with initial balance:', startingCash);
   };
