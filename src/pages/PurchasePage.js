@@ -457,13 +457,9 @@ function PurchasePage() {
                             <div style={{ flex: 2, padding: '0.5rem 0', marginRight: '4px' }}>
                                 <Form.Control
                                     type="number"
+                                    step="0.01"
                                     value={item.pricing}
                                     onChange={(e) => handlePricingChange(idx, parseFloat(e.target.value) || 0)}
-                                    onKeyPress={(e) => {
-                                        if (!/^[0-9.]$/.test(e.key)) {
-                                            e.preventDefault();
-                                        }
-                                    }}
                                     style={{
                                         background: '#f5f5f5',
                                         color: '#222',
@@ -479,13 +475,9 @@ function PurchasePage() {
                             <div style={{ flex: 2, padding: '0.5rem 0', marginRight: '4px' }}>
                                 <Form.Control
                                     type="number"
+                                    step="0.01"
                                     value={item.quantity}
                                     onChange={(e) => handleQuantityChange(idx, parseFloat(e.target.value) || 0)}
-                                    onKeyPress={(e) => {
-                                        if (!/^[0-9.]$/.test(e.key)) {
-                                            e.preventDefault();
-                                        }
-                                    }}
                                     style={{
                                         background: '#f5f5f5',
                                         color: '#222',
