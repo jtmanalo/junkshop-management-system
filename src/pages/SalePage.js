@@ -107,12 +107,13 @@ function SalePage() {
         );
         if (selected) {
             const updatedItems = [...items];
+            const itemPrice = Math.max(selected.ItemPrice || 0, 0);
             updatedItems[idx] = {
                 ...updatedItems[idx],
                 name: selected.Name,
                 classification: selected.Classification || '',
-                pricing: Math.max(selected.ItemPrice || 0, 0.01),
-                subtotal: (updatedItems[idx].quantity || 0) * Math.max(selected.ItemPrice || 0, 0.01),
+                pricing: itemPrice,
+                subtotal: (updatedItems[idx].quantity || 0) * itemPrice,
             };
             setItems(updatedItems);
             console.log(`Item selected: ${selected.Name}, Classification: ${selected.Classification}, Price: ${selected.ItemPrice}`);
@@ -122,10 +123,11 @@ function SalePage() {
     const handlePricingChange = (idx, newPricing) => {
         if (isNaN(newPricing)) return;
         const updatedItems = [...items];
+        const pricing = Math.max(newPricing || 0, 0);
         updatedItems[idx] = {
             ...updatedItems[idx],
-            pricing: Math.max(newPricing || 0, 0.01),
-            subtotal: (updatedItems[idx].quantity || 0) * Math.max(newPricing || 0, 0.01),
+            pricing: pricing,
+            subtotal: (updatedItems[idx].quantity || 0) * pricing,
         };
         setItems(updatedItems);
     };
@@ -133,10 +135,11 @@ function SalePage() {
     const handleQuantityChange = (idx, newQuantity) => {
         if (isNaN(newQuantity)) return;
         const updatedItems = [...items];
+        const quantity = Math.max(newQuantity || 0, 0);
         updatedItems[idx] = {
             ...updatedItems[idx],
-            quantity: Math.max(newQuantity || 0, 1),
-            subtotal: Math.max(newQuantity || 0, 1) * (updatedItems[idx].pricing || 0.01),
+            quantity: quantity,
+            subtotal: quantity * (updatedItems[idx].pricing || 0),
         };
         setItems(updatedItems);
     };
