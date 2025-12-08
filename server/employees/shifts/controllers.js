@@ -46,6 +46,7 @@ async function create(req, res) {
         branchId,
         userId,
         initialCash,
+        notes
     } = req.body;
     if (!branchId || !userId || !initialCash) {
         return res.status(400).json({ error: 'BranchId, UserId, and InitialCash are required.' });
@@ -55,7 +56,8 @@ async function create(req, res) {
         const shift = await shiftService.create({
             branchId,
             userId,
-            initialCash
+            initialCash,
+            notes
         });
         res.status(201).json(shift);
     } catch (error) {
@@ -88,11 +90,33 @@ async function getBalance(req, res) {
     }
 }
 
+async function addCapital(req, res) {
+    const shiftId = parseInt(req.params.id, 10);
+    const { amount, branchId, userId, notes } = req.body;
+
+    if (!amount || amount <= 0) {
+        return res.status(400).json({ error: 'A valid amount is required.' });
+    }
+
+    if (!branchId || !userId) {
+        return res.status(400).json({ error: 'BranchId and UserId are required.' });
+    }
+
+    try {
+        const updatedShift = await shiftService.addCapital(shiftId, amount, branchId, userId, notes);
+        res.json(updatedShift);
+    } catch (error) {
+        console.error('Error in addCapital:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     create,
     update,
     getActivebyUserID,
     getBalance,
-    getShiftDetails
+    getShiftDetails,
+    addCapital
 };

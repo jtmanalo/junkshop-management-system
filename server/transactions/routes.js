@@ -37,6 +37,6 @@ router.get('/purchase-balance', transactionController.getPurchaseBalance);
 router.put('/purchases/:transactionId', transactionController.update);
 
 // Delete a transaction
-// router.delete('/transactions/:id', transactionController.remove);
+router.post('/transactions/void/:transactionId', transactionController.voidTransaction);
 
 module.exports = router;

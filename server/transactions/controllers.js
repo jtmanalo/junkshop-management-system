@@ -1,5 +1,5 @@
-const { get } = require('./routes');
 const transactionService = require('./services');
+const bcrypt = require('bcrypt');
 
 // Get all transactions
 async function getAll(req, res) {
@@ -265,6 +265,44 @@ async function getTransactionItems(req, res) {
     }
 }
 
+async function voidTransaction(req, res) {
+    const transactionId = parseInt(req.params.transactionId, 10);
+    const {
+        password,
+        // user 
+    } = req.body;
+    console.log('Void request for TransactionID:', transactionId);
+
+    const ownerData = await transactionService.getOwnerPassword();
+    if (!ownerData) {
+        return res.status(404).json({ error: 'Owner not found.' });
+    }
+
+    console.log('Owner data retrieved:', ownerData);
+
+    const { passwordHash } = ownerData;
+    const isPasswordValid = await bcrypt.compare(password, passwordHash);
+
+    console.log('Password validation result:', isPasswordValid);
+    if (!isPasswordValid) {
+        return res.status(401).json({ error: 'Invalid password.' });
+    }
+
+    try {
+        const result = await transactionService.voidTransaction(transactionId);
+
+        // await userService.createActivityLog({
+        //     userId: user.UserID,
+        //     activityType: 'delete',
+        //     description: `User ${user.Username} voided a transaction.`,
+        // });
+
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getAll,
     create,
@@ -282,4 +320,5 @@ module.exports = {
     getDailyLogs,
     getPendingTransactionsByShift,
     getTransactionItems,
+    voidTransaction
 };

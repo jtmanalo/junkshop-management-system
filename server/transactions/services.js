@@ -988,7 +988,110 @@ async function createActivityLog(data) {
     }
 }
 
+async function getOwnerPassword() {
+    let conn;
+    try {
+        conn = await pool.getConnection();
 
+        // Perform the SELECT query
+        const rows = await conn.query(`
+            SELECT 
+                PasswordHash
+            FROM 
+                user
+            WHERE 
+                UserType = 'owner'
+            LIMIT 1;`
+        );
+
+        // Return the password hash
+        return rows.length > 0 ? { passwordHash: rows[0].PasswordHash } : null;
+    }
+    catch (error) {
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function voidTransaction(transactionId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        console.log('Voiding transaction with ID:', transactionId);
+
+        // Get transaction details to understand what type it is and what shift it belongs to
+        const [transaction] = await conn.query(
+            `SELECT TransactionID, TransactionType, TotalAmount, ShiftID, Status FROM transaction WHERE TransactionID = ?`,
+            [transactionId]
+        );
+
+        if (!transaction) {
+            throw new Error('Transaction not found');
+        }
+
+        if (transaction.Status === 'voided') {
+            throw new Error('Transaction is already voided');
+        }
+
+        // Get all transaction items for deletion
+        const transactionItems = await conn.query(
+            `SELECT TransactionItemID FROM transaction_item WHERE TransactionID = ?`,
+            [transactionId]
+        );
+
+        // Delete all transaction items associated with this transaction
+        if (transactionItems.length > 0) {
+            await conn.query(
+                `DELETE FROM transaction_item WHERE TransactionID = ?`,
+                [transactionId]
+            );
+        }
+
+        // Reverse the RunningTotal update based on transaction type
+        let runningTotalAdjustment = 0;
+        switch (transaction.TransactionType) {
+            case 'expense':
+            case 'loan':
+                // These add to the running total when created, so we subtract them back
+                runningTotalAdjustment = -transaction.TotalAmount;
+                break;
+            case 'repayment':
+            case 'sale':
+                // These subtract from the running total when created, so we add them back
+                runningTotalAdjustment = transaction.TotalAmount;
+                break;
+            case 'purchase':
+                // Purchases add to the running total when completed, so we subtract them back
+                runningTotalAdjustment = -transaction.TotalAmount;
+                break;
+            default:
+                throw new Error(`Unknown transaction type: ${transaction.TransactionType}`);
+        }
+
+        // Update the shift's running total to reverse the transaction's effect
+        await conn.query(
+            `UPDATE shift SET RunningTotal = RunningTotal + ? WHERE ShiftID = ?`,
+            [runningTotalAdjustment, transaction.ShiftID]
+        );
+
+        // Mark the transaction as voided instead of deleting it
+        await conn.query(
+            `UPDATE transaction SET Status = 'voided' WHERE TransactionID = ?`,
+            [transactionId]
+        );
+
+        await conn.commit();
+        return { id: transactionId, status: 'voided', message: 'Transaction successfully voided' };
+    } catch (error) {
+        if (conn) await conn.rollback();
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
 
 module.exports = {
     getAll,
@@ -1012,5 +1115,7 @@ module.exports = {
     getPendingTransactionDetails,
     getTransactionItems,
     getPendingTransactionsByShift,
-    createActivityLog
+    createActivityLog,
+    getOwnerPassword,
+    voidTransaction
 };

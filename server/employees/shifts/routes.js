@@ -17,6 +17,8 @@ router.get('/balance', shiftController.getBalance);
 // Create a shift
 router.post('/shifts', shiftController.create);
 
+router.post('/shifts/:id/add-capital', shiftController.addCapital);
+
 // Update a shift
 router.put('/shifts/:id', shiftController.update);
 

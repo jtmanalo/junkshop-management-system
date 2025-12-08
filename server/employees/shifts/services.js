@@ -80,13 +80,14 @@ async function create(data) {
         const result = await conn.query(
             `INSERT INTO shift 
             (BranchID, UserID, StartDatetime, 
-            InitialCash, RunningTotal, CreatedAt) VALUES (?, ?, ?, ?, ?, ?)`,
+            InitialCash, RunningTotal, Notes, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.branchId,
                 data.userId,
                 startDatetime,
                 data.initialCash,
                 0,
+                data.notes,
                 createdAt
             ]
         );
@@ -105,7 +106,7 @@ async function endShift(shiftId) {
         conn = await pool.getConnection();
 
         const [shift] = await conn.query(
-            `SELECT InitialCash, RunningTotal FROM shift WHERE ShiftID = ?`,
+            `SELECT InitialCash, RunningTotal, AddedCapital FROM shift WHERE ShiftID = ?`,
             [shiftId]
         );
 
@@ -113,9 +114,9 @@ async function endShift(shiftId) {
             throw new Error('Shift not found');
         }
 
-        const { InitialCash, RunningTotal } = shift;
+        const { InitialCash, RunningTotal, AddedCapital } = shift;
 
-        const finalCash = InitialCash - RunningTotal;
+        const finalCash = InitialCash + (AddedCapital || 0) - RunningTotal;
 
         const result = await conn.query(
             `UPDATE shift SET EndDatetime = NOW(), FinalCash = ? WHERE ShiftID = ?`,
@@ -165,7 +166,7 @@ async function getBalance(branchId, userId) {
         }
 
         const balance = await conn.query(
-            `SELECT InitialCash - RunningTotal AS Balance
+            `SELECT InitialCash + COALESCE(AddedCapital, 0) - RunningTotal AS Balance
              FROM shift
              WHERE ShiftID = ?`,
             [shift[0]?.ShiftID]
@@ -235,11 +236,63 @@ async function getShiftDetails() {
     }
 }
 
+async function addCapital(shiftId, amount, branchId, userId, notes) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        // Update shift's AddedCapital
+        const result = await conn.query(
+            `UPDATE shift 
+             SET AddedCapital = COALESCE(AddedCapital, 0) + ? 
+             WHERE ShiftID = ?`,
+            [amount, shiftId]
+        );
+
+        if (result.affectedRows === 0) {
+            throw new Error('Shift not found');
+        }
+
+        // Create a transaction record for capital injection
+        const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const transactionDate = createdAt;
+
+        await conn.query(
+            `INSERT INTO transaction 
+            (BranchID, UserID, TransactionType, 
+            TransactionDate, TotalAmount, 
+            PaymentMethod, Status, Notes, CreatedAt, ShiftID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                branchId,
+                userId,
+                'capital_addition',
+                transactionDate,
+                amount,
+                'cash',
+                'completed',
+                notes || null,
+                createdAt,
+                shiftId
+            ]
+        );
+
+        await conn.commit();
+        return { shiftId, addedCapital: amount };
+    } catch (error) {
+        if (conn) await conn.rollback();
+        throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
     getAll,
     create,
     endShift,
     getActivebyUserID,
     getBalance,
-    getShiftDetails
+    getShiftDetails,
+    addCapital
 };
