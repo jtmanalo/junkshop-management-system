@@ -1,4 +1,5 @@
 const shiftService = require('./services');
+const moment = require('moment-timezone');
 
 // Get all shifts
 async function getAll(req, res) {
@@ -46,7 +47,8 @@ async function create(req, res) {
         branchId,
         userId,
         initialCash,
-        notes
+        notes,
+        startDatetime
     } = req.body;
     if (!branchId || !userId || !initialCash) {
         return res.status(400).json({ error: 'BranchId, UserId, and InitialCash are required.' });
@@ -57,7 +59,8 @@ async function create(req, res) {
             branchId,
             userId,
             initialCash,
-            notes
+            notes,
+            startDatetime: startDatetime || moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss')
         });
         res.status(201).json(shift);
     } catch (error) {

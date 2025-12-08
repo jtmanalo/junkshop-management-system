@@ -110,13 +110,17 @@ async function endShift(shiftId) {
             [shiftId]
         );
 
+        console.log('Ending shift with ID:', shiftId, 'Shift data:', shift);
+
         if (!shift) {
             throw new Error('Shift not found');
         }
 
-        const { InitialCash, RunningTotal, AddedCapital } = shift;
+        const initialCash = Number(shift.InitialCash) || 0;
+        const runningTotal = Number(shift.RunningTotal) || 0;
+        const addedCapital = Number(shift.AddedCapital) || 0;
 
-        const finalCash = InitialCash + (AddedCapital || 0) - RunningTotal;
+        const finalCash = initialCash + addedCapital - runningTotal;
 
         const result = await conn.query(
             `UPDATE shift SET EndDatetime = NOW(), FinalCash = ? WHERE ShiftID = ?`,

@@ -1,6 +1,37 @@
 const pool = require('../db');
 const moment = require('moment-timezone');
 
+// Helper function to determine transaction date based on shift start date
+async function getTransactionDate(conn, userId, branchId) {
+    try {
+        // Get the active shift for the user
+        const shift = await conn.query(
+            `SELECT StartDatetime FROM shift WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [userId, branchId]
+        );
+
+        if (!shift[0]?.StartDatetime) {
+            // No active shift, use current date/time
+            return moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        }
+
+        const shiftStartDate = moment(shift[0].StartDatetime).tz('Asia/Manila');
+        const today = moment().tz('Asia/Manila');
+
+        // If shift start date is today, use current time; otherwise use shift start date with current time
+        if (shiftStartDate.format('YYYY-MM-DD') === today.format('YYYY-MM-DD')) {
+            // Use current datetime
+            return moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        } else {
+            // Use shift's start date with current time
+            return shiftStartDate.format('YYYY-MM-DD') + ' ' + moment().tz('Asia/Manila').format('HH:mm:ss');
+        }
+    } catch (error) {
+        // Fallback to current time if there's an error
+        return moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+    }
+}
+
 async function getAll() {
     let conn;
     try {
@@ -137,7 +168,7 @@ async function create(data) {
         // Convert timestamps to MariaDB-compatible format
         // const transactionDate = moment(data.transactionDate).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const transactionDate = createdAt;
+        const transactionDate = await getTransactionDate(conn, data.userId, data.branchId);
 
         // Perform the INSERT query
         const result = await conn.query(
@@ -205,7 +236,7 @@ async function createRepayment(data) {
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const transactionDate = createdAt;
+        const transactionDate = await getTransactionDate(conn, data.userId, data.branchId);
 
         // Get ShiftID
         const shift = await conn.query(
@@ -300,7 +331,7 @@ async function createLoan(data) {
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const transactionDate = createdAt;
+        const transactionDate = await getTransactionDate(conn, data.userId, data.branchId);
 
         // console.log('UserID:', data.userId, 'BranchID:', data.branchId);
         // Get ShiftID
@@ -366,7 +397,7 @@ async function createExpense(data) {
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const transactionDate = createdAt;
+        const transactionDate = await getTransactionDate(conn, data.userId, data.branchId);
 
         if (data.totalAmount <= 0) {
             throw new Error('Total amount must be greater than zero for an expense.');
@@ -679,7 +710,7 @@ async function createPurchase(data) {
         await conn.beginTransaction();
 
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const transactionDate = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        const transactionDate = await getTransactionDate(conn, data.userId, data.branchId);
 
         // Get ShiftID
         const shift = await conn.query(
@@ -746,8 +777,6 @@ async function createPurchase(data) {
         if (conn) conn.release();
     }
 }
-
-
 async function createSale(data) {
     let conn;
     try {
@@ -755,7 +784,7 @@ async function createSale(data) {
         await conn.beginTransaction();
 
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const transactionDate = createdAt;
+        const transactionDate = await getTransactionDate(conn, data.userId, data.branchId);
 
         // Get ShiftID
         const shift = await conn.query(
