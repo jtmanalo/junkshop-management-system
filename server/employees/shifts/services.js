@@ -1,6 +1,36 @@
 const pool = require('../../db');
 const moment = require('moment-timezone');
 
+async function getTransactionDate(conn, userId, branchId) {
+    try {
+        // Get the active shift for the user
+        const shift = await conn.query(
+            `SELECT StartDatetime FROM shift WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
+            [userId, branchId]
+        );
+
+        if (!shift[0]?.StartDatetime) {
+            // No active shift, use current date/time
+            return moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        }
+
+        const shiftStartDate = moment(shift[0].StartDatetime).tz('Asia/Manila');
+        const today = moment().tz('Asia/Manila');
+
+        // If shift start date is today, use current time; otherwise use shift start date with current time
+        if (shiftStartDate.format('YYYY-MM-DD') === today.format('YYYY-MM-DD')) {
+            // Use current datetime
+            return moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        } else {
+            // Use shift's start date with current time
+            return shiftStartDate.format('YYYY-MM-DD') + ' ' + moment().tz('Asia/Manila').format('HH:mm:ss');
+        }
+    } catch (error) {
+        // Fallback to current time if there's an error
+        return moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+    }
+}
+
 async function getAll() {
     let conn;
     try {
@@ -106,11 +136,11 @@ async function endShift(shiftId) {
         conn = await pool.getConnection();
 
         const [shift] = await conn.query(
-            `SELECT InitialCash, RunningTotal, AddedCapital FROM shift WHERE ShiftID = ?`,
+            `SELECT StartDatetime, InitialCash, RunningTotal, AddedCapital FROM shift WHERE ShiftID = ?`,
             [shiftId]
         );
 
-        console.log('Ending shift with ID:', shiftId, 'Shift data:', shift);
+        // console.log('Ending shift with ID:', shiftId, 'Shift data:', shift);
 
         if (!shift) {
             throw new Error('Shift not found');
@@ -119,20 +149,21 @@ async function endShift(shiftId) {
         const initialCash = Number(shift.InitialCash) || 0;
         const runningTotal = Number(shift.RunningTotal) || 0;
         const addedCapital = Number(shift.AddedCapital) || 0;
+        const shiftStartDate = moment(shift.StartDatetime).tz('Asia/Manila');
+        const endDatetime = shiftStartDate.format('YYYY-MM-DD') + ' ' + moment().tz('Asia/Manila').format('HH:mm:ss');
 
         const finalCash = initialCash + addedCapital - runningTotal;
 
         const result = await conn.query(
-            `UPDATE shift SET EndDatetime = NOW(), FinalCash = ? WHERE ShiftID = ?`,
-            [finalCash, shiftId]
-
+            `UPDATE shift SET EndDatetime = ?, FinalCash = ? WHERE ShiftID = ?`,
+            [endDatetime, finalCash, shiftId]
         );
 
         // Check if any rows were updated
         if (result.affectedRows === 0) {
             throw new Error('Shift not found');
         }
-        return { id: shiftId, finalCash, endDatetime: moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss') };
+        return { id: shiftId, finalCash, endDatetime };
     } catch (error) {
         throw error;
     } finally {
@@ -260,7 +291,7 @@ async function addCapital(shiftId, amount, branchId, userId, notes) {
 
         // Create a transaction record for capital injection
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const transactionDate = createdAt;
+        const transactionDate = await getTransactionDate(conn, userId, branchId);
 
         await conn.query(
             `INSERT INTO transaction 

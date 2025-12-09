@@ -79,7 +79,7 @@ async function getSellerLoans() {
             FROM 
                 seller s
             LEFT JOIN 
-                transaction t ON t.SellerID = s.SellerID AND t.TransactionType IN ('loan', 'repayment')
+                transaction t ON t.SellerID = s.SellerID AND t.TransactionType IN ('loan', 'repayment') AND t.Status = 'completed'
             GROUP BY 
                 s.SellerID, s.Name, s.ContactNumber, s.CreatedAt`
         );
@@ -129,7 +129,7 @@ async function getEmployeeLoans() {
             FROM 
                 employee e
             LEFT JOIN 
-                transaction t ON t.EmployeeID = e.EmployeeID AND t.TransactionType IN ('loan', 'repayment')
+                transaction t ON t.EmployeeID = e.EmployeeID AND t.TransactionType IN ('loan', 'repayment') AND t.Status = 'completed'
             WHERE 
                 e.EmployeeID IS NOT NULL
             GROUP BY 
@@ -478,6 +478,7 @@ async function getExpenseBalance(branchId, userID,) {
             `SELECT SUM(TotalAmount) AS TotalExpenses
                 FROM transaction
                 WHERE TransactionType = 'expense'
+                AND Status = 'completed'
                 AND BranchID = ?
                 AND UserID = ?
                 AND ShiftID = ?`,
@@ -502,7 +503,7 @@ async function getBalance(branchId, userID) {
             `SELECT ShiftID 
              FROM shift 
              WHERE UserID = ? AND BranchID = ? AND EndDatetime IS NULL`,
-            [data.userId, data.branchId]
+            [userID, branchId]
         );
 
         // console.log('UserID:', data.userId, 'BranchID:', data.branchId);
@@ -510,7 +511,7 @@ async function getBalance(branchId, userID) {
         // console.log('Active shift query result:', shift[0]?.ShiftID);
 
         const [balance] = await conn.query(
-            `SELECT (InitialCash - RunningTotal) AS Balance
+            `SELECT (InitialCash + COALESCE(AddedCapital, 0) - RunningTotal) AS Balance
                 FROM shift
                 WHERE
                 BranchID = ?
@@ -519,7 +520,7 @@ async function getBalance(branchId, userID) {
             [branchId, userID, shift[0]?.ShiftID]
         );
 
-        return balance ? balance.TotalSales || 0 : 0;
+        return balance ? balance.Balance || 0 : 0;
     } catch (error) {
         throw error;
     } finally {
