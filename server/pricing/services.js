@@ -153,33 +153,31 @@ async function getPriceTrend(itemId, entityId, entityType) {
         // Ensure entityType is lowercase for consistent comparison
         const typeLower = entityType.toLowerCase();
 
-        // Base query joins the activity log to the header tables
+        // Determine which column to filter on (BuyerID or BranchID)
+        const entityColumn = typeLower === 'buyer' ? 'BuyerID' : 'BranchID';
+
+        // Query: Historical prices from PriceList + Recent changes from PriceListActivity
         const baseQuery = `
-            SELECT
-                pa.NewPrice,
-                pa.UpdatedAt
-            FROM
-                pricelist_activity pa
-            JOIN
-                pricelist_item pi ON pa.PriceListItemID = pi.PriceListItemID
-            JOIN
-                pricelist p ON pi.PriceListID = p.PriceListID
-            WHERE
-                pi.ItemID = ?
-                AND (
-                    (LOWER(?) = 'buyer' AND p.BuyerID = ?) OR
-                    (LOWER(?) = 'branch' AND p.BranchID = ?)
-                )
-            ORDER BY
-                pa.UpdatedAt ASC
+            SELECT pli.Price as NewPrice, pl.DateEffective as UpdatedAt
+            FROM pricelist pl
+            JOIN pricelist_item pli ON pl.PriceListID = pli.PriceListID
+            WHERE pli.ItemID = ?
+            AND pl.${entityColumn} = ?
+
+            UNION
+
+            SELECT pla.NewPrice, pla.UpdatedAt
+            FROM pricelist_activity pla
+            JOIN pricelist_item pli ON pla.PriceListItemID = pli.PriceListItemID
+            JOIN pricelist pl ON pli.PriceListID = pl.PriceListID
+            WHERE pli.ItemID = ?
+            AND pl.${entityColumn} = ?
+
+            ORDER BY UpdatedAt ASC
         `;
 
-        // Parameters: [ItemID, EntityType, EntityID, EntityType, EntityID]
-        const params = [
-            itemId,
-            typeLower, entityId,
-            typeLower, entityId
-        ];
+        // Parameters: [ItemID, EntityID, ItemID, EntityID]
+        const params = [itemId, entityId, itemId, entityId];
 
         const rows = await conn.query(baseQuery, params);
 
