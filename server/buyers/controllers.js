@@ -27,6 +27,32 @@ async function getAllWithPrices(req, res) {
     }
 }
 
+async function getAllWithPricesFormatted(req, res) {
+    try {
+        const buyers = await buyerService.getAllWithPrices();
+        if (buyers.length === 0) {
+            return res.status(204).send("No buyers found");
+        }
+
+        // Transform PascalCase to camelCase for frontend table
+        const formattedRows = buyers.map(buyer => ({
+            buyerId: buyer.BuyerID,
+            itemName: buyer.Name && buyer.Classification && buyer.UnitOfMeasurement
+                ? `${buyer.Name} - ${buyer.Classification} (${buyer.UnitOfMeasurement})`
+                : buyer.Name
+                    ? `${buyer.Name} (${buyer.UnitOfMeasurement})`
+                    : '',
+            price: buyer.Price,
+            companyName: buyer.CompanyName
+        }));
+
+        res.json(formattedRows);
+    } catch (error) {
+        console.error('Error getAllWithPricesFormatted:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 async function getList(req, res) {
     try {
         const buyers = await buyerService.getBuyersList();
@@ -107,5 +133,6 @@ module.exports = {
     getById,
     update,
     getList,
-    getAllWithPrices
+    getAllWithPrices,
+    getAllWithPricesFormatted
 };
