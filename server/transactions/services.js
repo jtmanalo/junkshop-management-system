@@ -1082,6 +1082,8 @@ async function voidTransaction(transactionId) {
 
         // Reverse the RunningTotal update based on transaction type
         let runningTotalAdjustment = 0;
+        let addedCapitalAdjustment = 0;
+
         switch (transaction.TransactionType) {
             case 'expense':
             case 'loan':
@@ -1097,6 +1099,10 @@ async function voidTransaction(transactionId) {
                 // Purchases add to the running total when completed, so we subtract them back
                 runningTotalAdjustment = -transaction.TotalAmount;
                 break;
+            case 'capital_addition':
+                // Capital additions increase AddedCapital, so we subtract them back
+                addedCapitalAdjustment = -transaction.TotalAmount;
+                break;
             default:
                 throw new Error(`Unknown transaction type: ${transaction.TransactionType}`);
         }
@@ -1106,6 +1112,14 @@ async function voidTransaction(transactionId) {
             `UPDATE shift SET RunningTotal = RunningTotal + ? WHERE ShiftID = ?`,
             [runningTotalAdjustment, transaction.ShiftID]
         );
+
+        // Update the shift's added capital if it's a capital_addition transaction
+        if (addedCapitalAdjustment !== 0) {
+            await conn.query(
+                `UPDATE shift SET AddedCapital = COALESCE(AddedCapital, 0) + ? WHERE ShiftID = ?`,
+                [addedCapitalAdjustment, transaction.ShiftID]
+            );
+        }
 
         // Mark the transaction as voided instead of deleting it
         await conn.query(
