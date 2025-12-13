@@ -41,13 +41,13 @@ async function getAll() {
         // Ensures timestamps are in UTC+8
         rows.forEach(row => {
             if (row.StartDatetime) {
-                row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss Z');
+                row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format();
             }
             if (row.EndDatetime) {
-                row.EndDatetime = moment(row.EndDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss Z');
+                row.EndDatetime = moment(row.EndDatetime).tz('Asia/Manila').format();
             }
             if (row.CreatedAt) {
-                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss Z');
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
             }
         });
         return rows;
@@ -74,10 +74,10 @@ async function getActivebyUserID(userId) {
         // Ensures timestamps are in UTC+8
         rows.forEach(row => {
             if (row.StartDatetime) {
-                row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss Z');
+                row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format();
             }
             if (row.CreatedAt) {
-                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss Z');
+                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
             }
         });
         return rows;
@@ -251,17 +251,17 @@ async function getShiftDetails() {
 
         const rows = await conn.query(query);
 
-        rows.forEach(row => {
-            if (row.StartDatetime) {
-                row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss Z');
-            }
-            if (row.EndDatetime) {
-                row.EndDatetime = moment(row.EndDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss Z');
-            }
-            if (row.CreatedAt) {
-                row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss Z');
-            }
-        });
+        // rows.forEach(row => {
+        //     if (row.StartDatetime) {
+        //         row.StartDatetime = moment(row.StartDatetime).tz('Asia/Manila').format();
+        //     }
+        //     if (row.EndDatetime) {
+        //         row.EndDatetime = moment(row.EndDatetime).tz('Asia/Manila').format();
+        //     }
+        //     if (row.CreatedAt) {
+        //         row.CreatedAt = moment(row.CreatedAt).tz('Asia/Manila').format();
+        //     }
+        // });
 
         return rows;
     } catch (error) {
