@@ -105,7 +105,7 @@ async function create(data) {
 
         // Convert timestamps to MariaDB-compatible format
         const createdAt = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
-        const startDatetime = moment(data.startDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        // const startDatetime = moment(data.startDatetime).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
 
         const result = await conn.query(
             `INSERT INTO shift 
@@ -114,7 +114,7 @@ async function create(data) {
             [
                 data.branchId,
                 data.userId,
-                startDatetime,
+                data.startDatetime,
                 data.initialCash,
                 0,
                 data.notes,
@@ -122,7 +122,7 @@ async function create(data) {
             ]
         );
 
-        return { id: result.insertId.toString(), ...data, startDatetime, createdAt };
+        return { id: result.insertId.toString(), ...data, createdAt };
     } catch (error) {
         throw error;
     } finally {
