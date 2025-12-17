@@ -50,6 +50,7 @@ async function create(req, res) {
         notes,
         startDatetime
     } = req.body;
+    // console.log('Creating shift with data:', req.body);
     if (!branchId || !userId || !initialCash) {
         return res.status(400).json({ error: 'BranchId, UserId, and InitialCash are required.' });
     }
@@ -62,6 +63,7 @@ async function create(req, res) {
             notes,
             startDatetime: startDatetime || moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss')
         });
+        // console.log('Shift created successfully:', shift);
         res.status(201).json(shift);
     } catch (error) {
         console.error('Error in createShift:', error);
