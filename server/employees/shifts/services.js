@@ -149,8 +149,9 @@ async function endShift(shiftId) {
         const initialCash = Number(shift.InitialCash) || 0;
         const runningTotal = Number(shift.RunningTotal) || 0;
         const addedCapital = Number(shift.AddedCapital) || 0;
-        const shiftStartDate = moment(shift.StartDatetime).tz('Asia/Manila');
-        const endDatetime = shiftStartDate.format('YYYY-MM-DD') + ' ' + moment().tz('Asia/Manila').format('HH:mm:ss');
+        // const shiftStartDate = moment(shift.StartDatetime).tz('Asia/Manila');
+        const endDatetime = moment().tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss');
+        // const endDatetime = shiftStartDate.format('YYYY-MM-DD') + ' ' + moment().tz('Asia/Manila').format('HH:mm:ss');
 
         const finalCash = initialCash + addedCapital - runningTotal;
 
